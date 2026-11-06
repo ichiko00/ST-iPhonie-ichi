@@ -1,6 +1,6 @@
 # MyPhone
 
-基于 [ST-iPhonie](https://github.com/hey8v0/ST-iPhonie) 的独立定制版。当前基线：作者 0.9.31；MyPhone social.16。保留作者衣柜、生成器和正文设置更新，加入 AI 人脉、好友申请、群成员、正文电话、剧情时间及语音续播等定制功能。详细说明见 MyPhone-使用说明.txt。原项目许可证及署名保留。
+基于 [ST-iPhonie](https://github.com/hey8v0/ST-iPhonie) 的独立定制版。当前基线：作者 0.9.31；MyPhone social.26。保留作者衣柜、生成器和正文设置更新，加入 AI 人脉、好友申请、群成员、正文电话、剧情时间及语音续播等定制功能。详细说明见 MyPhone-使用说明.txt。原项目许可证及署名保留。
 
 本地测试通过不代表已连接用户的 TT 或实际生成 API 验证。
 

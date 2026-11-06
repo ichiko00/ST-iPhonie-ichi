@@ -1,3 +1,5 @@
+import {voiceDisplay} from './core/voice-display.js';
+import {splitBilingual} from './core/bilingual.js';
 // 台词小窗 on the tavern page (设置 → 台词小窗, off at first): the latest story reply's voiced lines in a small pill over
 // the story — and over a visual-novel sprite that may cover the waves in the text — so they can be heard one by one at
 // the reader's pace. The pill says how many lines there are (or shows the one being said); a tap opens the list: tap a
@@ -6,6 +8,7 @@
 // It steps aside while the phone is out or a call is on.
 import {joinStack, stackTop} from './island-stack.js';
 
+export function islandDialogueText(line){const original=voiceDisplay(line.text),translation=voiceDisplay(line.translation),pair=splitBilingual(original,translation);return{primary:pair.translation||translation||original,secondary:pair.translation?pair.original:''};}
 const KEY = 'myphone.voiceIsland';
 const HEIGHT_KEY = KEY + '.height';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
@@ -77,7 +80,7 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
     if (built !== key(r)) {
       built = key(r);
       text('[data-vi-title]', `${r.name || '台词'} · ${r.lines.length} 句`);
-      el.querySelector('[data-vi-list]').innerHTML = r.lines.map((l, i) => `<button type="button" class="vi-row" data-vi-i="${i}"><b>${esc(l.role || '')}</b><span>${esc(l.translation || l.text)}</span>${l.translation && l.translation !== l.text ? `<small>${esc(l.text)}</small>` : ''}</button>`).join('');
+      el.querySelector('[data-vi-list]').innerHTML = r.lines.map((l,i)=>{const text=islandDialogueText(l);return `<button type="button" class="vi-row" data-vi-i="${i}"><b>${esc(l.role||'')}</b><span>${esc(text.primary)}</span>${text.secondary?`<small>${esc(text.secondary)}</small>`:''}</button>`;}).join('');
       sizeList();
     }
     for (const row of el.querySelectorAll('.vi-row')) {
@@ -88,7 +91,7 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
     // 整篇朗读: while the 旁白 reads, no line is the one playing, but the reply is.
     const mineAll = s && s.id === r.id && BUSY.includes(s.phase), pausedAll = s && s.id === r.id && s.phase === 'paused';
     const said = mine >= 0 ? r.lines[mine] : paused >= 0 ? r.lines[paused] : null;
-    text('[data-vi-line]', said ? `${said.role ? said.role + '：' : ''}${said.translation || said.text}` : mineAll && s.narration ? `旁白：${s.narration}` : `${r.lines.length} 句台词`);
+    text('[data-vi-line]', said ? `${said.role ? said.role + '：' : ''}${islandDialogueText(said).primary}` : mineAll && s.narration ? `旁白：${s.narration}` : `${r.lines.length} 句台词`);
     marquee();
     const stepping=s?.id===r.id&&s.stepwise;
     const step=el.querySelector('[data-vi=step]'),stepOn=stepping&&mineAll;
