@@ -1,7 +1,7 @@
 // 自动挑音色, tavern side: when a character speaks for the first time (or 重新挑 in the 角色 App), the text model picks
 // their voice — from the 候选音色池 first, else from the voice library of the engine most roles use — and the route is
 // saved marked as picked automatically (autoVoice, with the reason). One character at a time.
-import {normalizePool, poolLine, voiceProfile, pickRequest, parsePick, searchRequest, parseSearch} from './core/auto-voice.js';
+import {rankedVoicePool,normalizePool, poolLine, voiceProfile, pickRequest, parsePick, searchRequest, parseSearch} from './core/auto-voice.js';
 import {plainStory} from './core/chat.js';
 import {findRoute} from './core/routes.js';
 
@@ -53,7 +53,7 @@ export function createVoiceHost({context, settings, backend, saidBy = () => []})
   async function choose(name, force) {
     const route = findRoute(settings().routes, name);
     if (route?.voice && !force) return route;
-    const profile = profileOf(name), pool = normalizePool(settings().voicePool);
+    const profile = profileOf(name), pool = rankedVoicePool(profile,settings().voicePool);
     let chosen = null;
     if (pool.length) {
       const candidates = pool.map(v => ({...v, label: `[${ENGINE_NAMES[v.engine]}] ${poolLine(v)}`}));

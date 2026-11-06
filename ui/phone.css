@@ -3146,3 +3146,9 @@ summary:has(.fold-note):after{margin-left:8px;flex-shrink:0}
 /* Anchor thoughts to a real avatar box. display:contents has no rectangle and caused top-left popups. */
 .pat-target[role=button]{display:inline-flex;position:relative;align-self:flex-start;flex-shrink:0}
 .pat-target>.avatar-thought{position:absolute;left:calc(100% + 8px);top:0;max-width:220px;width:max-content;text-align:left}
+
+.voice-tag-list,.voice-tag-presets{display:flex;flex-wrap:wrap;gap:6px;margin:7px 0}
+.voice-tag{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--ink);border:1px solid var(--line);font-size:11px;line-height:1.4;max-width:100%;overflow-wrap:anywhere}
+button.voice-tag[aria-pressed=true]{background:var(--accent-btn);color:var(--on-accent)}
+.voice-pool-search{width:100%;margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);box-sizing:border-box}
+.voice-gender-filter{margin:10px 0;flex-wrap:wrap}.voice-gender-filter button{font-size:12px}

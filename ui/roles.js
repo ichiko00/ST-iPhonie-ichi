@@ -5,7 +5,7 @@ import {layerTree} from '../core/layers.js';
 import {lookTest} from '../core/draw.js';
 import {voiceFromLink} from '../core/custom-voice.js';
 import {pickPicture} from './draw-images.js';
-import {VOICE_GENDERS, VOICE_AGES, poolLine, readPoolFile, poolFile, guessVoice} from '../core/auto-voice.js';
+import {VOICE_GENDERS, VOICE_AGES, normalizeVoiceTags,filterVoicePool,poolLine, readPoolFile, poolFile, guessVoice} from '../core/auto-voice.js';
 import {saveFile} from '../download.js';
 import {icon, halo} from './icons.js';
 
@@ -252,6 +252,7 @@ export function rolesApp(ctx) {
       ${manual ? field('引擎', select('fav-engine', entry.engine || 'fish', Object.entries(engines))) + field('音色 ID', input('fav-voice', '', 'text', 'autocomplete="off" placeholder="粘贴音色 ID"')) : `<div class="field"><span>音色 ID</span><small class="mono fav-id">${esc(engines[entry.engine])} · ${esc(entry.voice)}</small></div>`}
       ${field('名字', input('fav-name', entry.name || '', 'text', 'maxlength="60" placeholder="自己认得出的名字"'))}
       ${field('备注', input('fav-style', entry.style || '', 'text', 'maxlength="120" placeholder="例如：温柔、清亮、适合姐姐角色"'), '写什么都行；自动挑音色时也会参考这里的描述。')}
+      ${field('关键词标签',input('fav-tags',normalizeVoiceTags(entry.tags).join('、'),'text','maxlength="400" placeholder="低沉、温柔、成熟、日语"'),'用逗号、顿号或空格分隔；自动挑音色会参考这些标签。')}<div class="voice-tag-presets">${['低沉','清亮','温柔','清冷','磁性','成熟','少年感','元气','慵懒','沙哑','气声','中文','英语','日语'].map(tag=>`<button type="button" class="voice-tag" data-fav-tag="${tag}">${tag}</button>`).join('')}</div>
       ${field('性别', select('fav-gender', entry.gender || '', [['', '不限'], ...Object.entries(VOICE_GENDERS)]))}
       ${field('年龄', select('fav-age', entry.age || '', [['', '不限'], ...Object.entries(VOICE_AGES)]), '自动挑音色时，性别和年龄对得上才会选这个音色。')}</div>
       <div class="actions">${fresh ? '' : btn('fav-remove', icon('trash') + '取消收藏', 'danger')}${btn('fav-save', fresh ? '收藏' : '保存', 'primary')}</div>`);
@@ -259,11 +260,12 @@ export function rolesApp(ctx) {
       const value = k => d.body.querySelector(`[data-field=${k}]`)?.value.trim() || '';
       const list = [...favorites()];
       if (e.target.closest('[data-action=fav-remove]')) { list.splice(index, 1); api.saveVoicePool(list); d.close(); ctx.notify('已取消收藏'); done(); return; }
+      const chip=e.target.closest('[data-fav-tag]');if(chip){const box=d.body.querySelector('[data-field=fav-tags]');box.value=normalizeVoiceTags([...normalizeVoiceTags(box.value),chip.dataset.favTag]).join('、');return;}
       if (!e.target.closest('[data-action=fav-save]')) return;
       const engine = manual ? value('fav-engine') : entry.engine, voice = manual ? value('fav-voice') : entry.voice;
       if (!voice) { ctx.notify('先填音色 ID', {error: true}); return; }
       if (fresh && isFavorite(engine, voice)) { ctx.notify('这个音色已经在收藏夹里了', {error: true}); return; }
-      const next = {...entry, engine, voice, name: value('fav-name'), style: value('fav-style'), gender: value('fav-gender'), age: value('fav-age')};
+      const next = {...entry, engine, voice, name: value('fav-name'), style: value('fav-style'), gender: value('fav-gender'), age: value('fav-age'),tags:normalizeVoiceTags(value('fav-tags'))};
       if (fresh) list.push(next); else list[index] = next;
       api.saveVoicePool(list);
       d.close(); ctx.notify(fresh ? '已收藏' : '已保存'); done();
@@ -273,7 +275,10 @@ export function rolesApp(ctx) {
   /** 从收藏夹选: the kept voices of this engine; one tapped goes into the role being edited. */
   function pickFavorite() {
     const target = current, list = favorites().filter(f => f.engine === target.engine);
-    const d = ctx.dialog('从收藏夹选', `<div class="group" data-engine="${target.engine}">${list.map(f => `<button class="list-row" data-voice="${esc(f.voice)}"><span class="disc">${icon('heart', true)}</span><span><strong>${esc(f.name)}</strong><small>${esc(poolLine({...f, name: ''}) || '')}</small><small class="mono">${esc(f.voice)}</small></span>${icon('next')}</button>`).join('')}</div>`);
+    let gender='',query='';const draw=()=>{const rows=filterVoicePool(list,{gender,query});return rows.length?rows.map(({voice:f})=>`<button class="list-row" data-voice="${esc(f.voice)}"><span class="disc">${icon('heart',true)}</span><span><strong>${esc(f.name)}</strong><small>${esc(poolLine({...f,name:''}))}</small><small class="mono">${esc(f.voice)}</small></span>${icon('next')}</button>`).join(''):'<p class="hint">没有符合条件的收藏音色。</p>';};
+    const d=ctx.dialog('从收藏夹选',`<div class="segmented voice-gender-filter">${[['','全部'],['male','男声'],['female','女声'],['unknown','未分类']].map(([key,label])=>`<button type="button" data-pick-gender="${key}" aria-pressed="${!key}">${label}</button>`).join('')}</div><input class="voice-pool-search" data-pick-query type="search" placeholder="搜索标签、名字或备注" aria-label="搜索角色可用的收藏音色"><div class="group" data-favorite-list data-engine="${target.engine}">${draw()}</div>`);
+    d.body.addEventListener('input',e=>{if(e.target.matches('[data-pick-query]')){query=e.target.value;d.body.querySelector('[data-favorite-list]').innerHTML=draw();}});
+    d.body.addEventListener('click',e=>{const button=e.target.closest('[data-pick-gender]');if(button){gender=button.dataset.pickGender;d.body.querySelectorAll('[data-pick-gender]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.pickGender===gender)));d.body.querySelector('[data-favorite-list]').innerHTML=draw();}});
     d.body.addEventListener('click', e => {
       const b = e.target.closest('[data-voice]');
       if (!b) return;
@@ -287,13 +292,14 @@ export function rolesApp(ctx) {
     });
   }
   function poolSheet() {
+    let gender='',query='',tag='';
     // Each voice: a tap edits it; swiped left 改 / 删除; swiped right picked, to export or delete several.
-    const draw = () => { const pool = favorites(); return pool.length
-      ? `<div class="group" data-pool-list>${pool.map((v, i) => swipeRow(String(i), `<div class="list-row" data-engine="${v.engine}"><span style="flex:none">${plate(engines[v.engine])}</span><span style="flex:1;min-width:0"><strong>${esc(v.name)}</strong><small>${esc(poolLine({...v, name: ''}) || '没有备注')}</small><small class="mono">${esc(v.voice)}</small></span>${icon('next')}</div>`,
+    const draw = () => { const pool = favorites(),visible=filterVoicePool(pool,{gender,query,tag}); return visible.length
+      ? `<div class="group" data-pool-list>${visible.map(({voice:v,index:i}) => swipeRow(String(i), `<div class="list-row" data-engine="${v.engine}"><span style="flex:none">${plate(engines[v.engine])}</span><span style="flex:1;min-width:0"><strong>${esc(v.name)}</strong><small>${esc([VOICE_GENDERS[v.gender]||'未分类',VOICE_AGES[v.age],v.style].filter(Boolean).join(' · '))}</small><span class="voice-tag-list">${normalizeVoiceTags(v.tags).map(t=>`<span class="voice-tag">${esc(t)}</span>`).join('')}</span><small class="mono">${esc(v.voice)}</small></span>${icon('next')}</div>`,
         [{key: 'edit', label: '改', icon: 'edit'}, {key: 'delete', label: '删除', icon: 'trash', danger: true}], {label: v.name})).join('')}</div>`
-      : '<p class="hint">还没有音色。在角色页「从列表选」里点 ♡ 收藏，或点右上角的「＋」填音色 ID。</p>'; };
-    const d = ctx.dialog('音色收藏夹', `<div class="row-heading fav-heading"><span>收藏的音色 ${help('收藏用得上的音色，名字和备注随便写。角色页填音色时点「从收藏夹选」；自动挑音色也先从这里挑（标了性别和年龄的更容易挑中）。\n\n可以导入别人分享的音色文件（ST-iPhonie 导出的，或 FishDialogue 的音色库 JSON）。文件里没写男女和年龄的，按名字和描述猜（少女、大叔、妈妈……），猜不出就留空。')}</span><span class="fav-tools"><label class="chip-button file-button">${icon('import')}导入<input type="file" data-pool-file accept=".json,application/json" aria-label="选择音色收藏文件"></label>${btn('pool-export', icon('download') + '导出', 'chip-button')}</span></div>
-      <div data-pool>${draw()}</div>`, {add: '添加音色'});
+      : pool.length?'<p class="hint">没有符合分类和关键词的音色，试试切换“全部”或清空搜索。</p>':'<p class="hint">还没有音色。在角色页「从列表选」里点 ♡ 收藏，或点右上角的「＋」填音色 ID。</p>'; };
+    const d = ctx.dialog('音色收藏夹', `<div class="row-heading fav-heading"><span>收藏的音色 ${help('收藏用得上的音色，可按男声、女声、未分类筛选，按名字、标签和备注搜索。角色页填音色时点「从收藏夹选」；自动挑音色也先从这里挑（标了性别和年龄的更容易挑中）。\n\n可以导入别人分享的音色文件（ST-iPhonie 导出的，或 FishDialogue 的音色库 JSON）。文件里没写男女和年龄的，按名字和描述猜（少女、大叔、妈妈……），猜不出就留空。')}</span><span class="fav-tools"><label class="chip-button file-button">${icon('import')}导入<input type="file" data-pool-file accept=".json,application/json" aria-label="选择音色收藏文件"></label>${btn('pool-export', icon('download') + '导出', 'chip-button')}</span></div>
+      <div class="segmented voice-gender-filter" data-pool-genders>${[['','全部'],['male','男声'],['female','女声'],['unknown','未分类']].map(([key,label])=>`<button type="button" data-pool-gender="${key}" aria-pressed="${key===gender}">${label} ${favorites().filter(v=>!key||(key==='unknown'?!v.gender:v.gender===key)).length}</button>`).join('')}</div><input class="voice-pool-search" data-pool-query type="search" placeholder="搜索名字、标签、备注或音色ID" aria-label="搜索收藏音色"><div class="voice-tag-list">${[...new Set(favorites().flatMap(v=>normalizeVoiceTags(v.tags)))].slice(0,18).map(t=>`<button type="button" class="voice-tag" data-pool-tag="${esc(t)}" aria-pressed="false">${esc(t)}</button>`).join('')}</div><div data-pool>${draw()}</div>`, {add: '添加音色'});
     let swipe = null;
     const exportVoices = pool => {
       if (!pool.length) { ctx.notify('收藏夹还是空的'); return Promise.resolve(); }
@@ -323,7 +329,9 @@ export function rolesApp(ctx) {
     mount();
     d.onClose(() => swipe?.dispose());
     d.overlay.addEventListener('click', e => { if (e.target.closest('[data-sheet-add]')) favoriteForm({engine: current?.engine || 'fish', voice: ''}, {done: () => { if (!current) render(); poolSheet(); }}); });
-    const redraw = () => { if (!d.live) return; d.body.querySelector('[data-pool]').innerHTML = draw(); mount(); if (!current) render(); };
+    const redraw = () => { if (!d.live) return; d.body.querySelector('[data-pool]').innerHTML = draw();d.body.querySelectorAll('[data-pool-gender]').forEach(b=>{const key=b.dataset.poolGender;b.textContent=({'':'全部',male:'男声',female:'女声',unknown:'未分类'}[key])+' '+favorites().filter(v=>!key||(key==='unknown'?!v.gender:v.gender===key)).length;}); mount(); if (!current) render(); };
+    d.body.addEventListener('input',e=>{if(e.target.matches('[data-pool-query]')){query=e.target.value;redraw();}});
+    d.body.addEventListener('click',e=>{const g=e.target.closest('[data-pool-gender]'),t=e.target.closest('[data-pool-tag]');if(g){gender=g.dataset.poolGender;d.body.querySelectorAll('[data-pool-gender]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.poolGender===gender)));redraw();}if(t){tag=tag===t.dataset.poolTag?'':t.dataset.poolTag;d.body.querySelectorAll('[data-pool-tag]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.poolTag===tag)));redraw();}});
     // A pool file adds its voices (those already in the pool stay as they are).
     d.body.addEventListener('change', e => {
       if (!e.target.matches('[data-pool-file]')) return;
