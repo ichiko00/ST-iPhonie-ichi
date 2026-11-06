@@ -1,3 +1,6 @@
+import {installAvatarThoughts} from './avatar-thought.js';
+import {bilingualHTML} from './bilingual.js';
+import {splitBilingual} from '../core/bilingual.js';
 import {storyClockLabel} from '../core/story-clock.js';
 import {voiceDisplay,unheardQueue} from '../core/voice-display.js';
 import {groupMembersPanel} from './chat-group-members.js';
@@ -99,10 +102,12 @@ export function chatApp(ctx) {
   let unseen = 0, tailId = null, unreadMark = null;
   const photoURLs = new Map(), bubbleURLs = new Map(), photoSizes = new Map(), recalled = new Map(), transcribed = new Set();
   let press = null, pressedAt = 0;
+  const bilingual=()=>api.readState().chat.bilingual!==false;
   const voiceText = () => api.readState().chat.voiceText || {mode: 'translation', auto: false};
   /** 转文字 for a voice message: the translation, the original line, or both (original first). */
   function transcriptHTML(m) {
     // The engine's own marks ([sigh], <whisper>…</whisper>, (laughing), <#0.5#>) are for the voice, not for reading.
+    if(bilingual()){const original=voiceDisplay(m.text),translation=voiceDisplay(m.translation);const pair=splitBilingual(original,translation);if(pair.translation)return `<span class="v-text bilingual-voice">${bilingualHTML(original,translation)}</span>`;}
     const mode = voiceText().mode, original = String(m.text || '').replace(/\[[^\]]*\]|<[^>]*>|\((?:[a-z][a-z\s'-]*)\)/gi, '').replace(/\s{2,}/g, ' ').trim(), translation = voiceDisplay(m.translation);
     if (mode === 'original' || !translation) return `<span class="v-text">${esc(original)}</span>`;
     if (mode === 'both' && original && original !== translation) return `<span class="v-text both"><span class="v-orig">${esc(original)}</span><span>${esc(translation)}</span></span>`;
@@ -395,7 +400,7 @@ export function chatApp(ctx) {
   function bodyHTML(m) {
     const mid = `data-mid="${esc(m.id)}"`;
     switch (m.kind) {
-      case 'voice': return `<button class="voice-msg" data-action="voice" ${mid} data-state="ungenerated" aria-label="播放 ${esc(m.from)} 的语音"><span class="v-ico">${icon('play', true)}</span><span class="v-wave">${WAVE_HEIGHTS.map(h => `<i style="height:${h}px"></i>`).join('')}</span><span class="v-sec">${seconds(m)}″</span></button>${voiceText().auto || transcribed.has(m.id) ? transcriptHTML(m) : ''}`;
+      case 'voice': return `<button class="voice-msg" data-action="voice" ${mid} data-state="ungenerated" aria-label="播放 ${esc(m.from)} 的语音"><span class="v-ico">${icon('play', true)}</span><span class="v-wave">${WAVE_HEIGHTS.map(h => `<i style="height:${h}px"></i>`).join('')}</span><span class="v-sec">${seconds(m)}″</span></button>${voiceText().auto || transcribed.has(m.id) || (bilingual()&&splitBilingual(voiceDisplay(m.text),voiceDisplay(m.translation)).translation) ? transcriptHTML(m) : ''}`;
       case 'photo': return m.photoId
         ? `<button class="chat-photo" data-action="photo" ${mid}${photoSizes.has(m.photoId) ? ` style="${photoSizes.get(m.photoId)}"` : ''} aria-label="查看照片"><img data-chat-photo="${esc(m.photoId)}"${bubbleURLs.get(m.photoId) ? ` src="${esc(bubbleURLs.get(m.photoId))}"` : ''} alt="${esc(m.text || '照片')}"></button>`
         : `<button class="chat-photo described" data-action="message" ${mid}><span class="ph-art">${icon('image')}</span><span class="ph-cap">${esc(m.text)}</span></button>${photoNote(m)}`;
@@ -422,7 +427,7 @@ export function chatApp(ctx) {
       }
       case 'song': return `<button class="song-card" data-action="song" ${mid} aria-label="播放 ${esc(m.song?.title || '')}"><span class="sg-disc" aria-hidden="true">${icon('music')}</span><span class="sg-text"><strong>${esc(m.song?.title || '')}</strong><small>${esc(m.song?.artist || '')}</small>${m.text ? `<em>${esc(m.text)}</em>` : ''}</span><span class="sg-play" aria-hidden="true">${icon(m.song?.draft ? 'edit' : 'play', !m.song?.draft)}</span></button>`;
       case 'call': return `<button class="call-msg${m.state === 'answered' ? '' : ' missed'}" data-action="call-log" ${mid}>${icon('phone', true)}<span>${esc(callSummary(m))}</span></button>`;
-      default: return `<button class="chat-bubble" data-action="message" ${mid}>${esc(m.text)}</button>`;
+      default: return `<button class="chat-bubble" data-action="message" ${mid}>${bilingualHTML(m.text,m.translation,bilingual())}</button>`;
     }
   }
   function lineHTML(m) {
@@ -455,7 +460,7 @@ export function chatApp(ctx) {
     if (LINE_KINDS.includes(m.kind)) return day + lineHTML(m);
     const me = m.from === 'me', group = thread.type === 'group', picked = selecting?.has(m.id);
     const quoted = m.quote ? `<span class="m-quote">${esc(you(m.quote.from))}：${esc(m.quote.text)}</span>` : '';
-    return day + (picked && m.id === edges.first ? rangeBar('start') : '') + `<div class="msg${me ? ' me' : ''}${m.id === pace.fresh ? ' fresh' : ''}" data-engine="${me ? 'none' : engine(m.from)}" data-kind="${m.kind}" data-mid="${esc(m.id)}"${picked ? ' data-picked' : ''}>${selecting ? '<span class="pick" aria-hidden="true"></span>' : ''}${me ? `<span class="me-side">${myAvatar(34)}</span>` : `<span class="pat-target" data-pat="${esc(m.from)}" title="双击拍一拍">${avatar(m.from, engine(m.from), 34)}</span>`}<div class="m-body">${group && !me ? `<span class="m-name">${esc(shown(m.from))}</span>` : ''}${bodyHTML(m)}${quoted}</div></div>` + (picked && m.id === edges.last ? rangeBar('end') : '');
+    return day + (picked && m.id === edges.first ? rangeBar('start') : '') + `<div class="msg${me ? ' me' : ''}${m.id === pace.fresh ? ' fresh' : ''}" data-engine="${me ? 'none' : engine(m.from)}" data-kind="${m.kind}" data-mid="${esc(m.id)}"${picked ? ' data-picked' : ''}>${selecting ? '<span class="pick" aria-hidden="true"></span>' : ''}${me ? `<span class="me-side">${myAvatar(34)}</span>` : `<span class="pat-target" data-pat="${esc(m.from)}" title="单击看心声，双击拍一拍" role="button" tabindex="0" aria-label="${esc(shown(m.from))}：单击看心声，双击拍一拍">${avatar(m.from, engine(m.from), 34)}</span>`}<div class="m-body">${group && !me ? `<span class="m-name">${esc(shown(m.from))}</span>` : ''}${bodyHTML(m)}${quoted}</div></div>` + (picked && m.id === edges.last ? rangeBar('end') : '');
   }
   function toolsHTML() {
     const group = thread.type === 'group';
@@ -1332,14 +1337,15 @@ export function chatApp(ctx) {
   function voiceTextSheet() {
     const draw = () => {
       const o = voiceText();
-      return `<p class="help-copy">语音消息平时只显示语音条，长按（电脑上右键）选「转文字」才显示文字。</p>
-        <div class="field"><span>转文字显示</span><div class="segmented" style="margin:0">${[['translation', '中文译文'], ['original', '原文'], ['both', '原文和译文']].map(([k, l]) => `<button data-action="vt-mode" data-mode="${k}" aria-pressed="${o.mode === k}">${l}</button>`).join('')}</div></div>
+      return `<p class="help-copy">开启双语气泡时，带中文译文的外语语音自动显示原文和译文；其他语音仍可长按（电脑上右键）选择「转文字」。</p>
+        <div class="setting-row"><span>双语气泡 · 原文在上，中文在下</span><input class="switch" type="checkbox" data-field="chat-bilingual" aria-label="双语气泡" ${bilingual()?'checked':''}></div><div class="field"><span>关闭双语气泡时，转文字显示</span><div class="segmented" style="margin:0">${[['translation', '中文译文'], ['original', '原文'], ['both', '原文和译文']].map(([k, l]) => `<button data-action="vt-mode" data-mode="${k}" aria-pressed="${o.mode === k}">${l}</button>`).join('')}</div></div>
         <div class="setting-row"><span>新旧语音都自动转文字</span><input class="switch" type="checkbox" data-field="vt-auto" aria-label="语音自动转文字" ${o.auto ? 'checked' : ''}></div>`;
     };
     const d = sheet('语音消息', `<div class="vt-body">${draw()}</div>`, {
       'vt-mode': b => { api.saveChatOptions({voiceText: {mode: b.dataset.mode}}); d.body.querySelector('.vt-body').innerHTML = draw(); render(); }
     });
     d.body.addEventListener('change', e => {
+      if(e.target.matches('[data-field=chat-bilingual]')){api.saveChatOptions({bilingual:e.target.checked});render();return;}
       if (!e.target.matches('[data-field=vt-auto]')) return;
       try { api.saveChatOptions({voiceText: {auto: e.target.checked}}); render(); } catch (error) { ctx.notify(error.message); }
     });
@@ -1396,7 +1402,7 @@ export function chatApp(ctx) {
   /** A finished call: what was said, the voice message of a missed call, and calling back. */
   function callLog(m) {
     const name = m.from === 'me' ? thread.members[0] : m.from, who = l => l.from === 'me' ? '你' : l.from;
-    const said = m.lines?.length ? `<div class="call-log">${m.lines.map(l => `<p><b>${esc(who(l))}：</b>${esc(voiceDisplay(l.translation || l.text))}</p>`).join('')}</div>` : '';
+    const said = m.lines?.length ? `<div class="call-log">${m.lines.map(l => `<p><b>${esc(who(l))}：</b>${bilingualHTML(voiceDisplay(l.text||l.translation),voiceDisplay(l.translation),bilingual())}</p>`).join('')}</div>` : '';
     const mail = m.voicemail?.length ? `<p class="help-copy"><b>语音留言：</b>${esc(m.voicemail.map(l => l.translation || l.text).join(' '))}</p>` : '';
     const summary=m.text?.startsWith('通话摘要：')?`<div class="group pad"><strong>通话摘要</strong><p class="help-copy">${esc(m.text.slice(5))}</p></div>`:'';
     const d = sheet(callSummary(m), `${summary}${said || mail ? '' : '<p class="help-copy">这通电话没有说话内容。</p>'}${mail}${said}
@@ -1600,7 +1606,7 @@ export function chatApp(ctx) {
     render();
   });
   // Double-tap an avatar to 拍一拍; long-press (or right-click) a message for its menu.
-  v.on('dblclick', '[data-pat]', el => { if (!selecting) return pat(el.dataset.pat); });
+  const avatarThoughts=installAvatarThoughts({root:v.root,win:ctx.win,doc:ctx.doc,messageFor:el=>thread?.messages.find(m=>m.id===el.closest('.msg[data-mid]')?.dataset.mid),enabled:()=>!selecting&&mode==='thread',onPat:name=>pat(name),shown,notify:message=>ctx.notify(message)});
   // Long-press works the same on phones that do not send contextmenu (iOS): hold a message for half a second.
   v.on('pointerdown', '.msg[data-mid] .m-body', (el, e) => {
     if (selecting || e.button > 0) return;
@@ -1911,7 +1917,7 @@ export function chatApp(ctx) {
   /** 动态, from the tavern page's 动态小窗. */
   v.showMoments = () => { mode = 'list'; tab = 'moments'; threadId = null; search = ''; moments.only(''); v.root.scrollTop = 0; render(); };
   const dispose = v.dispose;
-  v.dispose = () => { ctx.win.clearTimeout(pace.timer); moments.dispose(); for (const url of new Set([...photoURLs.values(), ...bubbleURLs.values()])) if (url) ctx.win.URL.revokeObjectURL(url); photoURLs.clear(); bubbleURLs.clear(); dispose(); };
+  v.dispose = () => { avatarThoughts.dispose();ctx.win.clearTimeout(pace.timer); moments.dispose(); for (const url of new Set([...photoURLs.values(), ...bubbleURLs.values()])) if (url) ctx.win.URL.revokeObjectURL(url); photoURLs.clear(); bubbleURLs.clear(); dispose(); };
   render();
   return v;
 }

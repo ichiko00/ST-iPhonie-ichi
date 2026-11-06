@@ -3131,3 +3131,18 @@ summary:has(.fold-note):after{margin-left:8px;flex-shrink:0}
 .mp-group-info .mp-person-name{font-weight:400;}
 
 .mp-group-sheet{overflow:hidden;}.mp-group-sheet .sheet-header{border-radius:20px 20px 0 0;}
+
+/* MyPhone bilingual bubbles: translation is secondary but remains readable on every skin. */
+.bilingual-original{display:block;font-size:inherit;line-height:1.55;white-space:pre-wrap}
+.bilingual-translation{display:block;font-size:.82em;line-height:1.5;margin-top:5px;opacity:.66;white-space:pre-wrap;overflow-wrap:anywhere}
+.chat-bubble .bilingual-translation{padding-top:5px;border-top:1px solid color-mix(in srgb,currentColor 14%,transparent)}
+.v-text.bilingual-voice{font-size:14px;color:var(--ink)}
+
+/* A private, per-reply thought; never a chat bubble or a spoken line. */
+.avatar-thought{position:fixed;z-index:5000;display:flex;align-items:center;gap:7px;max-width:min(240px,calc(100vw - 24px));padding:10px 14px;border-radius:17px 17px 17px 5px;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 5px 22px #0002;font-size:13px;line-height:1.5;pointer-events:none;animation:panel-in .16s ease-out;overflow-wrap:anywhere}
+.thought-icon{font-size:17px;flex-shrink:0}
+.pat-target[role=button]{cursor:pointer}.pat-target[role=button]:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:50%}
+
+/* Anchor thoughts to a real avatar box. display:contents has no rectangle and caused top-left popups. */
+.pat-target[role=button]{display:inline-flex;position:relative;align-self:flex-start;flex-shrink:0}
+.pat-target>.avatar-thought{position:absolute;left:calc(100% + 8px);top:0;max-width:220px;width:max-content;text-align:left}

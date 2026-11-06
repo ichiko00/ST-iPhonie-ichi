@@ -1770,6 +1770,7 @@ export class TTSBackend {
     /** Phone chat options: {voiceText: {mode, auto}, profile: {name, status, statusText, signature, bubble, frame, background, backgroundPhoto}, starred: [name]}. */
     saveChatOptions(patch) {
         const next = this.getState();
+        if(typeof patch?.bilingual==='boolean')next.chat.bilingual=patch.bilingual;
         if (patch?.voiceText) next.chat.voiceText = normalizeVoiceText({ ...next.chat.voiceText, ...patch.voiceText });
         if (patch?.profile) {
             // A look from the shop goes on only once it is bought.

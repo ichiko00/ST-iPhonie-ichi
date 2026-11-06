@@ -1,3 +1,4 @@
+import {HEART_RULE,extractHearts} from './heart.js';
 // Chat app logic without DOM or network: chat presets, manual contacts, the reply prompt, the reply parser,
 // and the text that carries a phone chat into the next story reply ("带进剧情").
 //
@@ -58,7 +59,7 @@ export function normalizeVoiceText(v = {}) {
 
 import {normalizeSocial} from './social.js';
 export function defaultChat() {
-  return {social: normalizeSocial(), presets: [{...structuredClone(DEFAULT_PRESET), memory: normalizeMemory()}], activePreset: 'default', contacts: [], voiceText: {...DEFAULT_VOICE_TEXT}, profile: normalizeProfile(), starred: [], avatars: {}, partition: 'none', pace: true, wallet: defaultWallet(), stickers: [], proactive: normalizeProactive(), remarks: {}, netNames: {}};
+  return {bilingual:true,social: normalizeSocial(), presets: [{...structuredClone(DEFAULT_PRESET), memory: normalizeMemory()}], activePreset: 'default', contacts: [], voiceText: {...DEFAULT_VOICE_TEXT}, profile: normalizeProfile(), starred: [], avatars: {}, partition: 'none', pace: true, wallet: defaultWallet(), stickers: [], proactive: normalizeProactive(), remarks: {}, netNames: {}};
 }
 
 const text = (value, max) => String(value ?? '').slice(0, max);
@@ -231,7 +232,7 @@ export function normalizeChat(value) {
   const presets = (Array.isArray(value.presets) && value.presets.length ? value.presets : base.presets).map(normalizeChatPreset);
   const contacts = (Array.isArray(value.contacts) ? value.contacts : []).slice(0, CHAT_LIMITS.contacts).map(normalizeContact).filter(c => c.name);
   const starred = [...new Set((Array.isArray(value.starred) ? value.starred : []).map(n => text(n, 40).trim()).filter(Boolean))].slice(0, CHAT_LIMITS.contacts);
-  return {social: normalizeSocial(value.social), presets, activePreset: presets.some(p => p.id === value.activePreset) ? value.activePreset : presets[0].id, contacts, voiceText: normalizeVoiceText(value.voiceText), profile: normalizeProfile(value.profile), wallet: normalizeWallet(value.wallet), starred, avatars: normalizeAvatars(value.avatars), partition: ['card', 'chat'].includes(value.partition) ? value.partition : 'none', ...(value.firstSaves && typeof value.firstSaves === 'object' ? {firstSaves: Object.fromEntries(Object.entries(value.firstSaves).filter(([, v]) => typeof v === 'string').slice(-500))} : {}), pace: value.pace !== false, stickers: normalizeStickers(value.stickers), proactive: normalizeProactive(value.proactive), remarks: normalizeNames(value.remarks, 20), netNames: normalizeNames(value.netNames, 30)};
+  return {bilingual:value.bilingual!==false,social: normalizeSocial(value.social), presets, activePreset: presets.some(p => p.id === value.activePreset) ? value.activePreset : presets[0].id, contacts, voiceText: normalizeVoiceText(value.voiceText), profile: normalizeProfile(value.profile), wallet: normalizeWallet(value.wallet), starred, avatars: normalizeAvatars(value.avatars), partition: ['card', 'chat'].includes(value.partition) ? value.partition : 'none', ...(value.firstSaves && typeof value.firstSaves === 'object' ? {firstSaves: Object.fromEntries(Object.entries(value.firstSaves).filter(([, v]) => typeof v === 'string').slice(-500))} : {}), pace: value.pace !== false, stickers: normalizeStickers(value.stickers), proactive: normalizeProactive(value.proactive), remarks: normalizeNames(value.remarks, 20), netNames: normalizeNames(value.netNames, 30)};
 }
 
 // ---------- 主动发消息: characters text the user on their own ----------
@@ -263,6 +264,7 @@ export function phoneFormat({user = '我', names = [], groups = [], images = fal
       : `剧情里有人这时会用手机联系${user}（发消息、发照片、转账、打电话……），或者正文里写到了这样的事，就在正文写完的地方另起一行写 <phone></phone>（预设要求写在正文后面的状态栏、选项这些照常写在它后面，不要省略），把这些事在${user}的手机上真的发出来，内容和正文写的对得上。`,
     `${after ? '' : '<phone></phone> 里'}一件事一行：`,
     '- 消息：「名字：消息」，可以连着发几条',
+    HEART_RULE,
     `- 照片：「名字：[图片] 一句话描述照片里拍到的画面${images ? '｜画这张照片用的英文 danbooru tag（只写照片里真有的：拍的是猫就写 cat，画面里没有人就写 no humans、不写 1girl 1boy；只有拍到自己时才写 1girl 或 1boy 和 selfie；再写构图、光线）' : ''}」`,
     '- 位置：「名字：[位置] 地点」',
     '- 红包、转账：「名字：[红包 ¥金额] 祝福语」「名字：[转账 ¥金额] 备注」',
@@ -433,7 +435,7 @@ export function knowsRule(names, user, {prompts = {}, group = false} = {}) {
   const one = names.length === 1 ? names[0] : '';
   return promptText(prompts, 'knows', 'text', {'谁': one || '各人', '每个人': one || '每个人', '用户': user, '告诉': one ? ' TA ' : '自己', '某人': one || '一个人', '那人': one || '这个人', '群聊': group});
 }
-export function buildChatRequest({prompts = {}, preset, thread, members, story = [], user = '我', userPersona = '', voiceFormat, lore = '', memory = '', earlier = '', images = false, stickers = [], asking = '', music = null, forum = '', groups = '', nudge = false, pictures = []}) {
+export function buildChatRequest({prompts = {}, preset, thread, members, story = [], user = '我', userPersona = '', voiceFormat, lore = '', memory = '', earlier = '', images = false, stickers = [], asking = '', music = null, forum = '', groups = '', nudge = false, pictures = [], bilingual = true}) {
   const group = thread.type === 'group';
   const partner = group ? thread.name : members[0]?.name || thread.name;
   const speakers = members.filter(m => m.voice);
@@ -470,7 +472,7 @@ export function buildChatRequest({prompts = {}, preset, thread, members, story =
     '接着说': now && last && last.from !== 'me' ? (group ? '群里' : partner) : ''});
   const transcript = history.length ? `【${group ? thread.name + '（群聊）' : '和' + partner}的聊天记录】\n${history.map(m => messageLine(m, user)).filter(Boolean).join('\n')}\n\n` : '';
   const text = transcript + filesText(history, user) + turn;
-  return [{role: 'system', content: system}, {role: 'user', content: pictures.length ? [{type: 'text', text}, ...pictures.map(p => ({type: 'image_url', image_url: {url: p.url}}))] : text}];
+  return [{role: 'system', content: system+'\n\n'+HEART_RULE+(bilingual?'\n\n手机双语显示：保持角色设定及当前正在使用的语言，不强迫中文角色改说外语。外语文字消息使用原语言，并在末尾括号中附准确的中文译文，例如 Hello.（你好。）或 ありがとう。（谢谢。）。中文消息无需重复翻译。语音消息仍严格按给定语音格式：文本字段放原语言，译文字段放中文，不把译文混进要朗读的原文。':'')}, {role: 'user', content: pictures.length ? [{type: 'text', text}, ...pictures.map(p => ({type: 'image_url', image_url: {url: p.url}}))] : text}];
 }
 
 const NAME_LINE = /^\s*(?:\*\*)?[[【]?([^\]】:：\n]{1,40}?)[\]】]?(?:\*\*)?\s*[:：]\s*(.*)$/;
@@ -542,7 +544,8 @@ function special(from, content, {names, user, stickers = []}) {
  */
 export function parseChatReply(reply, {members, user = '我', voiceFormat, voiceNames = [], stickers = []}) {
   const names = members.map(m => m.name), out = [];
-  const body = String(reply || '').replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, '').replace(/```[a-z]*\n?|```/g, '');
+  const extracted=extractHearts(String(reply||'').replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi,''),names);
+  const body = extracted.text.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, '').replace(/```[a-z]*\n?|```/g, '');
   for (const raw of body.split(/\r?\n/)) {
     if (!raw.trim()) continue;
     const m = raw.match(NAME_LINE);
@@ -561,14 +564,14 @@ export function parseChatReply(reply, {members, user = '我', voiceFormat, voice
     const voice = voiceFormat ? parseDialogue(content, voiceFormat)[0] : null;
     if (voice) {
       if (voiceNames.includes(from)) out.push({from, kind: 'voice', text: voice.text.trim(), translation: voice.translation.trim(), emotion: voice.emotion});
-      else out.push({from, kind: 'text', text: voice.translation.trim()});
+      else {const original=voice.text.trim(),translated=voice.translation.trim();out.push({from,kind:'text',text:original&&translated&&original!==translated?original+'（'+translated+'）':original||translated});}
       continue;
     }
     const plain = unquote(content.replace(/<[^>]+>/g, ''));
     if (plain) out.push({from, kind: 'text', text: plain.slice(0, 4000)});
     if (out.length >= 12) break;
   }
-  return out;
+  return out.map(item=>extracted.hearts.has(item.from)?{...item,heart:extracted.hearts.get(item.from)}:item);
 }
 
 /** The text injected into the next story reply when the user brings chat messages into the story. */

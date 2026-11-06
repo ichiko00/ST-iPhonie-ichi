@@ -1,3 +1,4 @@
+import {cleanHeart} from './heart.js';
 // Phone chat history, kept in this browser (IndexedDB) and scoped to the tavern account like the other local data.
 // Thread: {id, type:'dm'|'group', name, members:[name], unread, createdAt, updatedAt, messages:[Message]}
 // Message: {id, from:'me'|name, kind, text, at, quote?:{from,text}} plus, by kind:
@@ -93,6 +94,7 @@ function cleanMessage(m, id, at) {
   const from = clip(m.from, 40).trim();
   if (!from) throw fail('消息缺少发送人');
   const out = {id, from, kind, text: clip(m.text, CHAT_STORE_LIMITS.text), at};
+  if(from!=='me'&&cleanHeart(m.heart))out.heart=cleanHeart(m.heart);
   if(m.storyClock&&typeof m.storyClock==='object')out.storyClock={date:/^\d{4}-\d{2}-\d{2}$/.test(m.storyClock.date)?m.storyClock.date:'',time:/^\d{2}:\d{2}$/.test(m.storyClock.time)?m.storyClock.time:''};
   if (Number.isFinite(m.updatedAt) && m.updatedAt > 0) out.updatedAt = m.updatedAt;
   if (kind === 'voice') { out.translation = clip(m.translation, CHAT_STORE_LIMITS.text); out.emotion = clip(m.emotion, 100); }

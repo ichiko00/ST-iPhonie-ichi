@@ -1,3 +1,4 @@
+import {bilingualHTML} from './bilingual.js';
 import {voiceDisplay,unheardQueue} from '../core/voice-display.js';
 // 来电: the full-screen call layer over the phone. It only draws what the tavern side reports (host-call.js) and sends
 // the user's taps and words back: answer, decline, hang up, say something, ask again. While it rings, a ringtone is
@@ -153,8 +154,8 @@ export function callScreen(ctx, host) {
   function linesHTML(c) {
     const shown = c.lines.slice(-8), from = c.lines.length - shown.length, free = c.state === 'talking' && !c.thinking && !c.speaking;
     return shown.map((l, i) => l.from === 'me'
-      ? `<p class="cl me">${esc(voiceDisplay(l.text))}</p>`
-      : `<p class="cl"${l.heard ? ` data-heard="${l.heard}" data-line="${from + i}"${free ? ' role="button" tabindex="0"' : ''} aria-label="${esc(HEARD[l.heard] || '')}：${esc(voiceDisplay(l.translation || l.text))}"` : ''}>${l.heard ? `<i class="cl-wave" aria-hidden="true"><b></b><b></b><b></b><b></b></i>` : ''}<span>${esc(voiceDisplay(l.translation || l.text))}</span>${l.text && l.translation && l.text !== l.translation ? `<small>${esc(voiceDisplay(l.text))}</small>` : ''}</p>`).join('');
+      ? `<p class="cl me">${bilingualHTML(voiceDisplay(l.text),'',api.getState().chat.bilingual!==false)}</p>`
+      : `<p class="cl"${l.heard ? ` data-heard="${l.heard}" data-line="${from + i}"${free ? ' role="button" tabindex="0"' : ''} aria-label="${esc(HEARD[l.heard] || '')}：${esc(voiceDisplay(l.translation || l.text))}"` : ''}>${l.heard ? `<i class="cl-wave" aria-hidden="true"><b></b><b></b><b></b><b></b></i>` : ''}<span>${bilingualHTML(voiceDisplay(l.text||l.translation),voiceDisplay(l.translation),api.getState().chat.bilingual!==false)}</span></p>`).join('');
   }
   // One layout per call (and per look), so answering does not reshuffle it.
   let backdrop = {key: '', html: ''};

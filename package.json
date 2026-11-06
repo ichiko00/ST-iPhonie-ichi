@@ -1,9 +1,9 @@
 {
   "name": "myphone",
-  "version": "0.9.31-social.16",
+  "version": "0.9.31-social.19",
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/social.test.mjs tests/groups.test.mjs tests/story-sync.test.mjs tests/calls.test.mjs"
+    "test": "node --test tests/social.test.mjs tests/groups.test.mjs tests/story-sync.test.mjs tests/calls.test.mjs tests/bilingual.test.mjs tests/heart.test.mjs"
   }
 }
