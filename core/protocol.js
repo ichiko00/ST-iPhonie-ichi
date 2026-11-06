@@ -1,3 +1,4 @@
+import {alignVisibleBilingual} from './visible-bilingual.js';
 export const DEFAULT_PROMPT = "正常续写正文与叙事，不要改变角色人设或写作风格。\n每一次角色真正说出口的台词，都必须完整写成 {{格式}}，不得留下没有语音标签的对白。标签前的译文是完整、自然的中文；标签内的文本是同一句台词的完整原语言版本，逐句对应、语义与信息完全一致，不概括、不漏译、不额外扩写。\n角色、情绪、译文和文本都必须填写实际内容。台词语言遵循：{{语言}}。旁白、动作、环境和心理描写继续写成普通正文。\n不要解释规则或输出代码块，不为未说出口的内容生成语音标签。";
 export const isPlaceholderRole=name=>/^\{\{?\s*(?:角色|角色名|role|speaker|char)\s*\}?\}$/iu.test(String(name).trim());
 // Plain paired tags (no attributes), so other plugins that exclude <tag></tag> blocks can drop the voice text.
@@ -70,12 +71,12 @@ function freeLines(message) {
  }
  return out;
 }
-export function parseDialogue(message,format=DEFAULT_FORMAT){const {literals,names}=compileFormat(format);message=String(message);if(message.length>500000)return [];if(format===FREE_FORMAT)return freeLines(message);
+export function parseDialogue(message,format=DEFAULT_FORMAT){const {literals,names}=compileFormat(format);message=String(message);if(message.length>500000)return [];if(format===FREE_FORMAT)return alignVisibleBilingual(message,freeLines(message));
 // A straight quote right outside a curly one ("“你好”"<tts>…) counts as a second curly quote. Same length, so positions hold.
 if(literals[0]==='“')message=message.replace(/"(?=“)/g,'“').replace(/”"/g,'””');
 const family=tagFamily(format);if(family)message=repaired(message);
 const excluded=codeSpans(message),found=exactLines(message,literals,names,excluded);
-return (family?[...found,...looseLines(message,found,excluded)].sort((a,b)=>a.start-b.start):found).map(mendLine);}
+return alignVisibleBilingual(message,(family?[...found,...looseLines(message,found,excluded)].sort((a,b)=>a.start-b.start):found).map(mendLine));}
 /** Voice tags in a reply that were not read as lines (lines: what was read), each with why, for the hint under the
  *  reply and the self-check. */
 export function dialogueProblems(message,lines=[]){const text=String(message);if(!/<tts\b/i.test(text)||text.length>500000)return [];const fixed=repaired(text.replace(/"(?=“)/g,'“').replace(/”"/g,'””')),excluded=codeSpans(fixed),problems=[];
@@ -117,7 +118,7 @@ export function dialogueContract(format,template=CONTRACT_PROMPT){return fillCon
 export function promptPlan(settings,rules,only=null){const p=settings.presets.find(p=>p.id===settings.activePreset);if(!p)return [];validatePreset(p);const named=(()=>{const all=settings.routes.filter(r=>!isPlaceholderRole(r.name));if(!Array.isArray(only))return all;const wanted=new Set(only.map(n=>String(n).trim()));return all.filter(r=>wanted.has(r.name));})();const language='默认台词语言：'+settings.general.defaultLanguage+(named.length?'；'+named.map(r=>`${r.name}：${r.language||settings.general.defaultLanguage}`).join('；'):'');const entries=p.entries.filter(e=>e.enabled&&e.text.trim())
 // The rules are entries of their own (朗读规则, 对白输出硬性规则) since 0.7.58; a preset without them (made elsewhere and not
 // opened since) still gets them after its first entry, as before.
-const own=p.entries.some(e=>e.id==='contract'||e.id==='reading'||/\{\{朗读规则\}\}/.test(e.text));const plan=entries.map((e,index)=>{const i=e.injection||p.injection;return {key:'myphone.entry.'+String(index).padStart(4,'0'),text:fillContract(e.text.replaceAll('{{朗读规则}}',rules),p.format).replaceAll('{{语言}}',language),position:{in_chat:1,in_prompt:0,before_prompt:2}[i.position],depth:i.position==='in_chat'?i.depth:0,role:i.position==='in_chat'?{system:0,user:1,assistant:2}[i.role]:0};});const tail=plan[0];if(tail&&!own)tail.text+='\n\n'+rules+'\n\n'+dialogueContract(p.format);return plan;}
+const own=p.entries.some(e=>e.id==='contract'||e.id==='reading'||/\{\{朗读规则\}\}/.test(e.text));const plan=entries.map((e,index)=>{const i=e.injection||p.injection;return {key:'myphone.entry.'+String(index).padStart(4,'0'),text:fillContract(e.text.replaceAll('{{朗读规则}}',rules),p.format).replaceAll('{{语言}}',language),position:{in_chat:1,in_prompt:0,before_prompt:2}[i.position],depth:i.position==='in_chat'?i.depth:0,role:i.position==='in_chat'?{system:0,user:1,assistant:2}[i.role]:0};});const tail=plan[0];if(tail&&!own)tail.text+='\n\n'+rules+'\n\n'+dialogueContract(p.format);const languageCheck=plan.at(-1);if(languageCheck)languageCheck.text+='\n\n【外语配音核对】角色说日语、英语等外语时，语音标签内的文本必须是该角色说出口的原语言原文，中文只能放在译文字段/可见译文中。若正文已用「外语原文」（中文翻译）展示，标签里也应重复对应外语原文，绝不能把括号中文再填进标签当原文。不要额外重复可见中文译文；播放器会负责在角色原文之后用旁白读一次中文。';return plan;}
 // 前端美化 cards: their regex may put the reply into a code block or a whole HTML page that 酒馆助手 draws in a frame of
 // its own, where the plugin's styles and clicks do not reach. The waves that landed in such places are taken back out,
 // leaving the translation as written, so the card looks as it was made (the lines still play from 整条播放 and 听取).

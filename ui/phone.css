@@ -3152,3 +3152,21 @@ summary:has(.fold-note):after{margin-left:8px;flex-shrink:0}
 button.voice-tag[aria-pressed=true]{background:var(--accent-btn);color:var(--on-accent)}
 .voice-pool-search{width:100%;margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);box-sizing:border-box}
 .voice-gender-filter{margin:10px 0;flex-wrap:wrap}.voice-gender-filter button{font-size:12px}
+
+/* Full-width voice cards, sized for touch rather than a three-column engine/text/arrow row. */
+.voice-pool-list,.voice-favorite-list{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;background:transparent;margin:12px 0}
+.voice-pool-list>.sw-row{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card)}
+.voice-pool-list .sw-main{background:var(--card)}.voice-pool-list .sw-more{width:44px;min-width:44px;min-height:44px;align-self:stretch;font-size:24px}
+.voice-pool-card{width:100%;min-width:0;box-sizing:border-box;padding:13px 12px 9px;text-align:left;color:var(--ink);cursor:pointer}
+.voice-card-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}.voice-card-heading>strong{display:block;min-width:0;flex:1;font-size:15px;line-height:1.45;overflow-wrap:anywhere;word-break:normal}
+.voice-gender-badge{flex:none;padding:3px 7px;font-size:11px;line-height:1.5;border-radius:8px;background:var(--accent-soft);color:var(--ink2);white-space:nowrap}
+.voice-card-meta{display:flex;flex-wrap:wrap;gap:5px 9px;font-size:11px;color:var(--ink2);margin-top:5px}
+.voice-card-note{font-size:12px;color:var(--ink2);line-height:1.5;margin-top:7px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.voice-card-tags{display:flex;flex-wrap:wrap;gap:5px;margin:9px 0 4px}.voice-no-tags{font-size:11px;color:var(--ink2)}
+.voice-card-footer{display:flex;align-items:center;gap:8px;min-width:0;min-height:44px}.voice-card-footer>code{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:var(--ink2)}
+.voice-card-edit{min-width:52px;min-height:44px;padding:0 10px;border:0;border-radius:10px;color:var(--accent);background:var(--accent-soft);font-size:13px;font-weight:600}
+.voice-favorite-choice{width:100%;padding:0;border:1px solid var(--line);border-radius:16px;background:var(--card);text-align:left}
+.voice-pool-card:focus-visible,.voice-favorite-choice:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.voice-gender-filter>button{min-height:42px;padding-inline:8px}.voice-tag-presets>button,.voice-tag-list>button{min-height:36px;padding:6px 10px}
+
+.voice-gender-filter{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px}.voice-gender-filter>button{min-width:0;white-space:nowrap;padding:6px 3px;font-size:11px}.voice-tag-presets>button,.voice-tag-list>button{white-space:nowrap}

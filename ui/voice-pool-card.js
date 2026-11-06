@@ -1,0 +1,6 @@
+import {esc,engines} from './common.js';
+import {VOICE_GENDERS,VOICE_AGES,normalizeVoiceTags} from '../core/auto-voice.js';
+export function voicePoolCard(voice,{index=-1,edit=false}={}){
+ const gender=VOICE_GENDERS[voice.gender]?VOICE_GENDERS[voice.gender]+'声':'未分类';
+ return `<div class="voice-pool-card"${edit?' role="button" tabindex="0" aria-label="编辑音色 '+esc(voice.name)+'"':''}><div class="voice-card-heading"><strong>${esc(voice.name)}</strong><span class="voice-gender-badge" data-gender="${esc(voice.gender||'unknown')}">${gender}</span></div><div class="voice-card-meta"><span>${esc(engines[voice.engine]||voice.engine)}</span>${VOICE_AGES[voice.age]?`<span>${esc(VOICE_AGES[voice.age])}</span>`:''}</div>${voice.style?`<div class="voice-card-note">${esc(voice.style)}</div>`:''}<div class="voice-card-tags">${normalizeVoiceTags(voice.tags).map(tag=>`<span class="voice-tag">${esc(tag)}</span>`).join('')||'<span class="voice-no-tags">还没添加标签</span>'}</div><div class="voice-card-footer"><code title="${esc(voice.voice)}">${esc(voice.voice)}</code>${edit?`<button type="button" class="voice-card-edit" data-pool-edit="${index}" aria-label="编辑${esc(voice.name)}的分类和标签">编辑</button>`:''}</div></div>`;
+}

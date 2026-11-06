@@ -220,6 +220,8 @@ export class BrowserAudio {
  }
 }
 
+const systemNarration=(line,s)=>!!line?.narration&&(s.narration?.voice!=='role'||line.translationRead&&!findRoute(s.routes,line.role)?.voice?.trim());
+
 export class DialoguePlayer {
  /** speech: the browser's voice for a 旁白 read with 系统朗读 (core/narration.js browserSpeech), or null. */
  constructor({ settings, providers, cache, sink = (prefersMediaAudio()?new MediaElementAudio():new BrowserAudio()), change = () => {}, unknown = () => {}, prepared = () => {}, speech = null, voiced = () => {} }) {
@@ -414,8 +416,7 @@ export class DialoguePlayer {
  }
  /** Starts making the line at `index` now (one ahead of the one about to play); null when there is nothing to make. */
  makeAhead(index, signal) {
-  const line = this.queue[index], s = this.settingsOverride || this.settings();
-  if (line?.narration && s.narration?.voice !== 'role') return null;
+  const s=this.settingsOverride||this.settings();while(index<this.queue.length&&systemNarration(this.queue[index],s))index++;const line=this.queue[index];
   const route = line && findRoute(s.routes, line.role);
   if (!route?.voice?.trim() && !(route?.engine === 'fish' && s.connections.fish.params.references.length) && !(route?.engine === 'mini' && s.connections.mini.params.timbre_weights.length)) return null;
   const made = this.make(line, route, s, signal, () => {}, () => !signal.aborted && this.valid());
@@ -425,7 +426,7 @@ export class DialoguePlayer {
  }
  async finishedLine(epoch) {
   if (!this.canContinue(epoch)) return false;
-  if (this.stepwise && this.index + 1 < this.queue.length) {
+  if (this.stepwise && this.index + 1 < this.queue.length && !this.queue[this.index+1]?.translationRead) {
    this.boundary = true; this.resumePhase = 'generating';
    this.emit('paused', '等待下一句');
    if (!await this.waitForResume(epoch)) return false;
@@ -440,13 +441,13 @@ export class DialoguePlayer {
     if (!this.canContinue(epoch)) return;
     const s = this.settingsOverride || this.settings(), line = this.queue[this.index];
     // 旁白 with 系统朗读: the browser says it, nothing is made or kept. Without one, the story goes on to the next line.
-    if (line.narration && s.narration?.voice !== 'role') {
+    if (systemNarration(line,s)) {
      this.line = line; this.speaker = line.role; this.engine = 'system'; this.requestKey = null; this.pending = null;
      if (!this.speech) { if (!this.skipped.includes('旁白（这个浏览器不能系统朗读）')) this.skipped.push('旁白（这个浏览器不能系统朗读）'); this.index++; continue; }
      if (!await this.waitForResume(epoch)) return;
      for (let said = false; !said;) {
       this.emit('playing', '正在朗读 · ' + line.role);
-      try { await this.speech.speak(line.text, { voice: s.narration.systemVoice, rate: s.narration.rate, volume: this.volume }, signal); said = true; }
+      try { await this.speech.speak(line.text, { voice:line.translationRead&&s.narration.systemVoice&&!this.speech.voices?.().some(v=>v.id===s.narration.systemVoice&&/^(zh|cmn)/i.test(v.lang))?'':s.narration.systemVoice, rate:s.narration.rate,volume:this.volume,lang:line.translationRead?'zh-CN':'' }, signal); said = true; }
       catch (error) {
        if (error?.name !== 'AbortError' || !this.current(epoch)) throw error;
        // Paused (see toggle): this piece again on resuming. 整篇朗读 turned off under it (dropNarration): on with the lines.
@@ -564,8 +565,8 @@ export class DialoguePlayer {
  dropNarration() {
   if (!this.queue.some(line => line.narration)) return;
   const current = this.queue[this.index];
-  this.queue = [...this.queue.slice(0, this.index + 1), ...this.queue.slice(this.index + 1).filter(line => !line.narration)];
-  if (current?.narration && this.engine === 'system' && this.phase === 'playing') this.speech?.stop();
+  this.queue = [...this.queue.slice(0, this.index + 1), ...this.queue.slice(this.index + 1).filter(line => !line.narration||line.translationRead)];
+  if (current?.narration && !current.translationRead && this.engine === 'system' && this.phase === 'playing') this.speech?.stop();
  }
  async unlockAndRun() {
   const epoch = this.epoch;

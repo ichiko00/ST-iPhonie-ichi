@@ -135,6 +135,7 @@ export function settingsApp(ctx) {
       const n = api.getState().narration, role = api.getState().routes.find(r => r.name === NARRATOR), voices = speech?.voices() || [];
       const chinese = voices.filter(x => /^(zh|cmn)/i.test(x.lang)), others = voices.filter(x => !/^(zh|cmn)/i.test(x.lang));
       d.body.innerHTML = `<div class="group pad">${toggle('nar-enabled', '整篇朗读', n.enabled, '点「整条」或「播放全部」时，台词之间的叙述也读出来：叙述用旁白的声音，台词还是各个角色的声音。单独点一句台词时只读那一句。\n\n叙述就是回复里台词以外的文字，不用再请求模型，不花模型的 token。')}
+        ${toggle('nar-translations','外语后朗读中文译文',n.readTranslations!==false,'先用角色音色读原文，再用旁白读中文译文；整条、逐条和单句播放都适用。纯中文不重复读。系统旁白免费；配音引擎旁白会增加译文的配音用量。')}
         <div class="field"><span>旁白的声音${help('系统朗读：用手机或电脑自带的声音，免费，不花配音额度；声音好不好听看设备（Edge、苹果设备上比较自然）。直接读出来，不能缓存，也不能下载。\n\n配音引擎：在角色 App 里给一个叫「旁白」的角色选音色，和别的角色一样用 Fish 等引擎生成，按字数花配音额度（叙述往往比台词长好几倍）；生成过的会缓存，可以下载。')}</span>
           <div class="segmented" style="margin:0">${[['system', '系统朗读'], ['role', '配音引擎']].map(([k, l]) => `<button type="button" data-nar-voice="${k}" aria-pressed="${n.voice === k}">${l}</button>`).join('')}</div></div>
         ${n.voice === 'system' ? (speech ? `${field('声音', select('nar-system', n.systemVoice, [['', '自动（中文的第一个）'], ...chinese.map(x => [x.id, x.name]), ...others.map(x => [x.id, `${x.name}（${x.lang}）`])]))}
@@ -153,6 +154,7 @@ export function settingsApp(ctx) {
     d.body.addEventListener('change', e => {
       const el = e.target;
       if (el.dataset.field === 'nar-enabled') { save({enabled: el.checked}); ctx.notify(el.checked ? '播放全部时会连叙述一起读' : '播放全部时只读台词'); }
+      if(el.dataset.field==='nar-translations')save({readTranslations:el.checked});
       if (el.dataset.field === 'nar-system') save({systemVoice: el.value});
       if (el.dataset.field === 'nar-rate') save({rate: Number(el.value)});
       if (el.dataset.field === 'nar-skip') save({skip: cleanSkip(el.value)});

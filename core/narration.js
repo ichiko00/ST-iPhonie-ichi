@@ -12,7 +12,7 @@ export const NARRATION_SKIP = Object.freeze(['小剧场', '状态栏', 'theater'
 export const NARRATION_BODY = Object.freeze(['content', '正文']);
 const RATES = [0.8, 0.9, 1, 1.1, 1.2, 1.35, 1.5];
 
-export const defaultNarration = () => ({enabled: false, voice: 'system', systemVoice: '', rate: 1, skip: [...NARRATION_SKIP], body: [...NARRATION_BODY]});
+export const defaultNarration = () => ({enabled: false, readTranslations:true, voice: 'system', systemVoice: '', rate: 1, skip: [...NARRATION_SKIP], body: [...NARRATION_BODY]});
 /** A tag name as typed (<小剧场>, 小剧场, </theater>): the name alone. */
 const tagName = value => String(value ?? '').replace(/[<>/\s]/g, '').slice(0, 40);
 /** 「开头…结尾」: a part that opens and closes with words of its own ([HUD_START]…[HUD_END]). */
@@ -39,6 +39,7 @@ export function normalizeNarration(value) {
   const rate = Number(v.rate);
   return {
     enabled: v.enabled === true,
+    readTranslations:v.readTranslations!==false,
     voice: v.voice === 'role' ? 'role' : 'system',
     systemVoice: String(v.systemVoice ?? '').slice(0, 300),
     rate: RATES.includes(rate) ? rate : base.rate,
