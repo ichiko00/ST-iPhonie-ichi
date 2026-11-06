@@ -4,17 +4,17 @@
 // again). How the phone looks now is each device's own; the themes it can put on (我的主题) are kept here too.
 //
 // Files (in data/<user>/user/files, written with the tavern's /api/files/upload):
-//   st-iphonie-sync.json        {app, kind:'sync', format, savedAt, device, deviceName, parts:{part:{hash, count}}}
-//   st-iphonie-chats.json       chat threads          st-iphonie-moments.json   朋友圈 posts
-//   st-iphonie-notes.json       notes                 st-iphonie-photos.json    album index (no pictures)
-//   st-iphonie-memories.json    complete chat books   st-iphonie-assistant.json assistant threads with memory: book | null
-//   st-iphonie-forum.json, -peek, -music, -sounds, -paint, -ledger, -looks, -albums, -games, -wardrobe, -theater, -books, -vibes, -favorites, -references  the same way
-//   st-iphonie-p-<id>.<ext>     one file per picture, written once (a picture never changes); a photo made smaller by
-//                               压缩旧图 is another picture, st-iphonie-p-<id>-c<when>.<ext>, and wins over the original
-//   st-iphonie-m-, -s-, -v-, -f-, -r-<id>   a song, a sound, a vibe, a saved voice, a reference voice: one file each, like
+//   myphone-app-sync.json        {app, kind:'sync', format, savedAt, device, deviceName, parts:{part:{hash, count}}}
+//   myphone-app-chats.json       chat threads          myphone-app-moments.json   朋友圈 posts
+//   myphone-app-notes.json       notes                 myphone-app-photos.json    album index (no pictures)
+//   myphone-app-memories.json    complete chat books   myphone-app-assistant.json assistant threads with memory: book | null
+//   myphone-app-forum.json, -peek, -music, -sounds, -paint, -ledger, -looks, -albums, -games, -wardrobe, -theater, -books, -vibes, -favorites, -references  the same way
+//   myphone-app-p-<id>.<ext>     one file per picture, written once (a picture never changes); a photo made smaller by
+//                               压缩旧图 is another picture, myphone-app-p-<id>-c<when>.<ext>, and wins over the original
+//   myphone-app-m-, -s-, -v-, -f-, -r-<id>   a song, a sound, a vibe, a saved voice, a reference voice: one file each, like
 //                               the pictures; a part's JSON lists them without the file (FILES)
-//   st-iphonie-w-<id>-<when>.json   a work of 画画: its layers, a new file each time it was saved
-//   st-iphonie-t-<id>-<when>.zip    a 主题 (core/looks.js), a new file each time it was saved
+//   myphone-app-w-<id>-<when>.json   a work of 画画: its layers, a new file each time it was saved
+//   myphone-app-t-<id>-<when>.zip    a 主题 (core/looks.js), a new file each time it was saved
 //
 // A sync reads the tavern's copy first. A part changed only there is taken as it is (so deletions carry over); a part
 // changed on both sides is merged item by item (the newer item wins, messages and comments are joined); then what
@@ -25,14 +25,14 @@ import {sha256Hex} from './hash.js';
 
 export const SYNC_FORMAT = 2;
 export const SYNC_PARTS = Object.freeze({chats: '聊天记录', moments: '朋友圈', notes: '备忘录', photos: '相册', memories: '聊天记忆', assistant: '助手会话与记忆', forum: '论坛', peek: '查手机', books: '绘本', vibes: 'Vibe', favorites: '收藏的语音', references: '参考音频', music: '音乐', sounds: '音效', paint: '画画的作品', ledger: '账本', looks: '我的主题', albums: '相册的分类', games: '大游戏存档', wardrobe: '衣柜', theater: '小剧场'});
-export const MANIFEST = 'st-iphonie-sync.json';
-export const partFile = part => `st-iphonie-${part}.json`;
+export const MANIFEST = 'myphone-app-sync.json';
+export const partFile = part => `myphone-app-${part}.json`;
 const EXT = {'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif', 'image/avif': 'avif'};
 const packedAt = row => Number.isFinite(row?.packed?.at) ? row.packed.at : 0;
-export const photoFile = row => `st-iphonie-p-${String(row.id).replace(/[^a-zA-Z0-9_-]/g, '_')}${packedAt(row) ? '-c' + packedAt(row).toString(36) : ''}.${EXT[row.type] || 'png'}`;
+export const photoFile = row => `myphone-app-p-${String(row.id).replace(/[^a-zA-Z0-9_-]/g, '_')}${packedAt(row) ? '-c' + packedAt(row).toString(36) : ''}.${EXT[row.type] || 'png'}`;
 const plain = id => String(id).replace(/[^a-zA-Z0-9_-]/g, '_');
 const SOUND_EXT = {'audio/mpeg': 'mp3', 'audio/mp3': 'mp3', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/aac': 'aac', 'audio/flac': 'flac', 'audio/x-flac': 'flac', 'audio/wav': 'wav', 'audio/x-wav': 'wav', 'audio/ogg': 'ogg', 'audio/webm': 'webm', 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/ogg': 'ogg'};
-const voiceFile = letter => row => `st-iphonie-${letter}-${plain(row.id)}.${SOUND_EXT[row.mime || row.type] || 'bin'}`;
+const voiceFile = letter => row => `myphone-app-${letter}-${plain(row.id)}.${SOUND_EXT[row.mime || row.type] || 'bin'}`;
 /** The file a row of a part has in the tavern, or null when it has none (a song from a music source, a 歌单). */
 export const FILES = Object.freeze({
   photos: photoFile,
@@ -41,10 +41,10 @@ export const FILES = Object.freeze({
   favorites: voiceFile('f'),
   references: voiceFile('r'),
   // A vibe's file changes as strengths are encoded for it: its time tells them apart.
-  vibes: row => `st-iphonie-v-${plain(row.id)}-${(Number(row.updatedAt) || 0).toString(36)}.bin`,
-  paint: row => `st-iphonie-w-${plain(row.id)}-${(Number(row.updatedAt) || 0).toString(36)}.json`,
+  vibes: row => `myphone-app-v-${plain(row.id)}-${(Number(row.updatedAt) || 0).toString(36)}.bin`,
+  paint: row => `myphone-app-w-${plain(row.id)}-${(Number(row.updatedAt) || 0).toString(36)}.json`,
   // A new name changes its row, not its file: made is when the file was written.
-  looks: row => `st-iphonie-t-${plain(row.id)}-${(Number(row.made) || 0).toString(36)}.zip`,
+  looks: row => `myphone-app-t-${plain(row.id)}-${(Number(row.made) || 0).toString(36)}.zip`,
 });
 
 export function defaultSync() { return {enabled: false}; }
@@ -180,8 +180,8 @@ export async function runSync({stores, files, memory = {}, readGone = () => memo
   let manifest = null;
   const raw = await files.read(MANIFEST);
   if (raw) {
-    try { manifest = JSON.parse(raw); } catch { throw Error('酒馆里的同步文件读不出来（st-iphonie-sync.json），可以在酒馆的数据文件夹里删掉它再试'); }
-    if (manifest?.app !== 'ST-iPhonie' || manifest.kind !== 'sync') throw Error('酒馆里的 st-iphonie-sync.json 不是小手机的同步文件');
+    try { manifest = JSON.parse(raw); } catch { throw Error('酒馆里的同步文件读不出来（myphone-app-sync.json），可以在酒馆的数据文件夹里删掉它再试'); }
+    if (manifest?.app !== 'ST-iPhonie' || manifest.kind !== 'sync') throw Error('酒馆里的 myphone-app-sync.json 不是小手机的同步文件');
     if (manifest.format > SYNC_FORMAT) throw Error('酒馆里的数据来自更新版本的插件，请先在这台设备上更新插件');
   }
   const remoteParts = manifest?.parts || {}, next = {};

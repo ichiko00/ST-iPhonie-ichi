@@ -294,7 +294,7 @@ export function assistantApp(ctx) {
   function closePreviews() {
     for (const slot of v.root.querySelectorAll('[data-preview-mid]')) slot.replaceChildren();
   }
-  const draftKey = id => `st-iphonie-assistant-draft:${api.getState().scope || 'local'}:${id || 'new'}`;
+  const draftKey = id => `myphone-app-assistant-draft:${api.getState().scope || 'local'}:${id || 'new'}`;
   function draft(id = threadId) {
     if (!drafts.has(id)) { let saved = ''; try { saved = win.sessionStorage.getItem(draftKey(id)) || ''; } catch {} drafts.set(id, saved); }
     return drafts.get(id);

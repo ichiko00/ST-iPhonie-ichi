@@ -1,3 +1,7 @@
+import {storyClockLabel} from '../core/story-clock.js';
+import {voiceDisplay,unheardQueue} from '../core/voice-display.js';
+import {groupMembersPanel} from './chat-group-members.js';
+import {socialPanel} from './chat-social.js';
 import {currentDm, chatWindows, currentWindow, groupKey, EDITABLE_KINDS, lastRound} from '../core/chats.js';
 import {swipeRow, mountSwipeList} from './swipe-list.js';
 import {createView, esc, btn, field, input, textArea, toggle, heading, groupTitle, avatar, avatarPicture, empty, help, copyText} from './common.js';
@@ -46,8 +50,9 @@ const dayLabel = at => { const s = stamp(at); return s.includes(':') ? '今天' 
 // A time between messages a while apart, as phones show it: the day first when it changes (today's just the time).
 const GAP = 5 * 60 * 1000;
 function timeLabel(m, prev) {
-  if (!prev || new Date(prev.at).toDateString() !== new Date(m.at).toDateString()) { const day = dayLabel(m.at); return day === '今天' ? clock(m.at) : `${day} ${clock(m.at)}`; }
-  return m.at - prev.at >= GAP ? clock(m.at) : '';
+ const label=storyClockLabel(m.storyClock);if(!label)return '';
+ if(!prev||storyClockLabel(prev.storyClock)!==label)return label;
+ return '';
 }
 // Messages drawn as a centred line instead of a bubble.
 const LINE_KINDS = ['system', 'pat', 'notice', 'recall'];
@@ -62,6 +67,8 @@ const KAOMOJI = ['(｡•̀ᴗ-)✧', '(╥﹏╥)', '(๑•̀ㅂ•́)و✧', 
 
 export function chatApp(ctx) {
   const {api} = ctx, v = createView(ctx, 'chat');
+  const social = socialPanel(ctx, () => render());
+  const socialAway = name => api.socialSnapshot().entries.some(e => e.name === name && ['blocked','pending','rejected'].includes(e.state));
   // 备注: what the user calls a contact, shown in the chat app only (the models keep using the real name).
   const remarks = () => api.readState().chat.remarks || {};
   /** What a person's avatar and 备注 are kept under: their name, or a key of their own when another card has someone of that name. */
@@ -77,7 +84,7 @@ export function chatApp(ctx) {
   let panel = null, quote = null;
   const drafts = new Map(), live = typeof api.chatReply === 'function';
   // 草稿: what was typed and not sent stays with its chat in this browser, over a reload or the phone closed and opened.
-  const scope = api.getState().scope || 'local', draftKey = id => `st-iphonie-chat-draft:${scope}:${id}`;
+  const scope = api.getState().scope || 'local', draftKey = id => `myphone-app-chat-draft:${scope}:${id}`;
   function draftOf(id) {
     if (!drafts.has(id)) { let saved = ''; try { saved = ctx.win.localStorage.getItem(draftKey(id)) || ''; } catch { /* this visit only */ } drafts.set(id, saved); }
     return drafts.get(id);
@@ -96,7 +103,7 @@ export function chatApp(ctx) {
   /** 转文字 for a voice message: the translation, the original line, or both (original first). */
   function transcriptHTML(m) {
     // The engine's own marks ([sigh], <whisper>…</whisper>, (laughing), <#0.5#>) are for the voice, not for reading.
-    const mode = voiceText().mode, original = String(m.text || '').replace(/\[[^\]]*\]|<[^>]*>|\((?:[a-z][a-z\s'-]*)\)/gi, '').replace(/\s{2,}/g, ' ').trim(), translation = m.translation || '';
+    const mode = voiceText().mode, original = String(m.text || '').replace(/\[[^\]]*\]|<[^>]*>|\((?:[a-z][a-z\s'-]*)\)/gi, '').replace(/\s{2,}/g, ' ').trim(), translation = voiceDisplay(m.translation);
     if (mode === 'original' || !translation) return `<span class="v-text">${esc(original)}</span>`;
     if (mode === 'both' && original && original !== translation) return `<span class="v-text both"><span class="v-orig">${esc(original)}</span><span>${esc(translation)}</span></span>`;
     return `<span class="v-text">${esc(translation)}</span>`;
@@ -201,7 +208,7 @@ export function chatApp(ctx) {
     const spark = t.type === 'dm' && t.streak >= 3 ? `<span class="spark" title="聊天火花：连续 ${t.streak} 天">🔥${t.streak}</span>` : '';
     // A chat with words typed and not sent shows them, as phones do.
     const typed = draftOf(t.id).trim(), pvLine = typed ? `<em class="draft-mark">[草稿]</em>${esc(typed)}` : `${atMe}${esc(who + preview(last))}`;
-    return `<button class="conv${t.pinned ? ' pinned' : ''}" data-action="open" data-id="${esc(t.id)}" data-conv="${esc(t.id)}">${threadAvatar(t, 50)}<span class="grow"><span class="conv-top"><strong>${esc(t.type === 'group' ? t.name : shown(t.members[0] || t.name))}</strong>${t.type === 'group' ? '<span class="tag-s">群</span>' : t.label ? `<span class="tag-s">${esc(t.label)}</span>` : ''}${t.type !== 'group' && t.blocked ? '<span class="tag-s tag-blocked">已拉黑</span>' : ''}${spark}<span class="conv-time">${last ? stamp(last.at) : ''}</span></span><span class="conv-bot"><span class="pv">${pvLine}</span>${t.muted ? `<span class="mute-ico" aria-label="免打扰">${icon('mute')}</span>` : ''}${badge}</span></span></button>`;
+    return `<button class="conv${t.pinned ? ' pinned' : ''}" data-action="open" data-id="${esc(t.id)}" data-conv="${esc(t.id)}">${threadAvatar(t, 50)}<span class="grow"><span class="conv-top"><strong>${esc(t.type === 'group' ? t.name : shown(t.members[0] || t.name))}</strong>${t.type === 'group' ? '<span class="tag-s">群</span>' : t.label ? `<span class="tag-s">${esc(t.label)}</span>` : ''}${t.type !== 'group' && t.blocked ? '<span class="tag-s tag-blocked">已拉黑</span>' : ''}${spark}<span class="conv-time">${esc(storyClockLabel(last?.storyClock))}</span></span><span class="conv-bot"><span class="pv">${pvLine}</span>${t.muted ? `<span class="mute-ico" aria-label="免打扰">${icon('mute')}</span>` : ''}${badge}</span></span></button>`;
   }
   /** The messages found, under what the list found by name. */
   function hitsHTML({hits: list, total}) {
@@ -209,7 +216,7 @@ export function chatApp(ctx) {
       const t = knownThreads.find(x => x.id === h.thread);
       if (!t) return '';
       const who = h.from === 'me' ? '我：' : t.type === 'group' ? shown(h.from) + '：' : '';
-      return `<button class="conv conv-hit" data-action="open-hit" data-id="${esc(t.id)}" data-mid="${esc(h.id)}">${threadAvatar(t, 42)}<span class="grow"><span class="conv-top"><strong>${esc(t.type === 'group' ? t.name : shown(t.members[0] || t.name))}</strong>${t.label ? `<span class="tag-s">${esc(t.label)}</span>` : ''}<span class="conv-time">${stamp(h.at)}</span></span><span class="conv-bot"><span class="pv">${esc(who + h.before)}<mark>${esc(h.hit)}</mark>${esc(h.after)}</span></span></span></button>`;
+      return `<button class="conv conv-hit" data-action="open-hit" data-id="${esc(t.id)}" data-mid="${esc(h.id)}">${threadAvatar(t, 42)}<span class="grow"><span class="conv-top"><strong>${esc(t.type === 'group' ? t.name : shown(t.members[0] || t.name))}</strong>${t.label ? `<span class="tag-s">${esc(t.label)}</span>` : ''}<span class="conv-time">${esc(storyClockLabel(h.storyClock))}</span></span><span class="conv-bot"><span class="pv">${esc(who + h.before)}<mark>${esc(h.hit)}</mark>${esc(h.after)}</span></span></span></button>`;
     }).join('');
     if (rows) return groupTitle(total > list.length ? `聊天记录 · ${total} 条，这里是最新的 ${list.length} 条` : `聊天记录 · ${total} 条`) + `<div class="conv-list qq-list">${rows}</div>`;
     return listEmpty ? `<p class="hint">没有找到「${esc(search)}」</p>` : '';
@@ -237,7 +244,7 @@ export function chatApp(ctx) {
     // count goes on the one in use.
     const inUse = t => currentWindow(threads, t)?.id === t.id;
     const unreadOf = t => chatWindows(threads, t).reduce((n, x) => n + (x.unread || 0), 0);
-    const rows = threads.filter(t => !(t.type === 'dm' && t.friend?.by === 'me')).filter(t => q ? [t.name, t.label, ...t.members, preview(t.last)].some(x => String(x || '').toLowerCase().includes(q)) : inUse(t)).map(t => ({...t, unread: q ? t.unread : unreadOf(t)}));
+    const rows = threads.filter(t => !(t.type === 'dm' && (t.friend?.by === 'me' || socialAway(t.members[0])))).filter(t => q ? [t.name, t.label, ...t.members, preview(t.last)].some(x => String(x || '').toLowerCase().includes(q)) : inUse(t)).map(t => ({...t, unread: q ? t.unread : unreadOf(t)}));
     const people = q ? api.chatContacts().filter(c => c.name.toLowerCase().includes(q) && !away.has(c.name) && !threads.some(t => t.type === 'dm' && t.members[0] === c.name)) : [];
     const bring = pendingBring();
     listEmpty = !rows.length && !people.length;
@@ -259,17 +266,18 @@ export function chatApp(ctx) {
     const [threads] = await Promise.all([api.listThreads(), counts()]);
     if (v.disposed || ticket !== epoch) return;
     const cut = threads.filter(t => t.type === 'dm' && t.friend?.by === 'me'), away = new Set(cut.map(t => t.members[0]));
-    const contacts = api.chatContacts().filter(c => !away.has(c.name)), stars = starred(), groups = threads.filter(t => t.type === 'group' && currentWindow(threads, t)?.id === t.id);
+    const contacts = api.chatContacts().filter(c => !away.has(c.name) && !socialAway(c.name)), stars = starred(), groups = threads.filter(t => t.type === 'group' && currentWindow(threads, t)?.id === t.id);
     const blockedAsks = threads.filter(t => t.type === 'dm' && t.blocked?.requests?.length && t.friend?.by !== 'me');
     const asks = cut.reduce((n, t) => n + (t.friend.requests?.length || t.blocked?.requests?.length ? 1 : 0), 0) + blockedAsks.length;
     const row = c => `<button class="list-row" data-action="profile" data-name="${esc(c.name)}">${avatar(c.name, c.engine, 42)}<span><strong>${esc(c.name)}</strong><small>${esc(signatureOf(c))}</small></span>${stars.includes(c.name) ? '<span class="star-mark" aria-label="特别关心">★</span>' : icon('next')}</button>`;
     const special = contacts.filter(c => stars.includes(c.name));
     v.draw(frame(heading('联系人', btn('contact-add', icon('add'), 'round-button', 'aria-label="添加联系人"'), 'Contacts')
+      + `<div class="group"><button class="list-row" data-action="social-open"><span><strong>好友申请与黑名单</strong><small>待处理 ${api.socialSnapshot().entries.filter(e=>e.state==='pending').length} · 已拉黑 ${api.socialSnapshot().entries.filter(e=>e.state==='blocked').length}</small></span></button><button class="list-row" data-action="social-plan"><span><strong>AI 整理好友和群聊</strong><small>根据正文、世界观和角色设定生成</small></span></button></div>`
       + (cut.length || blockedAsks.length ? `<div class="group"><button class="list-row" data-action="new-friends"><i class="friend-ico" aria-hidden="true">${icon('person')}</i><span><strong>新的朋友</strong><small>${asks ? `${asks} 个好友申请` : `删掉的好友（${cut.length}）可以在这里加回来`}</small></span>${asks ? `<b class="badge friend-badge">${asks}</b>` : icon('next')}</button></div>` : '')
       + (special.length ? groupTitle('特别关心') + `<div class="group">${special.map(row).join('')}</div>` : '')
       + groupTitle(`好友 · ${contacts.length}`, help('角色 App 里的角色会自动出现在这里。开了「按角色卡分开」时，只有这张卡的角色、在这张卡的剧情里说过话或被提到的角色，以及在这张卡里加的联系人；别的角色点右上角的「＋」加进来。剧情之外的人（同学、店员、网友……）也在「＋」里手动添加，写上人设就能聊。'))
       + (contacts.length ? `<div class="group">${contacts.map(row).join('')}</div>` : '<p class="hint">还没有好友。</p>')
-      + (groups.length ? groupTitle(`群聊 · ${groups.length}`) + `<div class="group">${groups.map(t => `<button class="list-row" data-action="open" data-id="${esc(t.id)}">${threadAvatar(t, 42)}<span><strong>${esc(t.name)}</strong><small>${t.members.length} 人</small></span>${icon('next')}</button>`).join('')}</div>` : '')));
+      + (groups.length ? groupTitle(`群聊 · ${groups.length}`) + `<div class="group">${groups.map(t => `<button class="list-row" data-action="open" data-id="${esc(t.id)}">${threadAvatar(t, 42)}<span><strong>${esc(t.name)}</strong><small>${t.members.length+1} 人</small></span>${icon('next')}</button>`).join('')}</div>` : '')));
   }
   /** ＋ in 联系人: a role from the 角色 App that is not here yet, or someone outside the story by hand. */
   function addContact() {
@@ -515,7 +523,7 @@ export function chatApp(ctx) {
     if (thread.unread) api.markThreadRead(threadId).catch(() => {});
     const group = thread.type === 'group', contacts = api.chatContacts(true);
     const voiced = thread.members.filter(n => contacts.find(c => c.name === n)?.voice).length;
-    const sub = group ? `${thread.members.length} 人 · ${voiced} 人能发语音` : contacts.find(c => c.name === thread.members[0])?.source === 'manual' ? '手动联系人' : voiced ? '能发语音消息' : '还没有配音 · 只发文字';
+    const sub = group ? `${thread.members.length+1} 人 · ${voiced} 人能发语音` : contacts.find(c => c.name === thread.members[0])?.source === 'manual' ? '手动联系人' : voiced ? '能发语音消息' : '还没有配音 · 只发文字';
     const bring = pendingBring(), scroller = v.root.querySelector('.msgs'), atBottom = !scroller || scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 80;
     const focused = ctx.doc.activeElement?.dataset?.field === 'draft' && v.root.contains(ctx.doc.activeElement);
     track(thread.messages);
@@ -1369,24 +1377,29 @@ export function chatApp(ctx) {
   /** 来电 options: characters calling by themselves (off by default), and how long a call rings. */
   function callsSheet() {
     const o = () => api.getState().calls;
-    const draw = () => `<div class="setting-row"><span>角色自己打来${help('角色可以给你打语音电话：接通后用 TA 的音色说话，你打字回。打开这里后，每隔几条正文回复，角色可能会自己打来；不打开时，聊天里角色偶尔也会直接打过来（聊天预设的「打电话」规则）。每句话都要调用一次模型并生成语音。')}</span><input class="switch" type="checkbox" data-field="call-auto" aria-label="角色自己打来" ${o().auto ? 'checked' : ''}></div>
+    const draw = () => `<div class="setting-row"><span>同步正文里的电话${help('识别正文来电、已接通及挂断，导入已有台词，不自动替你接听；识别及结束后的摘要使用文字模型。')}</span><input class="switch" type="checkbox" data-field="call-story" aria-label="同步正文里的电话" ${o().story!==false?'checked':''}></div><div class="setting-row"><span>角色自己打来${help('角色可以给你打语音电话：接通后用 TA 的音色说话，你打字回。打开这里后，每隔几条正文回复，角色可能会自己打来；不打开时，聊天里角色偶尔也会直接打过来（聊天预设的「打电话」规则）。每句话都要调用一次模型并生成语音。')}</span><input class="switch" type="checkbox" data-field="call-auto" aria-label="角色自己打来" ${o().auto ? 'checked' : ''}></div>
       <div class="field"><span>每几条正文回复可能打来一次</span><input data-field="call-every" type="number" min="1" max="100" value="${o().every}"></div>
       <div class="field"><span>每天最多</span><input data-field="call-dailyMax" type="number" min="1" max="10" value="${o().dailyMax}"></div>
       <div class="field"><span>响铃多久算未接（秒）</span><input data-field="call-ring" type="number" min="15" max="60" value="${o().ring}"></div>`;
     const d = sheet('来电', `<div class="calls-body">${draw()}</div>`, {});
+    const scanButton=document.createElement('button');scanButton.className='btn';scanButton.textContent='补查最新正文通话';
+    const scanNote=document.createElement('p');scanNote.className='muted';scanNote.textContent='检查最近一条角色正文，补录遗漏的通话，不重复添加已有记录。';
+    d.body.append(scanButton,scanNote);scanButton.addEventListener('click',async()=>{scanButton.disabled=true;scanNote.textContent='正在识别正文电话…';try{scanNote.textContent=await api.callStoryScan();}catch(error){scanNote.textContent='补查失败：'+error.message;}finally{scanButton.disabled=false;}});
+
     d.body.addEventListener('change', e => {
       const key = e.target.dataset.field?.replace(/^call-/, '');
       if (!key) return;
-      try { api.saveCalls({[key]: key === 'auto' ? e.target.checked : Number(e.target.value)}); d.body.querySelector('.calls-body').innerHTML = draw(); } catch (error) { ctx.notify(error.message); }
+      try { api.saveCalls({[key]: ['auto','story'].includes(key) ? e.target.checked : Number(e.target.value)}); d.body.querySelector('.calls-body').innerHTML = draw(); } catch (error) { ctx.notify(error.message); }
     });
   }
   /** 主动发消息: characters text the user from the story, and (if wanted) now and then on their own. */
   /** A finished call: what was said, the voice message of a missed call, and calling back. */
   function callLog(m) {
     const name = m.from === 'me' ? thread.members[0] : m.from, who = l => l.from === 'me' ? '你' : l.from;
-    const said = m.lines?.length ? `<div class="call-log">${m.lines.map(l => `<p><b>${esc(who(l))}：</b>${esc(l.translation || l.text)}</p>`).join('')}</div>` : '';
+    const said = m.lines?.length ? `<div class="call-log">${m.lines.map(l => `<p><b>${esc(who(l))}：</b>${esc(voiceDisplay(l.translation || l.text))}</p>`).join('')}</div>` : '';
     const mail = m.voicemail?.length ? `<p class="help-copy"><b>语音留言：</b>${esc(m.voicemail.map(l => l.translation || l.text).join(' '))}</p>` : '';
-    const d = sheet(callSummary(m), `${said || mail ? '' : '<p class="help-copy">这通电话没有说话内容。</p>'}${mail}${said}
+    const summary=m.text?.startsWith('通话摘要：')?`<div class="group pad"><strong>通话摘要</strong><p class="help-copy">${esc(m.text.slice(5))}</p></div>`:'';
+    const d = sheet(callSummary(m), `${summary}${said || mail ? '' : '<p class="help-copy">这通电话没有说话内容。</p>'}${mail}${said}
       <div class="actions">${m.voicemail?.length && ctx.routeFor(name)?.voice ? btn('call-mail', icon('play', true) + '听留言', 'secondary') : ''}${api.callDial ? btn('call-back', icon('phone') + '回拨', 'primary') : ''}</div>`, {
       'call-mail': () => api.speak(m.voicemail.map(l => ({role: name, text: l.text, translation: l.translation, emotion: l.emotion}))),
       'call-back': async () => { d.close(); await api.callDial(name); }
@@ -1443,6 +1456,7 @@ export function chatApp(ctx) {
   /** A group's own picture goes with its last window. */
   function forgetGroupAvatar(t) { if (api.getState().chat.avatars?.['g:' + groupKey(t)]) api.saveChatOptions({avatars: {['g:' + groupKey(t)]: null}}); }
   async function openDm(name) {
+    if(socialAway(name)){social.open();return;}
     const existing = currentDm(await api.listThreads(), name);
     const t = existing || await api.createThread({type: 'dm', members: [name]});
     open(t.id);
@@ -1451,7 +1465,7 @@ export function chatApp(ctx) {
     const group = thread.type === 'group';
     const d = ctx.dialog(thread.name, `<div class="pick-list">
       ${live ? `<button class="list-row" data-menu="reroll">${icon('refresh')}<span><strong>重新回复最后一轮</strong></span></button>` : ''}
-      ${group ? `<button class="list-row" data-menu="rename">${icon('edit')}<span><strong>改群名</strong></span></button><button class="list-row" data-menu="group-avatar">${icon('image')}<span><strong>换群头像</strong><small>从相册选一张或上传，也可以换回成员拼的头像</small></span></button>` : ''}
+      ${group ? `<button class="list-row" data-menu="members">${icon('group')}<span><strong>群成员</strong><small>查看、添加、移除及同步正文进退群</small></span></button><button class="list-row" data-menu="rename">${icon('edit')}<span><strong>改群名</strong></span></button><button class="list-row" data-menu="group-avatar">${icon('image')}<span><strong>换群头像</strong><small>从相册选一张或上传，也可以换回成员拼的头像</small></span></button>` : ''}
       <button class="list-row" data-menu="windows">${icon('layers')}<span><strong>聊天窗口</strong><small>${group ? '这个群' : '和' + esc(shown(thread.members[0]))}开好几个聊天，切换、新开、删除</small></span></button>
       <button class="list-row" data-menu="memory">${icon('book')}<span><strong>记忆</strong><small>更早的聊天整理成的摘要和总结，可以改</small></span></button>
       <button class="list-row" data-menu="voice-text">${icon('book')}<span><strong>语音消息</strong><small>转文字显示什么、要不要自动转</small></span></button>
@@ -1469,6 +1483,7 @@ export function chatApp(ctx) {
           const base = thread;
           r.body.addEventListener('click', ev => { if (ev.target.closest('[data-action=rename-save]')) { const name = r.body.querySelector('[data-field=rename]').value; r.close(); api.listThreads().then(list => Promise.all(chatWindows(list, base).map(t => api.updateThread(t.id, {name})))).catch(err => ctx.notify(err.message)); } });
         }
+        if (action === 'members') await groupMembersPanel(ctx,threadId,()=>render());
         if (action === 'voice-text') voiceTextSheet();
         if (action === 'group-avatar') await avatarSheet('g:' + groupKey(thread), {title: `${thread.name} 的群头像`, reset: '用成员拼的头像'});
         if (action === 'pace') { const on = api.getState().chat.pace === false; api.saveChatOptions({pace: on}); if (!on) { ctx.win.clearTimeout(pace.timer); pace.timer = 0; pace.queue = []; pace.hidden.clear(); render(); } ctx.notify(on ? '对方的消息会一条条出来' : '对方的消息会一次全显示'); }
@@ -1669,6 +1684,9 @@ export function chatApp(ctx) {
         catch (error) { ctx.notify(error.message, {error: true}); }
         break;
       }
+      case 'social-open': social.open(); break;
+      case 'social-plan': social.planner(); break;
+      case 'social-block': { if(await ctx.confirm(`拉黑「${profileOf}」？`,'所有私聊窗口和电话都会拒收，聊天记录保留；共同群聊不受影响。')) {await api.socialBlock(profileOf); mode='list'; tab='contacts'; render();} break; }
       case 'new-friends': mode = 'friends'; render(); break;
       case 'remark': {
         const name = profileOf, d = ctx.dialog('设置备注', `<div class="group pad">${field('备注', input('remark', remarks()[ownKey(name)] || '', 'text', `maxlength="20" placeholder="${esc(name)}"`), '只改你这边显示的名字（聊天列表、聊天、联系人）；角色那边还是用 TA 的名字，不会知道你给 TA 起了什么备注。空着就是不用备注。')}
@@ -1706,6 +1724,7 @@ export function chatApp(ctx) {
         catch (error) { ctx.notify(error.message, {error: true}); }
         break;
       }
+      case 'reject-old-request': { try {const t=await api.getThread(el.dataset.id);await api.updateThread(t.id,{friend:{...t.friend,requests:[]}});render();}catch(error){ctx.notify(error.message,{error:true});} break;}
       case 'refriend': {
         try { const t = await api.refriend(el.dataset.id); ctx.notify(`已把 ${t.members[0]} 加回好友`); if (mode === 'thread') render(); else open(t.id); }
         catch (error) { ctx.notify(error.message, {error: true}); }
@@ -1796,7 +1815,8 @@ export function chatApp(ctx) {
         if (!m) break;
         if (!ctx.routeFor(m.from)?.voice) { ctx.notify(`${m.from} 还没有配音`); break; }
         if (el.dataset.state === 'playing') { api.stop(); break; }
-        await api.speak(lineOf(m));
+        const voices=thread.messages.slice(thread.messages.findIndex(x=>x.id===m.id)).filter(x=>x.kind==='voice'&&x.from!=='me'&&ctx.routeFor(x.from)?.voice).map(lineOf);
+        const queue=await unheardQueue(voices,0,line=>api.lineState(line));await api.speak(queue);
         break;
       }
       case 'thread-menu': threadMenu(); break;

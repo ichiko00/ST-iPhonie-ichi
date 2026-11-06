@@ -3,7 +3,7 @@
 // own game files, which stay on this device. Used by both the page and the worker.
 import {BLOCKS, MINY, SECTIONS} from './blocks.js';
 
-const NAME = 'st-iphonie-blocks', VERSION = 1;
+const NAME = 'myphone-app-blocks', VERSION = 1;
 let opening = null;
 export function openDB() {
   opening ??= new Promise((resolve, reject) => {

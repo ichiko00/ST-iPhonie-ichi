@@ -6,7 +6,7 @@ const fail = (message, code = 'INVALID') => Object.assign(new Error(message), {c
 
 export class AppStore {
   #scope; #factory; #name; #db = null; #opening = null; #closed = false;
-  constructor(scope, {indexedDB = globalThis.indexedDB, database = 'st-iphonie-apps-v1'} = {}) { this.#scope = String(scope); this.#factory = indexedDB; this.#name = database; }
+  constructor(scope, {indexedDB = globalThis.indexedDB, database = 'myphone-app-apps-v1'} = {}) { this.#scope = String(scope); this.#factory = indexedDB; this.#name = database; }
   async #open() {
     if (this.#closed) throw fail('已关闭', 'CLOSED');
     if (this.#db) return this.#db;

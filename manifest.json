@@ -1,6 +1,6 @@
 {
-  "display_name": "ST-iPhonie",
-  "version": "0.9.31",
+  "display_name": "MyPhone",
+  "version": "0.9.31-social.16",
   "author": "ST-iPhonie contributors",
   "js": "index.js",
   "css": "style.css",
@@ -12,6 +12,6 @@
     "disable": "disable",
     "delete": "dispose"
   },
-  "homePage": "https://github.com/hey8v0/ST-iPhonie",
-  "generate_interceptor": "stIphonieInterceptor"
+  "homePage": "https://github.com/ichiko00/ST-iPhonie-ichi",
+  "generate_interceptor": "myPhoneAppInterceptor"
 }

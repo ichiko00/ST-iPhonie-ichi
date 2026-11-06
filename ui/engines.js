@@ -254,7 +254,7 @@ export function enginesApp(ctx) {
       + `<div class="group pad">${drawingWith('gpt')}${imageConnectionRow('gpt')}
           ${keyBox(g.url ? '中转密钥' : 'OpenAI API Key', saved && (api.keyHint('gpt') || '已保存'), g.url ? '填中转要求的密钥' : 'sk- 开头', '插件从浏览器直接请求 OpenAI（或你填的中转），密钥只保存在当前浏览器和酒馆地址。每张图都按对方的价格收费。')}
           ${field('接口地址', input('gpt-url', g.url, 'url', 'autocomplete="off" placeholder="留空直连 OpenAI，例如 https://relay.example.com/v1"'))}
-          ${field('模型', `<div class="music-selfhost">${input('gpt-model', g.model, 'text', `list="sttts-gpt-models" autocomplete="off" spellcheck="false"`)}${btn('gpt-models', icon('refresh') + '读取', 'secondary small')}</div><datalist id="sttts-gpt-models">${gptModelOptions()}</datalist>`, '「读取」列出这组连接提供的模型；列表可能包含文字模型，请选择支持 images 接口的模型。中转的自定义名称（例如 image2.5）也可以直接填，名称以中转提供的为准。')}
+          ${field('模型', `<div class="music-selfhost">${input('gpt-model', g.model, 'text', `list="myphone-gpt-models" autocomplete="off" spellcheck="false"`)}${btn('gpt-models', icon('refresh') + '读取', 'secondary small')}</div><datalist id="myphone-gpt-models">${gptModelOptions()}</datalist>`, '「读取」列出这组连接提供的模型；列表可能包含文字模型，请选择支持 images 接口的模型。中转的自定义名称（例如 image2.5）也可以直接填，名称以中转提供的为准。')}
           <p class="hint" data-gpt-status aria-live="polite">${esc(gptStatus)}</p>
           <div class="combo-menu model-list" data-gpt-model-list ${gptList.length ? '' : 'hidden'}>${gptModelButtons(g.model)}</div>
         </div>
@@ -266,7 +266,7 @@ export function enginesApp(ctx) {
   // Only replace the result area: a delayed response must not erase the connection form being edited.
   function updateGptModels() {
     if (v.disposed || engine !== 'gpt') return;
-    const status = v.root.querySelector('[data-gpt-status]'), list = v.root.querySelector('[data-gpt-model-list]'), options = v.root.querySelector('#sttts-gpt-models');
+    const status = v.root.querySelector('[data-gpt-status]'), list = v.root.querySelector('[data-gpt-model-list]'), options = v.root.querySelector('#myphone-gpt-models');
     if (status) status.textContent = gptStatus;
     if (list) { list.hidden = !gptList.length; list.innerHTML = gptModelButtons(v.root.querySelector('[data-field=gpt-model]')?.value); }
     if (options) options.innerHTML = gptModelOptions();
@@ -447,7 +447,7 @@ export function enginesApp(ctx) {
       + `<div class="savebar"><span class="save-state" data-save-state>${dirty ? '未保存' : '已保存'}</span>${btn('save-connection', '保存配置', 'primary')}</div>`);
   }
 
-  const FOLDER_KEY = 'sttts.voiceFolder';
+  const FOLDER_KEY = 'myphone.voiceFolder';
   const lastFolder = () => { try { return ctx.win.localStorage.getItem(FOLDER_KEY) || ''; } catch { return ''; } };
   /** 自己的接口: a folder of GPT-SoVITS characters (one folder each: .ckpt, .pth, reference audios) in one go. */
   function customImport() {

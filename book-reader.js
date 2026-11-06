@@ -10,7 +10,7 @@ import {BOOK_CSS, viewsOf, viewMarkup, viewWords, fitWords, themeStyle, directio
 import {readOf, linesOf, sheetOf, sheetCount} from './core/book.js';
 import {createFx, FX_KINDS} from './vn-fx.js';
 
-const STYLE_ID = 'sttts-book-style';
+const STYLE_ID = 'myphone-book-style';
 const READER_CSS = `
 .bkr{position:absolute;inset:0;overflow:hidden;background:#1c1a22;color:#fff;font:14px/1.4 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:contain}
 .bkr *{box-sizing:border-box}

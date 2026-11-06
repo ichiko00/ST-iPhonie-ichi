@@ -143,7 +143,7 @@ export function createGeneratorHost({context, settings, backend, notice = () => 
   function storyPlan(type, dryRun) {
     const d = steering();
     if (!d) return [];
-    const plan = [{key: 'sttts.entry.direction', text: directionText(settings().promptRules, d, userName()), position: 1, depth: 1, role: 0}];
+    const plan = [{key: 'myphone.entry.direction', text: directionText(settings().promptRules, d, userName()), position: 1, depth: 1, role: 0}];
     if (type && !['quiet', 'impersonate'].includes(type) && !dryRun) {
       pending = null;
       backend.emit('generator', {steer: null});

@@ -3,9 +3,9 @@
 // the browser for the whole screen as well. Esc or ✕ closes it. The reader itself is book-reader.js.
 import {mountBookReader, bookStyles} from './book-reader.js';
 
-const STYLE_ID = 'sttts-book-stage-style';
-const CSS = `.sttts-book{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;z-index:32000;background:#121016;opacity:0;transition:opacity .4s}
-.sttts-book[data-in]{opacity:1}`;
+const STYLE_ID = 'myphone-book-stage-style';
+const CSS = `.myphone-book{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;z-index:32000;background:#121016;opacity:0;transition:opacity .4s}
+.myphone-book[data-in]{opacity:1}`;
 
 /**
  * Opens the book: picture(p) → its address; sprite(name, emotion) → a 立绘's; read(lines, onLine) → resolves when read
@@ -16,7 +16,7 @@ export function openBookStage({doc, book, at = 0, picture, sprite, read, stop, s
   bookStyles(doc);
   if (!doc.getElementById(STYLE_ID)) { const s = doc.createElement('style'); s.id = STYLE_ID; s.textContent = CSS; doc.head.append(s); }
   const shell = doc.createElement('div');
-  shell.className = 'sttts-book';
+  shell.className = 'myphone-book';
   shell.setAttribute('role', 'dialog');
   shell.setAttribute('aria-label', book.title);
   doc.body.append(shell);

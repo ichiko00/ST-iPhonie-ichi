@@ -123,7 +123,7 @@ export class LocalLibrary {
    // files, and 'thumbs', the photos' small pictures for grids ({scope, id, type, bytes, w, h}).
    // 6 added 'previews', the photos' middle-sized pictures for chat bubbles and posts ({scope, id, type, bytes, w, h}, or
    // {scope, id, same: true} when the photo itself does as well), made when a photo is first shown there.
-   try{req=this.#factory.open('st-tts-library-v1',6);}catch(e){rejectOnce(e);return;}
+   try{req=this.#factory.open('myphone-tts-library-v1',6);}catch(e){rejectOnce(e);return;}
    req.onupgradeneeded=event=>{
     const db=req.result,tx=req.transaction,old=event.oldVersion;
     for(const name of STORES){if(db.objectStoreNames.contains(name))continue;const store=db.createObjectStore(name,{keyPath:['scope','id']});store.createIndex('scope','scope');}

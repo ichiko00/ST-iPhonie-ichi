@@ -28,7 +28,7 @@ export class AudioCache {
  async open() {
   if (this.failed || this.closed) return null;
   if (!this.db) this.db = new Promise((resolve, reject) => {
-   const request = this.factory.open('st-tts-audio-v1', 2);
+   const request = this.factory.open('myphone-tts-audio-v1', 2);
    let settled = false;
    const fail = error => { if (!settled) { settled = true; reject(error); } };
    request.onupgradeneeded = event => {

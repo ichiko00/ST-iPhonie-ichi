@@ -1091,9 +1091,9 @@ export function createPhoneApp({window: win, api, mount = win.document.getElemen
   }
 
   // ---------- Host hooks ----------
-  const previousOpenRole = win.stTtsOpenRole, previousVisibility = win.stTtsPanelVisibility, previousOpenDraw = win.stTtsOpenDraw, previousOpenThread = win.stTtsOpenThread;
-  win.stTtsOpenRole = id => open('roles', id);
-  const previousOpenApp = win.stTtsOpenApp;
+  const previousOpenRole = win.myPhoneOpenRole, previousVisibility = win.myPhonePanelVisibility, previousOpenDraw = win.myPhoneOpenDraw, previousOpenThread = win.myPhoneOpenThread;
+  win.myPhoneOpenRole = id => open('roles', id);
+  const previousOpenApp = win.myPhoneOpenApp;
   /** An App the tavern page asked for (the music island's double tap): taken when the phone shows, or right away. */
   // 'chat:moments': the chat app on 动态 (the 动态小窗's tap).
   function openPart(value) {
@@ -1104,7 +1104,7 @@ export function createPhoneApp({window: win, api, mount = win.document.getElemen
     return true;
   }
   function takeApp() { return openPart(api.takeApp?.()); }
-  win.stTtsOpenApp = name => run(() => name && openPart(name) || takeApp());
+  win.myPhoneOpenApp = name => run(() => name && openPart(name) || takeApp());
   function takeDraw() {
     const request = api.takeDraw?.();
     if (!request) return false;
@@ -1112,7 +1112,7 @@ export function createPhoneApp({window: win, api, mount = win.document.getElemen
     withView('draw', v => v.load?.(request));
     return true;
   }
-  win.stTtsOpenDraw = () => run(takeDraw);
+  win.myPhoneOpenDraw = () => run(takeDraw);
   /** The chat a message card on the tavern page was double-tapped for (msg-island.js). */
   function takeThread() {
     const id = api.takeThread?.();
@@ -1121,19 +1121,19 @@ export function createPhoneApp({window: win, api, mount = win.document.getElemen
     withView('chat', v => v.openThread?.(id));
     return true;
   }
-  win.stTtsOpenThread = () => run(takeThread);
+  win.myPhoneOpenThread = () => run(takeThread);
   // The browser's back while the phone is open (the edge swipe on a phone, see index.js): whatever is on top closes
   // the way Esc closes it (a picture, the 改提示词 box, a sheet), else the app goes back a step. false at home: the
   // phone itself closes.
-  win.stTtsBack = () => {
-    if (!sheet && !locked && !active && !doc.querySelector('.sttts-ask, .sttts-viewer, .album-viewer')) return false;
+  win.myPhoneBack = () => {
+    if (!sheet && !locked && !active && !doc.querySelector('.myphone-ask, .myphone-viewer, .album-viewer')) return false;
     const keyboard = doc.documentElement.dataset.keyboard;
     doc.dispatchEvent(new win.KeyboardEvent('keydown', {key: 'Escape', bubbles: true, cancelable: true}));
     // It was not a key: the phone keeps its animations (they are off while a keyboard is used).
     if (keyboard === undefined) delete doc.documentElement.dataset.keyboard;
     return true;
   };
-  win.stTtsPanelVisibility = (visible, {preserveView = false} = {}) => {
+  win.myPhonePanelVisibility = (visible, {preserveView = false} = {}) => {
     const reopening = visible && !panelVisible;
     panelVisible = visible;
     if (visible) { callState(); run(refreshAvatars); floatingBar(); }
@@ -1165,12 +1165,12 @@ export function createPhoneApp({window: win, api, mount = win.document.getElemen
     win.clearTimeout(openTimer);
     win.clearTimeout(unreadTimer); win.clearTimeout(freshTimer);
     win.cancelAnimationFrame(animation);
-    win.stTtsOpenRole = previousOpenRole;
-    win.stTtsOpenApp = previousOpenApp;
-    win.stTtsPanelVisibility = previousVisibility;
-    win.stTtsOpenDraw = previousOpenDraw;
-    win.stTtsOpenThread = previousOpenThread;
-    if (win.stTtsBack) delete win.stTtsBack;
+    win.myPhoneOpenRole = previousOpenRole;
+    win.myPhoneOpenApp = previousOpenApp;
+    win.myPhonePanelVisibility = previousVisibility;
+    win.myPhoneOpenDraw = previousOpenDraw;
+    win.myPhoneOpenThread = previousOpenThread;
+    if (win.myPhoneBack) delete win.myPhoneBack;
   }
   win.addEventListener('pagehide', dispose, {signal});
   today = todayPage({doc, win, api, open, confirm, dialog, notify, signal, engineOf, appIcon, playback: () => playback, battery: () => batteryState(battery),
@@ -1210,7 +1210,7 @@ export function createPhoneApp({window: win, api, mount = win.document.getElemen
 }
 
 if (typeof window !== 'undefined' && window.document.getElementById('root')) {
-  try { window.stTtsPhone = createPhoneApp({window, api: connectBackend()}); }
+  try { window.myPhonePhone = createPhoneApp({window, api: connectBackend()}); }
   catch (error) {
     const el = window.document.querySelector('.startup');
     if (el) { el.textContent = error.message; el.setAttribute('role', 'alert'); }

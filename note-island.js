@@ -3,7 +3,7 @@
 // with who and what, and goes again after a few seconds (not while a pointer rests on it). A tap opens the phone on
 // 动态; × puts it away. Several at once: the newest shows, with how many more there are.
 // What is new is found by comparing 朋友圈 with how it was the time before (watchMoments): likes have no time of their own.
-// It wears the call island's look (style.css .sttts-call-island).
+// It wears the call island's look (style.css .myphone-call-island).
 
 import {joinStack, stackTop} from './island-stack.js';
 import {inSpace} from './core/chat.js';
@@ -71,7 +71,7 @@ export function watchMoments({backend, notify}) {
 export function createNoteIsland({doc = document, phoneOpen, open, avatar = () => '', label = name => name}) {
   const win = doc.defaultView;
   const el = doc.createElement('div');
-  el.className = 'sttts-call-island sttts-note-island';
+  el.className = 'myphone-call-island myphone-note-island';
   el.dataset.kind = 'note';
   el.hidden = true;
   el.setAttribute('role', 'status');

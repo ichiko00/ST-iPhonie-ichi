@@ -1,6 +1,9 @@
 {
-  "name": "st-iphonie",
-  "version": "0.9.31",
+  "name": "myphone",
+  "version": "0.9.31-social.16",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/social.test.mjs tests/groups.test.mjs tests/story-sync.test.mjs tests/calls.test.mjs"
+  }
 }

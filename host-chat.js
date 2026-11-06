@@ -22,11 +22,11 @@ export async function pictureUrl(blob, doc = globalThis.document, side = 1024) {
   return canvas.toDataURL('image/jpeg', .85);
 }
 
-const BRING_KEY = 'sttts.bring';
+const BRING_KEY = 'myphone.bring';
 /** The note older versions wrote into the chat for a choice; the chat shows the pending choice by itself now. */
 export const BRING_NOTE = /^\d+ 条消息会带进下一次正文$/;
 
-export function createChatHost({context, settings, backend, notice, memory = null, onCall = () => {}, onPosts = () => {},storage = globalThis.localStorage, loadCompletion = loadCompletionModule, picture = pictureUrl, ask = requestAssistantText}) {
+export function createChatHost({context, settings, backend, notice, memory = null, onCall = () => {}, onPosts = () => {},storage = globalThis.localStorage, timeline = null, loadCompletion = loadCompletionModule, picture = pictureUrl, ask = requestAssistantText}) {
   // busy: the reply being written for a chat (one at a time); stops: what lets it go (停止回复).
   const busy = new Map(), stops = new Map();
   const stopped = () => Object.assign(new Error('已停止回复'), {name: 'AbortError'});
@@ -87,7 +87,7 @@ export function createChatHost({context, settings, backend, notice, memory = nul
     const s = settings(), contacts = backend.contacts(), all = chatContacts(s);
     return thread.members.map(name => {
       const c = contacts.find(x => x.name === name) || all.find(x => x.name === name);
-      return {name, persona: c?.persona || '', card: c?.persona ? '' : card(name), voice: !!c?.voice, language: c?.language || s.general.defaultLanguage};
+      return {name, persona: c?.persona || '', card: backend.socialEntry(name)?.owner ? card(backend.socialEntry(name).owner) : c?.persona ? '' : card(name), voice: !!c?.voice, language: c?.language || s.general.defaultLanguage};
     });
   }
 
@@ -95,13 +95,14 @@ export function createChatHost({context, settings, backend, notice, memory = nul
   /** nudge: 主动找你 — the contact may also choose not to text (null then), and no 正在输入 shows meanwhile. */
   /** reroll: 重新回复这一轮 — the last round is asked again as if it were not there, and is replaced only when the new one
    *  came (it stays among the round's versions); one that fails or is stopped changes nothing. */
-  function reply(threadId, {nudge = false, reroll = false} = {}) {
+  function reply(threadId, {nudge = false, reroll = false, source = null} = {}) {
     if (busy.has(threadId)) return busy.get(threadId);
     const controller = new AbortController(), signal = controller.signal;
     const job = (async () => {
       const ctx = context();
       const thread = await backend.chats.get(threadId);
       if (!thread) throw Error('这段聊天已不存在');
+      if (thread.type === 'dm') backend.socialAssert(thread.members[0],backend.socialScopeFor(thread));
       const last = reroll ? lastRound(thread.messages) : null;
       if (last) { const old = new Set(last.round.map(m => m.id)); thread.messages = thread.messages.filter(m => !old.has(m.id)); }
       if (thread.friend?.by === 'me') throw Error(`你已经删除了${thread.members[0]}，在「联系人 → 新的朋友」里加回来才能聊天`);
@@ -128,13 +129,17 @@ export function createChatHost({context, settings, backend, notice, memory = nul
         try { shared = await sharedGroups(thread.members[0], user); } catch (error) { backend.reportDiagnostic?.('聊天 · 同群消息', error, 'warn'); }
       }
       const remembered = memory ? (await memory.contextFor(thread, {query}).catch(() => ({text: ''}))).text : '';
-      const request = pics => buildChatRequest({prompts: settings().promptRules, preset, thread, members: people, story: recent, user, userPersona: userPersona(), voiceFormat, lore, forum, groups: shared, memory: remembered, earlier: memory?.storyMemory() || '', images: !!backend.drawReady?.(), stickers: settings().chat.stickers || [], nudge, music: {share: s.music?.share !== false, listening: s.music?.share !== false ? backend.listening : null}, pictures: pics});
+      const request = pics => { const messages=buildChatRequest({prompts: settings().promptRules, preset, thread, members: people, story: recent, user, userPersona: userPersona(), voiceFormat, lore, forum, groups: shared, memory: remembered, earlier: memory?.storyMemory() || '', images: !!backend.drawReady?.(), stickers: settings().chat.stickers || [], nudge, music: {share: s.music?.share !== false, listening: s.music?.share !== false ? backend.listening : null}, pictures: pics});
+        const relations=backend.socialSnapshot().entries.filter(e=>['blocked','pending','rejected'].includes(e.state));
+        if(relations.length) messages[0].content += '\n【手机社交状态】'+relations.map(e=>`${e.name}：${e.state==='blocked'?'被用户拉黑，知道私信及电话被拒收，共同群聊仍可见':'尚未通过好友验证，不能直接私聊'}`).join('；')+'。不要擅自解除关系或宣称用户同意申请。';
+        return messages; };
       const answer = cleanTagged(await answerFor(ctx, request, await pictures(ctx, thread, preset), signal), preset.cleanTags);
       // 停止 while it was being written: what comes late is let go (the tavern's own generation cannot be stopped).
-      if (signal.aborted) throw stopped();
+      if (signal.aborted || (source&&timeline&&!timeline.current(source))) throw stopped();
       // 「[不发]」 (also as 「名字：[不发]」) is a no, not a message.
       const text = nudge ? answer.split('\n').filter(line => !/\[不发\]/.test(line)).join('\n') : answer;
-      const items = parseChatReply(text, {members: people, user, voiceFormat, voiceNames: people.filter(p => p.voice).map(p => p.name), stickers: settings().chat.stickers || []});
+      let items = parseChatReply(text, {members: people, user, voiceFormat, voiceNames: people.filter(p => p.voice).map(p => p.name), stickers: settings().chat.stickers || []});
+      if(source)items=items.map(item=>({...item,story:source.story,storyVer:source.ver}));
       if (!items.length && nudge) return null;
       if (!items.length) throw Error('这次没有收到消息，可以再试一次');
       const before = new Set((await backend.chats.get(threadId))?.messages.map(m => m.id) || []);
@@ -158,6 +163,9 @@ export function createChatHost({context, settings, backend, notice, memory = nul
    */
   async function settle(threadId, items, round = null) {
     const thread = await backend.chats.get(threadId), taken = new Set(), out = [], posts = [];
+    items = await backend.socialFilter(thread, items);
+    if(thread.type==='group')items=items.filter(item=>thread.members.includes(item.from));
+    if (!items.length) return thread;
     let calling = null, cutting = false;
     const whispers = [];
     let latest = thread;
@@ -187,12 +195,13 @@ export function createChatHost({context, settings, backend, notice, memory = nul
       const gift = target.kind === 'gift';
       out.push({from: item.from, kind: 'notice', target: 'me', text: {opened: '领取了{对方}的红包', accepted: gift ? '收下了{对方}的礼物' : '收下了{对方}的转账', returned: gift ? '退还了{对方}的礼物' : '退还了{对方}的转账'}[state]});
     }
+    const sourceItem=items.find(i=>i.story);if(sourceItem)for(const m of out){m.story=sourceItem.story;m.storyVer=sourceItem.storyVer;}
     // Their pictures are drawn the way 朋友圈's own are (onPosts).
     if (posts.length) await backend.momentsMutate(() => backend.moments.add(posts)).then(onPosts).catch(() => {});
     // 重新回复: the new round takes the old one's place (which stays among its versions).
     let saved = !out.length ? latest : round ? await backend.replaceChatRound(threadId, round.after, out) : await backend.chats.append(threadId, out);
     if (cutting) { saved = await backend.chats.update(threadId, {friend: {by: 'them', at: Date.now(), requests: []}}); calling = null; refreshCuts(); }
-    if (calling) setTimeout(() => onCall(calling.from, calling.reason), 1200);
+    if (calling) setTimeout(() => {if ((!sourceItem||!timeline||timeline.current({story:sourceItem.story,ver:sourceItem.storyVer}))&&!backend.socialBlocked(calling.from,backend.socialScopeFor(thread))) onCall(calling.from, calling.reason,sourceItem?{story:sourceItem.story,ver:sourceItem.storyVer}:null);}, 1200);
     // (a moment after the group's own messages)
     if (whispers.length) setTimeout(() => whisper(whispers).catch(error => backend.reportDiagnostic?.('聊天 · 私聊', error, 'warn')), 900);
     return saved;
@@ -227,12 +236,12 @@ export function createChatHost({context, settings, backend, notice, memory = nul
 
   /**
    * Prompt entries for inject(). A real story reply (not a dry run, a quiet request or an impersonation) uses the pending
-   * chat once; the entry stays until the next inject() clears the sttts.entry.* keys.
+   * chat once; the entry stays until the next inject() clears the myphone.entry.* keys.
    */
   function bringPlan(type, dryRun) {
     if (!pending) return [];
     const i = activeChatPreset(settings().chat).injection, inChat = i.position === 'in_chat';
-    const entry = {key: 'sttts.entry.bring', text: pending.text, position: {in_chat: 1, in_prompt: 0, before_prompt: 2}[i.position], depth: inChat ? i.depth : 0, role: inChat ? {system: 0, user: 1, assistant: 2}[i.role] : 0};
+    const entry = {key: 'myphone.entry.bring', text: pending.text, position: {in_chat: 1, in_prompt: 0, before_prompt: 2}[i.position], depth: inChat ? i.depth : 0, role: inChat ? {system: 0, user: 1, assistant: 2}[i.role] : 0};
     if (type && !['quiet', 'impersonate'].includes(type) && !dryRun) {
       const used = pending;
       pending = null; keepBring();
@@ -346,7 +355,7 @@ export function createChatHost({context, settings, backend, notice, memory = nul
       refused.length ? `${refused.join('、')}发来的好友申请刚被${user}拒绝了。` : '',
       accepted.length ? `${user}刚在手机上把${accepted.join('、')}加回了好友（通过了好友申请），现在又能互发消息了。` : '',
       theirs.length ? `${theirs.join('、')}在手机上把${user}删了好友：${user}发的消息会被拒收。` : ''].filter(Boolean).join(' ');
-    return [{key: 'sttts.entry.friends', text, position: 1, depth: 2, role: 0}];
+    return [{key: 'myphone.entry.friends', text, position: 1, depth: 2, role: 0}];
   }
 
   // ---------- 主动发消息 ----------
@@ -369,13 +378,16 @@ export function createChatHost({context, settings, backend, notice, memory = nul
   }
   /** The 正文 rule for the story request while 正文联动手机 is on: who can send what, and how (<phone>). */
   function storyPlan() {
-    const s = settings(), friends = friendsPlan();
+    const s = settings(), friends = [...friendsPlan()];
+    const social = backend.socialSnapshot(), blocked = social.entries.filter(e=>e.state==='blocked');
+    const pending = social.entries.filter(e=>['pending','rejected'].includes(e.state));
+    if (blocked.length || pending.length) friends.push({key:'myphone.entry.social',position:1,depth:2,role:0,text:'【手机黑名单与好友验证】'+blocked.map(e=>`${e.name}知道自己被用户拉黑，私聊和电话会被拒收，不能直接送达消息。`).join(' ')+pending.map(e=>`${e.name}尚未通过好友验证，不能直接聊天。`).join(' ')+'黑名单角色可能按性格在剧情中尝试小号申请，但申请不等于加好友，必须等待用户决定，不能假装用户已同意。'});
     if (!s.chat.proactive?.on || phoneAfter() || !phoneTurn()) return friends;
     refreshCuts();
     const text = storyTextRule(activeChatPreset(s.chat), {user: userName(), names: backend.contacts().map(c => c.name), groups: groupNames(), images: !!backend.drawReady?.()});
-    return [...(text ? [{key: 'sttts.entry.phone', text, position: 1, depth: 0, role: 0}] : []), ...friends];
+    return [...(text ? [{key: 'myphone.entry.phone', text, position: 1, depth: 0, role: 0}] : []), ...friends];
   }
-  const SENT_KEY = 'sttts.phoneSent', DAY_KEY = 'sttts.phoneDay';
+  const SENT_KEY = 'myphone.phoneSent', DAY_KEY = 'myphone.phoneDay';
   const hash = text => { let h = 0; for (const c of String(text)) h = (h * 31 + c.codePointAt(0)) | 0; return (h >>> 0).toString(36); };
   function sentBefore(key) {
     let list = [];
@@ -392,11 +404,12 @@ export function createChatHost({context, settings, backend, notice, memory = nul
   /** What someone in a group said to the user alone (「[私聊]」): into their private chat, unread, with a note. */
   async function whisper(items) {
     const byName = new Map();
-    for (const item of items) byName.set(item.from, [...(byName.get(item.from) || []), {from: item.from, kind: 'text', text: item.text}]);
+    for (const item of items) byName.set(item.from, [...(byName.get(item.from) || []), {from: item.from, kind: 'text', text: item.text,...(item.story?{story:item.story,storyVer:item.storyVer}:{})}]);
     for (const [name, list] of byName) {
       const t = await dmWith(name);
+      if(timeline&&list.some(m=>m.story&&!timeline.current({story:m.story,ver:m.storyVer})))continue;
       // one who has deleted the user does not write to them; one the user blocked is held
-      if (t.friend?.by === 'them') continue;
+      if (t.friend?.by === 'them' || backend.socialBlocked(name) || backend.socialWaiting(name)) continue;
       if (t.blocked) { await backend.holdMessages(t.id, list.map(heldOf)).catch(() => {}); continue; }
       if (await arrive(t.id, list)) notice(`${name} 私聊了你`);
     }
@@ -443,31 +456,34 @@ export function createChatHost({context, settings, backend, notice, memory = nul
   /** A story reply finished: what it sent to the phone (<phone>) arrives, once per version of the reply; when it is
    * the phone's turn and nothing came, someone is asked whether they would text first (one phone request). */
   async function storyReplied(id) {
+    const synced=timeline?await timeline.sync():null;
     const o = settings().chat.proactive || {};
     if (!o.on) { quiet = 0; return; }
-    const sent = await deliver(id);
+    const sent = synced?synced.delivered:await deliver(id);
     if (sent) { quiet = 0; counted(); return; }
     if (!(o.every > 0) || ++quiet < o.every) return;
     quiet = 0;
-    if (!(o.dailyMax > 0 && today().n >= o.dailyMax)) await nudge();
+    if (!(o.dailyMax > 0 && today().n >= o.dailyMax)) await nudge(id);
   }
   /**
    * What a story reply sent to the phone (<phone>) arrives, once per version of the reply: private messages (and
    * photos, money, calls, 朋友圈…) to each sender's chat, <phone group="…"> to that group. Returns how many arrived.
    */
-  async function deliver(id) {
+  async function deliver(id,{source=null}={}) {
+    if(timeline&&!source)return(await timeline.sync()).delivered;
     const ctx = context(), s = settings();
     if (!s.chat.proactive?.on) return 0;
     const index = Number.isInteger(Number(id)) ? Number(id) : (ctx?.chat?.length || 0) - 1, m = ctx?.chat?.[index];
     let sent = 0;
     if (m && !m.is_user && !m.is_system && typeof m.mes === 'string') {
       const parts = phoneParts(m.mes), blocks = parts.filter(p => !p.group).map(p => p.text), grouped = parts.filter(p => p.group);
-      const story = [ctx.getCurrentChatId?.() || ctx.chatId || '', index].join('|'), ver = hash(parts.map(p => p.group + '|' + p.text).join('\n'));
+      const story = source?.story || [ctx.getCurrentChatId?.() || ctx.chatId || '', index].join('|'), ver = source?.ver || hash(parts.map(p => p.group + '|' + p.text).join('\n'));
+      if(source&&timeline&&!timeline.current(source))return 0;
       const key = story + '|' + ver, from = {story, ver};
       // Rolled again (重 roll, a new swipe): what the earlier version sent goes; this one sends its own.
-      const gone = await withdraw(story, ver).catch(() => 0);
+      const gone = source?0:await withdraw(story, ver).catch(() => 0);
       if (gone && !parts.length) notice(`重新生成了这条回复，之前发到手机上的 ${gone} 条消息撤回了`);
-      if (parts.length && !sentBefore(key)) {
+      if (parts.length && (source || !sentBefore(key))) {
         const contacts = backend.contacts(), people = contacts.map(c => ({name: c.name, voice: false}));
         // A line from someone who is not in the phone (a passer-by, the user) is left out, not given to the one before.
         const known = new Set(contacts.map(c => c.name)), named = line => line.match(/^\s*(?:\*\*)?[[【]?([^\]】:：\n]{1,40}?)[\]】]?(?:\*\*)?\s*[:：]/)?.[1]?.trim();
@@ -488,6 +504,7 @@ export function createChatHost({context, settings, backend, notice, memory = nul
         for (const item of items) if (contacts.some(c => c.name === item.from)) byName.set(item.from, [...(byName.get(item.from) || []), item]);
         for (const [name, list] of byName) {
           try {
+            if (backend.socialBlocked(name) || backend.socialWaiting(name)) continue;
             const thread = await dmWith(name);
             // Blocked by the user: a 好友申请 waits for an answer; anything else is held (拦截记录), without a word.
             if (thread.blocked) {
@@ -530,17 +547,19 @@ export function createChatHost({context, settings, backend, notice, memory = nul
     return gone;
   }
   /** On the phone's turn with nothing sent: someone is asked whether they would text first now (they may say no). */
-  async function nudge() {
+  async function nudge(id) {
+    const source=timeline?.source(id);
     const ctx = context();
     // The card's own character first, else someone from the 角色 App.
     // Not someone who is not friends with the user right now (either way).
     const apart = new Set((await backend.threads()).filter(t => t.type === 'dm' && (t.friend || t.blocked)).map(t => t.members[0]));
-    const roles = backend.contacts().filter(c => c.source === 'role' && !apart.has(c.name)), now = ctx?.name2;
+    const roles = backend.contacts().filter(c => c.source === 'role' && !apart.has(c.name) && !backend.socialBlocked(c.name) && !backend.socialWaiting(c.name)), now = ctx?.name2;
     const name = roles.find(c => c.name === now)?.name || roles[Math.floor(Math.random() * roles.length)]?.name;
     if (!name) return;
     try {
       const thread = await dmWith(name), before = new Set((await backend.chats.get(thread.id))?.messages.map(x => x.id) || []);
-      const saved = await reply(thread.id, {nudge: true});
+      const saved = await reply(thread.id, {nudge: true,source});
+      if(source&&timeline)await timeline.sync({deliverNew:false});
       const fresh = (saved?.messages || []).filter(x => !before.has(x.id) && x.from !== 'me');
       // Only messages sent count toward the day; 「[不发]」 does not.
       if (!fresh.length) return;

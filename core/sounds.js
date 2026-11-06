@@ -76,7 +76,7 @@ export function renderSounds(text, marker, on = true) {
   let out = '', at = 0;
   for (const t of tags) {
     const label = t.stop ? '氛围音停' : t.name, said = (t.kind === 'ambience' ? '氛围音' : '音效') + '：' + label;
-    out += source.slice(at, t.start).replace(TAG, '') + `<span class="sttts-sound" data-sttts-sound="${t.index}" data-sttts-token="${escape(marker)}"><button type="button" class="sttts-sound-chip" data-sttts-action="sound" data-sttts-kind="${t.kind}" title="${escape(said)}（点一下再听）" aria-label="${escape(said)}">${escape(label)}</button></span>`;
+    out += source.slice(at, t.start).replace(TAG, '') + `<span class="myphone-sound" data-myphone-sound="${t.index}" data-myphone-token="${escape(marker)}"><button type="button" class="myphone-sound-chip" data-myphone-action="sound" data-myphone-kind="${t.kind}" title="${escape(said)}（点一下再听）" aria-label="${escape(said)}">${escape(label)}</button></span>`;
     at = t.end;
   }
   return out + source.slice(at).replace(TAG, '');
@@ -157,7 +157,7 @@ export function soundRule({names = {sfx: [], ambience: []}, generate = false, no
 }
 /** The extension prompt for the story (same shape as the voice and picture rules: in the chat, as system). */
 export function soundPromptPlan(text) {
-  return text ? [{key: 'sttts.entry.sound', text, position: 1, depth: 0, role: 0}] : [];
+  return text ? [{key: 'myphone.entry.sound', text, position: 1, depth: 0, role: 0}] : [];
 }
 
 // ---------- When each sound plays without voice: as fast as the reply is read ----------
@@ -195,7 +195,7 @@ export function missingKey(kind, name) { return 'missing:' + kind + ':' + soundN
 // ---------- 自带音效包: sounds/pack.json in the plugin, played from the plugin's folder (never copied into the browser) ----------
 /** The shipped pack's rows (no audio; url says where it is). Ids stay the same from one version to the next. */
 export function packRows(pack, base) {
-  if (!pack || pack.format !== 'st-iphonie-pack' || !Array.isArray(pack.sounds)) return [];
+  if (!pack || pack.format !== 'myphone-app-pack' || !Array.isArray(pack.sounds)) return [];
   const credits = pack.credits || {};
   return pack.sounds.filter(s => s && typeof s.file === 'string' && /^[\w.-]+\.mp3$/.test(s.file)).map(s => {
     const row = soundRow({...s, source: 'pack'}), c = credits[s.credit];
@@ -205,7 +205,7 @@ export function packRows(pack, base) {
 }
 
 // ---------- 音效包: a file of sounds to share ----------
-export const PACK_FORMAT = 'st-iphonie-sounds';
+export const PACK_FORMAT = 'myphone-app-sounds';
 /** A pack read from its JSON: its rows with the audio as base64, checked. */
 export function readPack(value) {
   const data = typeof value === 'string' ? JSON.parse(value) : value;

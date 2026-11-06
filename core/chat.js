@@ -56,8 +56,9 @@ export function normalizeVoiceText(v = {}) {
   return {mode: VOICE_TEXT_MODES.includes(v?.mode) ? v.mode : DEFAULT_VOICE_TEXT.mode, auto: v?.auto === true};
 }
 
+import {normalizeSocial} from './social.js';
 export function defaultChat() {
-  return {presets: [{...structuredClone(DEFAULT_PRESET), memory: normalizeMemory()}], activePreset: 'default', contacts: [], voiceText: {...DEFAULT_VOICE_TEXT}, profile: normalizeProfile(), starred: [], avatars: {}, partition: 'none', pace: true, wallet: defaultWallet(), stickers: [], proactive: normalizeProactive(), remarks: {}, netNames: {}};
+  return {social: normalizeSocial(), presets: [{...structuredClone(DEFAULT_PRESET), memory: normalizeMemory()}], activePreset: 'default', contacts: [], voiceText: {...DEFAULT_VOICE_TEXT}, profile: normalizeProfile(), starred: [], avatars: {}, partition: 'none', pace: true, wallet: defaultWallet(), stickers: [], proactive: normalizeProactive(), remarks: {}, netNames: {}};
 }
 
 const text = (value, max) => String(value ?? '').slice(0, max);
@@ -230,7 +231,7 @@ export function normalizeChat(value) {
   const presets = (Array.isArray(value.presets) && value.presets.length ? value.presets : base.presets).map(normalizeChatPreset);
   const contacts = (Array.isArray(value.contacts) ? value.contacts : []).slice(0, CHAT_LIMITS.contacts).map(normalizeContact).filter(c => c.name);
   const starred = [...new Set((Array.isArray(value.starred) ? value.starred : []).map(n => text(n, 40).trim()).filter(Boolean))].slice(0, CHAT_LIMITS.contacts);
-  return {presets, activePreset: presets.some(p => p.id === value.activePreset) ? value.activePreset : presets[0].id, contacts, voiceText: normalizeVoiceText(value.voiceText), profile: normalizeProfile(value.profile), wallet: normalizeWallet(value.wallet), starred, avatars: normalizeAvatars(value.avatars), partition: ['card', 'chat'].includes(value.partition) ? value.partition : 'none', ...(value.firstSaves && typeof value.firstSaves === 'object' ? {firstSaves: Object.fromEntries(Object.entries(value.firstSaves).filter(([, v]) => typeof v === 'string').slice(-500))} : {}), pace: value.pace !== false, stickers: normalizeStickers(value.stickers), proactive: normalizeProactive(value.proactive), remarks: normalizeNames(value.remarks, 20), netNames: normalizeNames(value.netNames, 30)};
+  return {social: normalizeSocial(value.social), presets, activePreset: presets.some(p => p.id === value.activePreset) ? value.activePreset : presets[0].id, contacts, voiceText: normalizeVoiceText(value.voiceText), profile: normalizeProfile(value.profile), wallet: normalizeWallet(value.wallet), starred, avatars: normalizeAvatars(value.avatars), partition: ['card', 'chat'].includes(value.partition) ? value.partition : 'none', ...(value.firstSaves && typeof value.firstSaves === 'object' ? {firstSaves: Object.fromEntries(Object.entries(value.firstSaves).filter(([, v]) => typeof v === 'string').slice(-500))} : {}), pace: value.pace !== false, stickers: normalizeStickers(value.stickers), proactive: normalizeProactive(value.proactive), remarks: normalizeNames(value.remarks, 20), netNames: normalizeNames(value.netNames, 30)};
 }
 
 // ---------- 主动发消息: characters text the user on their own ----------

@@ -24,7 +24,7 @@ export function validateKey(engine,value){if(!engines.includes(engine))throw Err
 /** The last characters of a key, to tell which key is saved without showing it. */
 export const keyTail=key=>key&&key.length>=8?key.slice(-4):'';
 export class LocalKeyStore{
- constructor(scope,storage=()=>globalThis.localStorage){this.prefix='sttts.keys.v1:'+encodeURIComponent(scope)+':';this.storage=storage;}
+ constructor(scope,storage=()=>globalThis.localStorage){this.prefix='myphone.keys.v1:'+encodeURIComponent(scope)+':';this.storage=storage;}
  load(){const result=new Map();let storage;try{storage=this.storage();for(const engine of engines){const value=storage.getItem(this.prefix+engine);if(value){try{const key=validateKey(engine,value);if(key)result.set(engine,key);}catch{}}}}catch{throw Error('浏览器无法读取已保存的密钥，请在引擎设置重新填写');}return result;}
  save(engine,value){const key=validateKey(engine,value);try{const storage=this.storage();if(key)storage.setItem(this.prefix+engine,key);else storage.removeItem(this.prefix+engine);}catch(error){throw Error(storageFailure(error));}return key;}
  /** Removes a key without checking it (moving keys elsewhere). */
@@ -36,7 +36,7 @@ export function storageFailure(error){
  return full?'浏览器的网站存储满了，密钥没有存上：先在 设置 → 备份与恢复 备份一次，再清理这个酒馆地址的网站数据，或者删掉占地方的插件数据'
   :'浏览器不让保存密钥：可能是无痕窗口，或者禁用了这个网站的数据（Cookie 和网站数据）';
 }
-const KEY_DB='st-iphonie-keys',KEY_STORE='keys';
+const KEY_DB='myphone-app-keys',KEY_STORE='keys';
 /**
  * Keys in their own IndexedDB database (not in localStorage: its ~5 MB per address is shared with the tavern and every
  * other extension, and once another one fills it nothing can be saved). open() reads this account's keys into memory

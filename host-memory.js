@@ -192,7 +192,7 @@ export function createMemoryHost({context, settings, backend, notice = () => {}}
   function storyPlan() {
     if (!storyText) return [];
     const i = activeChatPreset(settings().chat).injection, inChat = i.position === 'in_chat';
-    return [{key: 'sttts.entry.memory', text: storyText, position: {in_chat: 1, in_prompt: 0, before_prompt: 2}[i.position], depth: inChat ? i.depth : 0, role: inChat ? {system: 0, user: 1, assistant: 2}[i.role] : 0}];
+    return [{key: 'myphone.entry.memory', text: storyText, position: {in_chat: 1, in_prompt: 0, before_prompt: 2}[i.position], depth: inChat ? i.depth : 0, role: inChat ? {system: 0, user: 1, assistant: 2}[i.role] : 0}];
   }
   // The phone's chats change: worked out again (the tavern side calls refreshStory once the phone's data is open, and
   // when the open card or the settings change).
@@ -203,7 +203,7 @@ export function createMemoryHost({context, settings, backend, notice = () => {}}
   /** Every extension prompt there is now (not the phone's own), for picking which hold story memory. */
   function storySources() {
     const prompts = context()?.extensionPrompts || {}, picked = new Set(options().storyKeys);
-    const found = Object.entries(prompts).filter(([key, p]) => !key.startsWith('sttts.') && typeof p?.value === 'string' && p.value.trim())
+    const found = Object.entries(prompts).filter(([key, p]) => !key.startsWith('myphone.') && typeof p?.value === 'string' && p.value.trim())
       .map(([key, p]) => ({key, name: STORY_MEMORY[key] || '', chars: p.value.trim().length, preview: p.value.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 90), picked: picked.has(key)}));
     // Picked keys that have nothing in them right now are listed too, so they can be unpicked.
     for (const key of picked) if (!found.some(x => x.key === key)) found.push({key, name: STORY_MEMORY[key] || '', chars: 0, preview: '', picked: true});

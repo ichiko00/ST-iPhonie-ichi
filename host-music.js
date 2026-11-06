@@ -5,7 +5,7 @@
 // pick them again.
 import {parseBgm, bgmRule, musicPromptPlan, parseLyrics, lyricAt, matchScore, songKey, MUSIC_LIMITS} from './core/music.js';
 
-const RECENT_KEY = 'sttts.bgmRecent', PLAYED_KEY = 'sttts.bgmPlayed', DUCK = 0.3;
+const RECENT_KEY = 'myphone.bgmRecent', PLAYED_KEY = 'myphone.bgmPlayed', DUCK = 0.3;
 const label = t => t ? (t.artist ? `${t.title} - ${t.artist}` : t.title) : '';
 const hash = text => { let h = 0; for (const c of String(text)) h = (h * 31 + c.codePointAt(0)) | 0; return (h >>> 0).toString(36); };
 
@@ -17,7 +17,7 @@ export function createMusicHost({context, settings, backend, notice = () => {}, 
   let from = '', shuffled = [];
   let library = [], soundAt = 0;
   const onSound = () => { soundAt = Date.now(); };
-  doc?.addEventListener?.('sttts-sound', onSound);
+  doc?.addEventListener?.('myphone-sound', onSound);
   const loadLibrary = () => backend.listSongs?.().then(rows => { library = rows; }).catch(() => {});
   loadLibrary();
   const unsubscribe = backend.subscribe?.(event => { if (event.type === 'music' && event.library) loadLibrary(); if (event.type === 'music' && event.settings) level(); });
@@ -239,6 +239,6 @@ export function createMusicHost({context, settings, backend, notice = () => {}, 
     seek(seconds) { if (audio && Number.isFinite(seconds)) { audio.currentTime = Math.max(0, seconds); emit(); } },
     /** The voice player's phase: music is turned down while a line is voiced. */
     voice(voicePhase) { const on = ['playing', 'generating'].includes(voicePhase); if (on !== voiced) { voiced = on; level(); } },
-    close() { closed = true; unsubscribe?.(); doc?.removeEventListener?.('sttts-sound', onSound); stop(); audio = null; },
+    close() { closed = true; unsubscribe?.(); doc?.removeEventListener?.('myphone-sound', onSound); stop(); audio = null; },
   };
 }

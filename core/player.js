@@ -234,6 +234,7 @@ export class DialoguePlayer {
   this.controller = null;
   this.valid = () => true;
   this.played = new Set();
+  try{const saved=JSON.parse(globalThis.localStorage?.getItem('myphone-heard-audio-v1')||'[]');if(Array.isArray(saved))this.played=new Set(saved.slice(-5000).filter(x=>typeof x==='string'));}catch{}
   // Lines being made now, by request key: playing a line that 提前生成 is still making waits for it, not pays twice.
   this.making = new Map();
   this.readyAudio = new Map();
@@ -492,6 +493,7 @@ export class DialoguePlayer {
     await this.sink.play(blob, signal, { effect: lineEffect(line) });
     if (!this.canContinue(epoch)) return;
     this.played.add(key);
+    try{globalThis.localStorage?.setItem('myphone-heard-audio-v1',JSON.stringify([...this.played].slice(-5000)));}catch{}
     if (!await this.finishedLine(epoch)) return;
    }
    this.complete();

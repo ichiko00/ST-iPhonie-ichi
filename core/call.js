@@ -15,13 +15,13 @@ export const CALL_LIMITS = Object.freeze({lines: 80, perTurn: 10, ring: [15, 60]
 
 /** auto: characters call on their own every `every` story replies, at most `dailyMax` a day; ring: seconds before a missed call. */
 export function defaultCalls() {
-  return {auto: false, every: 12, dailyMax: 1, ring: 30};
+  return {story:true,auto: false, every: 12, dailyMax: 1, ring: 30};
 }
 const count = (value, min, max, fallback) => { const n = Math.round(Number(value)); return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback; };
 export function normalizeCalls(value) {
   const base = defaultCalls();
   if (!value || typeof value !== 'object') return base;
-  return {auto: value.auto === true, every: count(value.every, 1, 100, base.every), dailyMax: count(value.dailyMax, 1, 10, base.dailyMax), ring: count(value.ring, ...CALL_LIMITS.ring, base.ring)};
+  return {story:value.story!==false,auto: value.auto === true, every: count(value.every, 1, 100, base.every), dailyMax: count(value.dailyMax, 1, 10, base.dailyMax), ring: count(value.ring, ...CALL_LIMITS.ring, base.ring)};
 }
 
 const fill = (template, values) => Object.entries(values).reduce((s, [k, v]) => s.replaceAll(`{{${k}}}`, v), String(template));

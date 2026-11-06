@@ -7,44 +7,44 @@
 // The picture sits between the top bar and the bottom bar, so the bars never cover it at its opening size.
 // It brings its own styles, so it works in any document.
 
-const STYLE_ID = 'sttts-viewer-style';
+const STYLE_ID = 'myphone-viewer-style';
 const CSS = `
-.sttts-viewer{position:fixed;top:0;left:0;width:100vw;height:100vh;height:100dvh;z-index:40000;background-color:rgba(8,10,20,.94);touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:contain;font:14px/1.4 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:#fff}
-.sttts-viewer img{position:absolute;left:0;top:0;max-width:none;max-height:none;transform-origin:0 0;will-change:transform;cursor:grab;-webkit-user-drag:none}
-.sttts-viewer[data-dragging] img{cursor:grabbing}
-.sttts-viewer-top{position:absolute;top:max(12px,env(safe-area-inset-top));left:12px;right:12px;display:flex;align-items:center;gap:8px;pointer-events:none}
-.sttts-viewer-top>*{pointer-events:auto}
-.sttts-viewer-top .sttts-viewer-count{margin:0 auto;padding:6px 12px;border-radius:999px;background:rgba(20,24,40,.7);font-variant-numeric:tabular-nums;font-weight:700}
-.sttts-viewer-bar{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:2px;padding:4px;border-radius:24px;background:rgba(20,24,40,.8);box-shadow:0 8px 24px rgba(0,0,0,.4);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);max-width:calc(100vw - 24px);flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
-.sttts-viewer-bar::-webkit-scrollbar{display:none}
-.sttts-viewer-top,.sttts-viewer-bar,.sttts-viewer-info,.sttts-viewer-caption{transition:opacity .2s}
-.sttts-viewer:not([data-pulling]){transition:background-color .25s}
-.sttts-viewer:is([data-chrome=off],[data-pulling],[data-leaving]) :is(.sttts-viewer-top,.sttts-viewer-bar,.sttts-viewer-info,.sttts-viewer-caption){opacity:0;pointer-events:none}
-.sttts-viewer[data-leaving] img{transition:transform .28s cubic-bezier(.23,1,.32,1),opacity .2s}
-.sttts-viewer[data-info] .sttts-viewer-caption{display:none}
-.sttts-viewer-caption{position:absolute;left:12px;right:12px;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 66px);max-height:30%;overflow:auto;margin:0;padding:9px 13px;border-radius:14px;background:rgba(20,24,40,.78);color:#fff;font-size:13px;line-height:1.6;white-space:pre-wrap;user-select:text;-webkit-user-select:text}
+.myphone-viewer{position:fixed;top:0;left:0;width:100vw;height:100vh;height:100dvh;z-index:40000;background-color:rgba(8,10,20,.94);touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:contain;font:14px/1.4 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:#fff}
+.myphone-viewer img{position:absolute;left:0;top:0;max-width:none;max-height:none;transform-origin:0 0;will-change:transform;cursor:grab;-webkit-user-drag:none}
+.myphone-viewer[data-dragging] img{cursor:grabbing}
+.myphone-viewer-top{position:absolute;top:max(12px,env(safe-area-inset-top));left:12px;right:12px;display:flex;align-items:center;gap:8px;pointer-events:none}
+.myphone-viewer-top>*{pointer-events:auto}
+.myphone-viewer-top .myphone-viewer-count{margin:0 auto;padding:6px 12px;border-radius:999px;background:rgba(20,24,40,.7);font-variant-numeric:tabular-nums;font-weight:700}
+.myphone-viewer-bar{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;align-items:center;gap:2px;padding:4px;border-radius:24px;background:rgba(20,24,40,.8);box-shadow:0 8px 24px rgba(0,0,0,.4);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);max-width:calc(100vw - 24px);flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.myphone-viewer-bar::-webkit-scrollbar{display:none}
+.myphone-viewer-top,.myphone-viewer-bar,.myphone-viewer-info,.myphone-viewer-caption{transition:opacity .2s}
+.myphone-viewer:not([data-pulling]){transition:background-color .25s}
+.myphone-viewer:is([data-chrome=off],[data-pulling],[data-leaving]) :is(.myphone-viewer-top,.myphone-viewer-bar,.myphone-viewer-info,.myphone-viewer-caption){opacity:0;pointer-events:none}
+.myphone-viewer[data-leaving] img{transition:transform .28s cubic-bezier(.23,1,.32,1),opacity .2s}
+.myphone-viewer[data-info] .myphone-viewer-caption{display:none}
+.myphone-viewer-caption{position:absolute;left:12px;right:12px;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 66px);max-height:30%;overflow:auto;margin:0;padding:9px 13px;border-radius:14px;background:rgba(20,24,40,.78);color:#fff;font-size:13px;line-height:1.6;white-space:pre-wrap;user-select:text;-webkit-user-select:text}
 /* all:unset makes pointer-events inherit (none from the top bar): buttons say auto themselves, and none while hidden. */
-.sttts-viewer[data-chrome=off] button{pointer-events:none}
-.sttts-viewer button{all:unset;pointer-events:auto;box-sizing:border-box;flex-shrink:0;min-width:40px;height:44px;padding:0 12px;border-radius:999px;display:inline-grid;place-items:center;cursor:pointer;color:#fff;font-weight:700;white-space:nowrap}
-.sttts-viewer button:hover{background:rgba(255,255,255,.12)}
-.sttts-viewer button:focus-visible{outline:2px solid #7cc4ff;outline-offset:2px}
-.sttts-viewer button:disabled{opacity:.35;cursor:default}
-.sttts-viewer button[data-danger]{color:#ff9cb8}
-.sttts-viewer button[hidden],.sttts-viewer-bar[hidden]{display:none}
-.sttts-viewer-top button{background:rgba(20,24,40,.7)}
-.sttts-viewer-top button[aria-pressed=true]{background:rgba(124,196,255,.3)}
-.sttts-viewer .sttts-viewer-close{margin-left:auto;font-size:22px}
-.sttts-viewer [data-v=prev],.sttts-viewer [data-v=next]{font-size:24px;font-weight:400}
-.sttts-viewer output{flex-shrink:0;min-width:48px;text-align:center;font-variant-numeric:tabular-nums;opacity:.85}
-.sttts-viewer-info{position:absolute;left:12px;right:12px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 60px);max-height:min(45vh,380px);overflow:auto;padding:12px 14px;border-radius:16px;background:rgba(20,24,40,.92);box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:13px;line-height:1.6;user-select:text;-webkit-user-select:text;touch-action:pan-y}
-.sttts-viewer[data-nobar] .sttts-viewer-info{bottom:max(12px,env(safe-area-inset-bottom))}
-@media(prefers-reduced-motion:no-preference){.sttts-viewer-info{animation:sttts-sheet .28s cubic-bezier(.23,1,.32,1)}}
-@keyframes sttts-sheet{from{transform:translateY(24px);opacity:0}}
-.sttts-viewer-info dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0}
-.sttts-viewer-info dt{opacity:.65;white-space:nowrap}
-.sttts-viewer-info dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
-@media(max-width:480px){.sttts-viewer [data-v=full],.sttts-viewer [data-v=in],.sttts-viewer [data-v=out],.sttts-viewer output{display:none}}
-@media(prefers-reduced-motion:no-preference){.sttts-viewer img[data-animate]{transition:transform .3s cubic-bezier(.22,1,.36,1.08)}}
+.myphone-viewer[data-chrome=off] button{pointer-events:none}
+.myphone-viewer button{all:unset;pointer-events:auto;box-sizing:border-box;flex-shrink:0;min-width:40px;height:44px;padding:0 12px;border-radius:999px;display:inline-grid;place-items:center;cursor:pointer;color:#fff;font-weight:700;white-space:nowrap}
+.myphone-viewer button:hover{background:rgba(255,255,255,.12)}
+.myphone-viewer button:focus-visible{outline:2px solid #7cc4ff;outline-offset:2px}
+.myphone-viewer button:disabled{opacity:.35;cursor:default}
+.myphone-viewer button[data-danger]{color:#ff9cb8}
+.myphone-viewer button[hidden],.myphone-viewer-bar[hidden]{display:none}
+.myphone-viewer-top button{background:rgba(20,24,40,.7)}
+.myphone-viewer-top button[aria-pressed=true]{background:rgba(124,196,255,.3)}
+.myphone-viewer .myphone-viewer-close{margin-left:auto;font-size:22px}
+.myphone-viewer [data-v=prev],.myphone-viewer [data-v=next]{font-size:24px;font-weight:400}
+.myphone-viewer output{flex-shrink:0;min-width:48px;text-align:center;font-variant-numeric:tabular-nums;opacity:.85}
+.myphone-viewer-info{position:absolute;left:12px;right:12px;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 60px);max-height:min(45vh,380px);overflow:auto;padding:12px 14px;border-radius:16px;background:rgba(20,24,40,.92);box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:13px;line-height:1.6;user-select:text;-webkit-user-select:text;touch-action:pan-y}
+.myphone-viewer[data-nobar] .myphone-viewer-info{bottom:max(12px,env(safe-area-inset-bottom))}
+@media(prefers-reduced-motion:no-preference){.myphone-viewer-info{animation:myphone-sheet .28s cubic-bezier(.23,1,.32,1)}}
+@keyframes myphone-sheet{from{transform:translateY(24px);opacity:0}}
+.myphone-viewer-info dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0}
+.myphone-viewer-info dt{opacity:.65;white-space:nowrap}
+.myphone-viewer-info dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:480px){.myphone-viewer [data-v=full],.myphone-viewer [data-v=in],.myphone-viewer [data-v=out],.myphone-viewer output{display:none}}
+@media(prefers-reduced-motion:no-preference){.myphone-viewer img[data-animate]{transition:transform .3s cubic-bezier(.22,1,.36,1.08)}}
 `;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const infoHTML = info => Array.isArray(info)
@@ -74,16 +74,16 @@ export function openImageViewer({doc = document, src, alt = '', actions = [], fr
   const paged = items.length > 1;
   const focus = doc.activeElement;
   const root = doc.createElement('div');
-  root.className = 'sttts-viewer';
+  root.className = 'myphone-viewer';
   root.setAttribute('role', 'dialog');
   root.setAttribute('aria-modal', 'true');
   root.setAttribute('aria-label', '查看图片');
   root.innerHTML = `<img alt="">
-    <div class="sttts-viewer-top"><button data-v="info" aria-pressed="false" hidden>参数</button>${paged ? '<span class="sttts-viewer-count" aria-live="polite"></span>' : ''}<button class="sttts-viewer-close" data-v="close" aria-label="关闭">×</button></div>
-    <div class="sttts-viewer-info" hidden></div>${caption || items.some(item => item.caption) ? '<p class="sttts-viewer-caption"></p>' : ''}
-    <div class="sttts-viewer-bar">${paged ? '<button data-v="prev" aria-label="上一个版本">‹</button><button data-v="next" aria-label="下一个版本">›</button>' : ''}<button data-v="out" aria-label="缩小">－</button><output aria-live="polite"></output><button data-v="in" aria-label="放大">＋</button><button data-v="full">实际像素</button>${actions.map((a, i) => `<button data-action="${i}"${a.danger ? ' data-danger' : ''}></button>`).join('')}</div>`;
-  const img = root.querySelector('img'), label = root.querySelector('output'), bar = root.querySelector('.sttts-viewer-bar');
-  const panel = root.querySelector('.sttts-viewer-info'), infoButton = root.querySelector('[data-v=info]'), count = root.querySelector('.sttts-viewer-count');
+    <div class="myphone-viewer-top"><button data-v="info" aria-pressed="false" hidden>参数</button>${paged ? '<span class="myphone-viewer-count" aria-live="polite"></span>' : ''}<button class="myphone-viewer-close" data-v="close" aria-label="关闭">×</button></div>
+    <div class="myphone-viewer-info" hidden></div>${caption || items.some(item => item.caption) ? '<p class="myphone-viewer-caption"></p>' : ''}
+    <div class="myphone-viewer-bar">${paged ? '<button data-v="prev" aria-label="上一个版本">‹</button><button data-v="next" aria-label="下一个版本">›</button>' : ''}<button data-v="out" aria-label="缩小">－</button><output aria-live="polite"></output><button data-v="in" aria-label="放大">＋</button><button data-v="full">实际像素</button>${actions.map((a, i) => `<button data-action="${i}"${a.danger ? ' data-danger' : ''}></button>`).join('')}</div>`;
+  const img = root.querySelector('img'), label = root.querySelector('output'), bar = root.querySelector('.myphone-viewer-bar');
+  const panel = root.querySelector('.myphone-viewer-info'), infoButton = root.querySelector('[data-v=info]'), count = root.querySelector('.myphone-viewer-count');
   // On a phone the zoom buttons are hidden: with nothing else on it, there is no bottom bar.
   const narrow = !!win.matchMedia?.('(max-width:480px)').matches, barKept = paged || actions.length > 0 || !narrow;
   bar.hidden = !barKept;
@@ -159,7 +159,7 @@ export function openImageViewer({doc = document, src, alt = '', actions = [], fr
     paintActions();
     const item = items[index];
     img.alt = item.alt ?? alt;
-    const words = root.querySelector('.sttts-viewer-caption');
+    const words = root.querySelector('.myphone-viewer-caption');
     if (words) words.textContent = item.caption ?? caption;
     const details = item.info ?? info;
     infoButton.hidden = !details;
@@ -234,7 +234,7 @@ export function openImageViewer({doc = document, src, alt = '', actions = [], fr
   win.addEventListener('resize', onResize);
   doc.addEventListener('keydown', onKey, true);
 
-  const onChrome = e => e.target.closest('.sttts-viewer-top,.sttts-viewer-bar,.sttts-viewer-info,.sttts-viewer-caption');
+  const onChrome = e => e.target.closest('.myphone-viewer-top,.myphone-viewer-bar,.myphone-viewer-info,.myphone-viewer-caption');
   root.addEventListener('wheel', e => {
     if (onChrome(e)) return;
     e.preventDefault();

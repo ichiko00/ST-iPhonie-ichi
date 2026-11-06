@@ -17,7 +17,7 @@ const USES = [['dm', '私聊'], ['group', '群聊'], ['moments', '朋友圈'], [
 // Drawing rules: which engines an entry is sent with (none ticked or all ticked: every engine).
 const ENGINE_USES = [['nai', 'NovelAI'], ['gpt', 'GPT 生图'], ['comfy', 'ComfyUI']];
 // One preset as a file (导出 / 导入): to keep, to share, or to hand to an AI to rewrite and bring back.
-export const PRESET_FILE = 'st-iphonie-preset';
+export const PRESET_FILE = 'myphone-app-preset';
 /**
  * A preset file read back: {kind, preset} (no id: it is saved as a new preset). A bare preset (an AI may hand back
  * just that) counts as the kind being shown. Entries are checked here; the rest is checked when it is saved.

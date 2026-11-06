@@ -295,7 +295,7 @@ export function renderBgm(text, marker, on = true) {
   let out = '', at = 0;
   for (const t of tags) {
     const label = t.artist ? `${t.title} - ${t.artist}` : t.title;
-    out += withoutBgm(source.slice(at, t.start)) + `<span class="sttts-bgm" data-sttts-bgm="${t.index}" data-sttts-token="${escape(marker)}"><button type="button" class="sttts-bgm-chip" data-sttts-action="bgm" title="背景音乐：${escape(label)}（点一下播放）" aria-label="背景音乐：${escape(label)}">♪ ${escape(label)}</button></span>`;
+    out += withoutBgm(source.slice(at, t.start)) + `<span class="myphone-bgm" data-myphone-bgm="${t.index}" data-myphone-token="${escape(marker)}"><button type="button" class="myphone-bgm-chip" data-myphone-action="bgm" title="背景音乐：${escape(label)}（点一下播放）" aria-label="背景音乐：${escape(label)}">♪ ${escape(label)}</button></span>`;
     at = t.end;
   }
   return out + withoutBgm(source.slice(at));
@@ -312,7 +312,7 @@ export function bgmRule(music, {prompts = {}, recent = [], library = [], user = 
   const mine = some.map(s => s.artist ? `${s.title} - ${s.artist}` : s.title);
   return [text, mine.length ? promptText(prompts, 'music', 'library', {'用户': user, '歌单': mine.join('、')}) : ''].filter(Boolean).join('\n');
 }
-export function musicPromptPlan(text) { return text ? [{key: 'sttts.entry.bgm', text, position: 1, depth: 0, role: 0}] : []; }
+export function musicPromptPlan(text) { return text ? [{key: 'myphone.entry.bgm', text, position: 1, depth: 0, role: 0}] : []; }
 /** What the user is listening to, for the story and the phone chat (一起听). */
 export function listeningNote(track, user = '我', prompts = {}) {
   if (!track?.title) return '';

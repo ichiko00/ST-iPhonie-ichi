@@ -21,6 +21,8 @@
 // [[Message]], shown: which one is in messages}. Any message added after it, or that message deleted, ends them.
 import {connectionLost, lostError, breath} from './idb.js';
 
+import {reconcileStoryRows,validateStoryArchives} from './story-sync.js';
+import {memberChange} from './group-social.js';
 export const CHAT_STORE_LIMITS = Object.freeze({messages: 1000, text: 4000, members: 20, fileText: 30000, versions: 10, held: 50});
 /** A chat's last round: the contacts' messages after the user's last one (after: that message's id, '' at the start). */
 export function lastRound(messages) {
@@ -74,7 +76,7 @@ export function searchThreads(threads, query, {limit = 60, around = 16, tail = 4
   found.sort((a, b) => b.m.at - a.m.at);
   return {total: found.length, hits: found.slice(0, limit).map(({t, m, words, at}) => {
     const from = Math.max(0, at - around), end = at + q.length;
-    return {thread: t.id, id: m.id, from: m.from, at: m.at, before: (from ? '…' : '') + words.slice(from, at), hit: words.slice(at, end), after: words.slice(end, end + tail)};
+    return {thread: t.id, id: m.id, from: m.from, at: m.at, ...(m.storyClock?{storyClock:m.storyClock}:{}), before: (from ? '…' : '') + words.slice(from, at), hit: words.slice(at, end), after: words.slice(end, end + tail)};
   })};
 }
 /** Money as a string with two decimals, 0.01 to 200000; null when the value is not an amount. */
@@ -91,6 +93,7 @@ function cleanMessage(m, id, at) {
   const from = clip(m.from, 40).trim();
   if (!from) throw fail('消息缺少发送人');
   const out = {id, from, kind, text: clip(m.text, CHAT_STORE_LIMITS.text), at};
+  if(m.storyClock&&typeof m.storyClock==='object')out.storyClock={date:/^\d{4}-\d{2}-\d{2}$/.test(m.storyClock.date)?m.storyClock.date:'',time:/^\d{2}:\d{2}$/.test(m.storyClock.time)?m.storyClock.time:''};
   if (Number.isFinite(m.updatedAt) && m.updatedAt > 0) out.updatedAt = m.updatedAt;
   if (kind === 'voice') { out.translation = clip(m.translation, CHAT_STORE_LIMITS.text); out.emotion = clip(m.emotion, 100); }
   if (kind === 'photo' && m.photoId) out.photoId = clip(m.photoId, 512);
@@ -131,6 +134,7 @@ function cleanMessage(m, id, at) {
   }
   if (m.quote?.text && ['text', 'voice'].includes(kind)) out.quote = {from: clip(m.quote.from, 40), text: clip(m.quote.text, 200)};
   // Sent by a story reply (正文联动手机): which reply (chat|message) and which version of it.
+  if(m.kind==='call'&&typeof m.callSource?.story==='string'&&typeof m.callSource?.ver==='string')out.callSource={story:clip(m.callSource.story,300),ver:clip(m.callSource.ver,40),handled:m.callSource.handled===true};
   if (typeof m.story === 'string' && m.story) { out.story = clip(m.story, 300); out.storyVer = clip(m.storyVer, 40); }
   const textless = ['photo', 'system', 'redpacket', 'transfer', 'pat', 'dice', 'recall', 'call', 'gift', 'file'];
   if (!textless.includes(kind) && !out.text.trim()) throw fail('消息内容为空');
@@ -151,6 +155,9 @@ const pageStorage = () => { try { return globalThis.localStorage || null; } catc
 const REVISIONS = new Map();
 
 export class ChatStore {
+  storyClockProvider=null;
+  setStoryClock(provider){this.storyClockProvider=provider;this.#summaries=null;}
+  storyTimed(message,latest=false){if(!message||message.storyClock)return message;const clock=this.storyClockProvider?.(message,latest);return clock?{...message,storyClock:clock}:message;}
   #scope; #factory; #now; #id; #storage; #db = null; #opening = null; #closed = false; #madeAt = 0;
   // What the list shows of each thread, id → summary. Reading it from the store means reading every message of every chat, and the
   // phone asks for the list on every change of the settings; so it is kept, and follows the writes. #revision: what another page's
@@ -160,7 +167,7 @@ export class ChatStore {
     this.#scope = String(scope); this.#factory = indexedDB; this.#now = now; this.#id = id; this.#storage = storage;
   }
   #revisionNow(next) {
-    const key = 'st-iphonie-chats-rev:' + this.#scope;
+    const key = 'myphone-app-chats-rev:' + this.#scope;
     try { if (this.#storage) { if (next) this.#storage.setItem(key, next); return this.#storage.getItem(key) || ''; } } catch { /* as if there were none */ }
     if (next) REVISIONS.set(key, next);
     return REVISIONS.get(key) || '';
@@ -178,8 +185,8 @@ export class ChatStore {
     if (this.#db) return this.#db;
     if (!this.#factory?.open) throw fail('浏览器不支持本地保存聊天记录，请检查存储权限', 'STORAGE_UNAVAILABLE');
     this.#opening ||= new Promise((resolve, reject) => {
-      const req = this.#factory.open('st-iphonie-chats-v1', 1);
-      req.onupgradeneeded = () => { const store = req.result.createObjectStore('threads', {keyPath: ['scope', 'id']}); store.createIndex('scope', 'scope'); };
+      const req = this.#factory.open('myphone-app-chats-v1', 2);
+      req.onupgradeneeded = () => { for(const name of ['threads','storyArchives']) if(!req.result.objectStoreNames.contains(name)){const store=req.result.createObjectStore(name,{keyPath:['scope','id']});store.createIndex('scope','scope');} };
       req.onerror = () => reject(fail('无法打开聊天记录，请检查浏览器的存储权限', 'STORAGE_UNAVAILABLE'));
       req.onblocked = () => reject(fail('另一个页面占用了聊天记录，请关闭旧页面后重试', 'STORAGE_BLOCKED'));
       req.onsuccess = () => {
@@ -204,11 +211,11 @@ export class ChatStore {
     try {
       return await new Promise((resolve, reject) => {
         let result, own, tx, change = null;
-        try { tx = db.transaction('threads', mode); } catch (error) { reject(this.#closed ? fail('聊天记录已关闭', 'CLOSED') : lostError(error)); return; }
+        try { tx = db.transaction(['threads','storyArchives'], mode); } catch (error) { reject(this.#closed ? fail('聊天记录已关闭', 'CLOSED') : lostError(error)); return; }
         const store = tx.objectStore('threads');
         tx.oncomplete = () => { if (mode === 'readwrite') this.#wrote(change); resolve(result); };
         tx.onabort = () => reject(own || (connectionLost(tx.error) ? lostError(tx.error) : fail(tx.error?.name === 'QuotaExceededError' ? '设备存储空间不足，聊天没有保存' : '聊天记录没有保存，请重试', 'STORAGE')));
-        work(store, value => { result = value; }, error => { own = error; tx.abort(); }, fn => { change = fn; });
+        work(store, value => { result = value; }, error => { own = error; tx.abort(); }, fn => { change = fn; },tx.objectStore('storyArchives'));
       });
     } catch (error) {
       if (error?.code !== 'STORAGE_LOST' || this.#closed) throw error;
@@ -224,12 +231,12 @@ export class ChatStore {
   #public(row) {
     if (!row) return null;
     const {scope, ...rest} = row;
-    return structuredClone({pinned: false, muted: false, ...rest});
+    return structuredClone({pinned: false, muted: false, ...rest,messages:rest.messages.map(m=>this.storyTimed(m))});
   }
   #summary(row) {
     const {scope, messages, alts, blocked, ...rest} = row;
     // A blocked chat's 拦截记录 stays out of the list: only how much there is.
-    return structuredClone({pinned: false, muted: false, ...rest, ...(blocked ? {blocked: {at: blocked.at, requests: blocked.requests, count: blocked.held.length, ...refusedOf(blocked.refused)}} : {}), count: messages.length, last: messages.filter(m => m.kind !== 'system').at(-1) || null, streak: this.#streak(messages)});
+    return structuredClone({pinned: false, muted: false, ...rest, ...(blocked ? {blocked: {at: blocked.at, requests: blocked.requests, count: blocked.held.length, ...refusedOf(blocked.refused)}} : {}), count: messages.length, last: this.storyTimed(messages.filter(m => m.kind !== 'system').at(-1)) || null, streak: this.#streak(messages)});
   }
   #streak(messages) {
     const day = at => { const d = new Date(at); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
@@ -277,7 +284,8 @@ export class ChatStore {
   async #change(id, change) {
     return this.#tx('readwrite', (store, done, abort, after) => this.#get(store, id, row => {
       if (!row) { abort(fail('这段聊天已不存在', 'MISSING')); return; }
-      try { change(row); } catch (error) { abort(error); return; }
+      const prior=new Set(row.messages.map(m=>m.id));
+      try { change(row); row.messages=row.messages.map(m=>this.storyTimed(m,!prior.has(m.id))); } catch (error) { abort(error); return; }
       if (row.messages.length > CHAT_STORE_LIMITS.messages) row.messages = row.messages.slice(-CHAT_STORE_LIMITS.messages);
       store.put(row);
       after(list => list.set(row.id, this.#summary(row)));
@@ -300,11 +308,55 @@ export class ChatStore {
       if (name !== undefined) row.name = clip(name, 40).trim() || row.name;
       if (members !== undefined && row.type === 'group') {
         const list = [...new Set(members.map(m => clip(m, 40).trim()).filter(Boolean))];
-        if (list.length < 2) throw fail('群聊至少要选两个人');
+        if (list.length < 1) throw fail('群聊至少保留一名角色');
         row.members = list.slice(0, CHAT_STORE_LIMITS.members);
       }
       if (name !== undefined || members !== undefined) row.updatedAt = this.#now();
     });
+  }
+  async changeGroupMembers(id, options = {}) {
+    return this.#tx('readwrite', (store, done, abort, after,archives) => {
+      this.#get(store,id,base=>{
+        if(!base||base.type!=='group'){abort(fail('这个群聊已不存在'));return;}
+        let change;try{change=memberChange(base.members,options);}catch(error){abort(error);return;}
+        if(!change.added.length&&!change.removed.length){done({...change,thread:this.#public(base)});return;}
+        const root=base.windowOf||base.id,req=store.index('scope').getAll(this.#scope),now=this.#now();
+        req.onsuccess=()=>{
+          const rows=req.result.filter(r=>r.type==='group'&&(r.windowOf||r.id)===root&&(r.space||'')===(base.space||'')&&(r.save||'')===(base.save||''));
+          const automatic=options.source==='story',ref=options.sourceRef;
+          const words=[...change.added.map(n=>automatic?`「${n}」加入了群聊`:`你邀请了「${n}」加入群聊`),...change.removed.map(n=>automatic?`「${n}」退出了群聊`:`你将「${n}」移出了群聊`)];
+          const apply=doc=>{
+            const updated=[],messageIds=[];
+            for(const row of rows){row.members=[...change.members];row.updatedAt=now;
+              const lines=words.map(text=>cleanMessage({from:'me',kind:'system',text,...(ref?{story:ref.story,storyVer:ref.ver}:{})},this.#id(),now));messageIds.push(...lines.map(m=>m.id));
+              row.messages=[...row.messages,...lines].slice(-CHAT_STORE_LIMITS.messages);store.put(row);updated.push(row);
+            }
+            if(ref){doc ||= {scope:this.#scope,id:ref.story,story:ref.story,chatUid:ref.chatUid,source:{index:ref.index},kind:'storyArchive',activeVer:ref.ver,versions:{}};doc.versions[ref.ver] ||= {delivered:false,messages:[],groups:[]};doc.versions[ref.ver].groups.push({root,space:base.space||'',save:base.save||'',before:[...base.members],after:[...change.members],added:change.added,removed:change.removed,messageIds});archives.put(doc);}
+            after(list=>{for(const row of updated)list.set(row.id,this.#summary(row));});done({...change,thread:this.#public(updated.find(r=>r.id===base.id)||base)});
+          };
+          if(ref){const request=archives.get([this.#scope,ref.story]);request.onsuccess=()=>apply(request.result);}else apply(null);
+        };
+      });
+    });
+  }
+  /** Active rows and archived versions commit together; no independent message is removed. */
+  async syncStory(snapshot,options={}){
+    return this.#tx('readwrite',(store,done,abort,after,archives)=>{
+      const r=store.index('scope').getAll(this.#scope),a=archives.index('scope').getAll(this.#scope);let rows,docs;
+      const run=()=>{if(!rows||!docs)return;let result;try{result=reconcileStoryRows(rows,docs,snapshot,options);}catch(error){abort(error);return;}
+        for(const row of result.changed)store.put(row);for(const doc of result.archives)archives.put({...doc,scope:this.#scope});
+        after(list=>{for(const row of result.changed)list.set(row.id,this.#summary(row));});
+        done({changed:result.changed.map(r=>r.id),removed:result.removed,needsDelivery:result.needsDelivery,warnings:result.warnings});};
+      r.onsuccess=()=>{rows=r.result;run();};a.onsuccess=()=>{docs=a.result;run();};
+    });
+  }
+  async markStoryDelivered(source){
+    return this.#tx('readwrite',(store,done,abort,after,archives)=>{const r=archives.get([this.#scope,source.story]);r.onsuccess=()=>{const doc=r.result;if(doc&&doc.activeVer===source.ver){doc.versions[source.ver].delivered=true;archives.put(doc);}done();};});
+  }
+  async exportStoryArchives(){return this.#tx('readonly',(store,done,abort,after,archives)=>{const r=archives.index('scope').getAll(this.#scope);r.onsuccess=()=>done(r.result.map(({scope,...doc})=>doc));});}
+  async importStoryArchives(values,{replace=false}={}){
+    const docs=validateStoryArchives(values);for(const doc of docs)for(const pack of Object.values(doc.versions))for(const e of pack.messages)e.message=cleanMessage(e.message,clip(e.message.id,512),Number.isFinite(e.message.at)?e.message.at:this.#now());
+    return this.#tx('readwrite',(store,done,abort,after,archives)=>{const apply=()=>{for(const doc of docs)archives.put({...doc,scope:this.#scope});done(docs.length);};if(replace){const r=archives.index('scope').getAllKeys(this.#scope);r.onsuccess=()=>{for(const key of r.result)archives.delete(key);apply();};}else apply();});
   }
   /** Adds messages. Replies count as unread unless `read` is set (the chat is open on screen). */
   async append(id, messages, {read = false} = {}) {
@@ -419,6 +471,7 @@ export class ChatStore {
       if (row.alts && lastRound(row.messages).after !== row.alts.after) delete row.alts;
     });
   }
+  async updateCall(id,messageId,patch){return this.#change(id,row=>{const i=row.messages.findIndex(m=>m.id===messageId&&m.kind==='call');if(i<0)throw fail('通话记录不存在','MISSING');const m=row.messages[i];row.messages[i]=cleanMessage({...m,...patch},m.id,m.at);row.updatedAt=this.#now();});}
   async markRead(id) {
     return this.#change(id, row => { row.unread = 0; });
   }

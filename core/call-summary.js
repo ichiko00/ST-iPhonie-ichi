@@ -8,6 +8,8 @@ export function callClock(seconds) {
 /** Short words for how a call ended, as the chat shows it. */
 export function callSummary(m) {
   const mine = m.dir === 'out';
+  if(m.text==='[通话进行中]')return '语音通话 · 正在进行';
+  if(m.text==='[等待接听]')return '来电 · 等待接听';
   if (m.state === 'answered') return `语音通话 ${callClock(m.duration)}`;
   if (m.state === 'missed') return mine ? '对方无人接听' : m.voicemail?.length ? '未接来电 · 有语音留言' : '未接来电';
   if (m.state === 'declined') return mine ? '对方已拒绝' : '已拒绝';

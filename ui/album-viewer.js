@@ -281,7 +281,7 @@ export function openAlbum({ctx, host, ids, index = 0, load, actions = [], from =
   stage.addEventListener('pointerup', end);
   stage.addEventListener('pointercancel', end);
   const onKey = e => {
-    if (doc.querySelector('.sttts-viewer, .overlay')) return;
+    if (doc.querySelector('.myphone-viewer, .overlay')) return;
     if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
     else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (info) setInfo(false); else close(); }

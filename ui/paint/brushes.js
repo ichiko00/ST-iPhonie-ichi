@@ -22,7 +22,7 @@ export const FIELDS = [
   ['hardness', '硬度', 0, 1, .01], ['pressureSize', '压力 → 粗细', 0, 1, .01], ['pressureOpacity', '压力 → 浓淡', 0, 1, .01],
   ['streamline', '防抖', 0, 1, .01], ['jitter', '散布', 0, 1, .01], ['taper', '两头收尖', 0, 1, .01],
 ];
-const KEY = 'st-iphonie-paint-brushes';
+const KEY = 'myphone-app-paint-brushes';
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 /** A brush with every field in range; tip a known kind or a picture's data URL. */
 export function cleanBrush(b) {

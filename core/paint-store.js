@@ -1,8 +1,8 @@
-// 画画的作品, kept in this browser (IndexedDB 'st-iphonie-paint'): a list (name, size, when, a small picture) and,
+// 画画的作品, kept in this browser (IndexedDB 'myphone-app-paint'): a list (name, size, when, a small picture) and,
 // apart, each work's layers as PNG pictures — so the list opens quickly however big the works are. The phone (ui/paint.js)
 // draws in it; the backend reads it for backups and 保存到酒馆. win: anything with indexedDB.
 
-const DB = 'st-iphonie-paint';
+const DB = 'myphone-app-paint';
 export function paintStore(win) {
   let opening = null;
   const open = () => opening ||= new Promise((resolve, reject) => {

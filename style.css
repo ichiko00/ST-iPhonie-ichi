@@ -1,32 +1,32 @@
 /* ST-iPhonie host styles: the phone dialog, the extension drawer, chat waves and in-text pictures. */
 
 /* ---------- Phone dialog ---------- */
-#sttts-panel{padding:0;border:0;border-radius:0;width:min(470px,98vw);height:min(940px,98dvh);max-width:100vw;max-height:100dvh;background:transparent;box-shadow:none;overflow:hidden}
+#myphone-panel{padding:0;border:0;border-radius:0;width:min(470px,98vw);height:min(940px,98dvh);max-width:100vw;max-height:100dvh;background:transparent;box-shadow:none;overflow:hidden}
 /* Full screen the phone opens as a plain dialog (index.js openPanel), above the whole tavern page as a modal one was. */
-#sttts-panel:not(.floating){position:fixed;inset:auto;margin:0;box-sizing:border-box;min-width:0;min-height:0;max-width:none;max-height:none;transform:none;translate:none;rotate:none;scale:none;z-index:2147482000}
-#sttts-panel::backdrop{background:#0d103088;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+#myphone-panel:not(.floating){position:fixed;inset:auto;margin:0;box-sizing:border-box;min-width:0;min-height:0;max-width:none;max-height:none;transform:none;translate:none;rotate:none;scale:none;z-index:2147482000}
+#myphone-panel::backdrop{background:#0d103088;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
 /* On a computer: a floating phone beside the story (index.js placePanel) */
-#sttts-panel.floating{position:fixed;inset:auto;margin:0;z-index:9000;max-width:none;max-height:none;filter:drop-shadow(0 22px 34px rgba(0,0,0,.38))}
-#sttts-panel.floating::backdrop{display:none}
-#sttts-panel.floating iframe{transform-origin:0 0;max-width:none}
+#myphone-panel.floating{position:fixed;inset:auto;margin:0;z-index:9000;max-width:none;max-height:none;filter:drop-shadow(0 22px 34px rgba(0,0,0,.38))}
+#myphone-panel.floating::backdrop{display:none}
+#myphone-panel.floating iframe{transform-origin:0 0;max-width:none}
 /* 画画 全屏: the floating phone opened up to the whole window (index.js panelFull) */
-#sttts-panel.floating.expanded{filter:none;z-index:9001}
+#myphone-panel.floating.expanded{filter:none;z-index:9001}
 /* Follows the system like the phone page's root: with different schemes Chrome paints the frame opaque behind the
    phone, and the page inside reads 跟随系统 from this element's scheme. */
-#sttts-panel iframe{border:0;width:100%;height:100%;display:block;color-scheme:light dark;background:transparent}
-@media(max-width:540px){#sttts-panel{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border:0;border-radius:0}}
+#myphone-panel iframe{border:0;width:100%;height:100%;display:block;color-scheme:light dark;background:transparent}
+@media(max-width:540px){#myphone-panel{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border:0;border-radius:0}}
 
 /* ---------- Extension drawer ---------- */
-#sttts-extension-entry{width:100%;flex:0 0 auto;min-width:0;height:auto;min-height:0}
-#sttts-extension-entry .inline-drawer-header{width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px}
-#sttts-extension-entry .inline-drawer-header b{white-space:nowrap;word-break:normal}
-#sttts-extension-entry #sttts-open{width:100%;white-space:nowrap;margin:8px 0;display:flex;align-items:center;justify-content:center;padding:9px 12px}
-#sttts-extension-entry .sttts-entry-controls{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-#sttts-extension-entry .sttts-entry-controls button{flex:1;white-space:nowrap}
-#sttts-extension-entry .sttts-status{display:block;min-height:1.4em;margin-top:4px;font-size:.8em;opacity:.8}
-[data-sttts-line]{display:inline}
+#myphone-extension-entry{width:100%;flex:0 0 auto;min-width:0;height:auto;min-height:0}
+#myphone-extension-entry .inline-drawer-header{width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:12px}
+#myphone-extension-entry .inline-drawer-header b{white-space:nowrap;word-break:normal}
+#myphone-extension-entry #myphone-open{width:100%;white-space:nowrap;margin:8px 0;display:flex;align-items:center;justify-content:center;padding:9px 12px}
+#myphone-extension-entry .myphone-entry-controls{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+#myphone-extension-entry .myphone-entry-controls button{flex:1;white-space:nowrap}
+#myphone-extension-entry .myphone-status{display:block;min-height:1.4em;margin-top:4px;font-size:.8em;opacity:.8}
+[data-myphone-line]{display:inline}
 /* 心声: in the story's italics (the color of its *thoughts*), without quotes, so it is not taken for a line said aloud. */
-#chat [data-sttts-line][data-sttts-inner] [data-sttts-translation]{font-style:italic;color:var(--SmartThemeEmColor,inherit)}
+#chat [data-myphone-line][data-myphone-inner] [data-myphone-translation]{font-style:italic;color:var(--SmartThemeEmColor,inherit)}
 
 /* ---------- Chat waves ----------
    Every colour comes from the tavern theme:
@@ -37,244 +37,246 @@
    played    - finished:       underline colour, with a short line under the wave
    Shapes back the colours up (faint bars, a dot under ready, a line under played, a pill while playing) for themes
    whose colours are close to each other. */
-#chat [data-sttts-action="line"]{
-  --sttts-body:var(--SmartThemeBodyColor,currentColor);
-  --sttts-quote:var(--SmartThemeQuoteColor,var(--sttts-body));
-  --sttts-em:var(--SmartThemeEmColor,var(--sttts-body));
-  --sttts-under:var(--SmartThemeUnderlineColor,var(--sttts-em));
+#chat [data-myphone-action="line"]{
+  --myphone-body:var(--SmartThemeBodyColor,currentColor);
+  --myphone-quote:var(--SmartThemeQuoteColor,var(--myphone-body));
+  --myphone-em:var(--SmartThemeEmColor,var(--myphone-body));
+  --myphone-under:var(--SmartThemeUnderlineColor,var(--myphone-em));
   display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;width:34px;height:28px;min-height:28px;margin:0 2px;padding:3px 5px;
   font:inherit;border:0;border-radius:999px;box-shadow:none;background:transparent;cursor:pointer;touch-action:manipulation;
-  color:color-mix(in srgb,var(--sttts-body) 50%,transparent);transition:color 160ms,background 160ms}
+  color:color-mix(in srgb,var(--myphone-body) 50%,transparent);transition:color 160ms,background 160ms}
 /* Only the wave is drawn: no ring and no pill around it in any state. A line made and not yet heard keeps its dot under
    the wave, a line heard its bar; playing, the bars move with the voice. Pointed at with a mouse, the wave lifts a little. */
-@media (hover:hover){#chat [data-sttts-action="line"]:hover [data-sttts-wave]{transform:scale(1.12)}}
-#chat [data-sttts-action="line"]:focus-visible{outline:2px solid var(--sttts-quote);outline-offset:2px}
-#chat [data-sttts-state="unbound"]{color:color-mix(in srgb,var(--sttts-em) 60%,transparent)}
-#chat [data-sttts-state="unbound"] [data-sttts-bar]{height:3px!important;flex-basis:3px;width:3px;border-radius:50%}
-#chat [data-sttts-state="ungenerated"] [data-sttts-bar]{opacity:.55}
-#chat [data-sttts-state="ready"]{color:var(--sttts-quote);background:radial-gradient(circle,currentColor 0 1.6px,transparent 2px) center bottom 1px/4px 4px no-repeat}
-#chat [data-sttts-state="playing"],#chat [data-sttts-state="generating"],#chat [data-sttts-state="paused"]{color:var(--sttts-quote)}
-#chat [data-sttts-state="generating"] [data-sttts-bar]{animation:sttts-think 1s ease-in-out infinite}
-#chat [data-sttts-state="generating"] [data-sttts-bar]:nth-child(2n){animation-delay:-.5s}
-#chat [data-sttts-state="played"]{color:var(--sttts-under);background:linear-gradient(currentColor,currentColor) center bottom 2px/16px 2px no-repeat}
-#chat [data-sttts-state="waiting"]{color:color-mix(in srgb,var(--sttts-quote) 70%,transparent);animation:sttts-wait 1.4s ease-in-out infinite}
-#chat [data-sttts-wave]{display:inline-flex;align-items:center;justify-content:center;gap:3px;width:22px;height:20px;background:none;box-shadow:none;border:0;padding:0;margin:0;transition:transform .22s cubic-bezier(.3,1.6,.5,1)}
-#chat [data-sttts-bar]{display:block;flex:0 0 2.5px;width:2.5px;height:9px;border-radius:2px;background:currentColor;box-shadow:none;border:0;margin:0;padding:0;transform-origin:center}
-#chat [data-sttts-bar]:nth-child(2){height:15px}#chat [data-sttts-bar]:nth-child(3){height:20px}#chat [data-sttts-bar]:nth-child(4){height:13px}#chat [data-sttts-bar]:nth-child(5){height:7px}
-@keyframes sttts-think{50%{transform:scaleY(.45)}}
-@keyframes sttts-wait{50%{opacity:.55}}
+@media (hover:hover){#chat [data-myphone-action="line"]:hover [data-myphone-wave]{transform:scale(1.12)}}
+#chat [data-myphone-action="line"]:focus-visible{outline:2px solid var(--myphone-quote);outline-offset:2px}
+#chat [data-myphone-state="unbound"]{color:color-mix(in srgb,var(--myphone-em) 60%,transparent)}
+#chat [data-myphone-state="unbound"] [data-myphone-bar]{height:3px!important;flex-basis:3px;width:3px;border-radius:50%}
+#chat [data-myphone-state="ungenerated"] [data-myphone-bar]{opacity:.55}
+#chat [data-myphone-state="ready"]{color:var(--myphone-quote);background:radial-gradient(circle,currentColor 0 1.6px,transparent 2px) center bottom 1px/4px 4px no-repeat}
+#chat [data-myphone-state="playing"],#chat [data-myphone-state="generating"],#chat [data-myphone-state="paused"]{color:var(--myphone-quote)}
+#chat [data-myphone-state="generating"] [data-myphone-bar]{animation:myphone-think 1s ease-in-out infinite}
+#chat [data-myphone-state="generating"] [data-myphone-bar]:nth-child(2n){animation-delay:-.5s}
+#chat [data-myphone-state="played"]{color:var(--myphone-under);background:linear-gradient(currentColor,currentColor) center bottom 2px/16px 2px no-repeat}
+#chat [data-myphone-state="waiting"]{color:color-mix(in srgb,var(--myphone-quote) 70%,transparent);animation:myphone-wait 1.4s ease-in-out infinite}
+#chat [data-myphone-wave]{display:inline-flex;align-items:center;justify-content:center;gap:3px;width:22px;height:20px;background:none;box-shadow:none;border:0;padding:0;margin:0;transition:transform .22s cubic-bezier(.3,1.6,.5,1)}
+#chat [data-myphone-bar]{display:block;flex:0 0 2.5px;width:2.5px;height:9px;border-radius:2px;background:currentColor;box-shadow:none;border:0;margin:0;padding:0;transform-origin:center}
+#chat [data-myphone-bar]:nth-child(2){height:15px}#chat [data-myphone-bar]:nth-child(3){height:20px}#chat [data-myphone-bar]:nth-child(4){height:13px}#chat [data-myphone-bar]:nth-child(5){height:7px}
+@keyframes myphone-think{50%{transform:scaleY(.45)}}
+@keyframes myphone-wait{50%{opacity:.55}}
 
 /* ---------- In-text pictures (<img> tags written by the model) ----------
-   The placeholder is matched by [data-sttts-pic]: the tavern prefixes classes inside messages with custom-. */
-#chat [data-sttts-pic]{--sttts-quote:var(--SmartThemeQuoteColor,currentColor);--sttts-body:var(--SmartThemeBodyColor,currentColor);display:block;width:min(100%,300px);margin:8px 0 12px}
-#chat [data-sttts-pic][data-state="done"],#chat [data-sttts-pic][data-state="generating"]{width:min(100%,560px);margin:10px 0 14px}
-#chat [data-sttts-pic][data-state="done"] .sttts-pic-frame{box-shadow:none;background:none}
-#chat .sttts-pic-note{position:absolute;left:8px;right:8px;bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 6px 6px 12px;border-radius:10px;font-size:.8em;color:#fff;background:rgba(10,12,24,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
-#chat .sttts-pic-note button{font:inherit;color:#fff;background:rgba(255,255,255,.16);border:0;border-radius:999px;padding:3px 10px;cursor:pointer;min-height:26px}
-#chat .sttts-pic-frame{position:relative;display:block;border-radius:12px;overflow:hidden;background:color-mix(in srgb,var(--sttts-body) 8%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--sttts-body) 16%,transparent)}
-#chat .sttts-pic-zoom{all:unset;display:block;width:100%;cursor:zoom-in}
-#chat .sttts-pic-zoom:focus-visible{outline:2px solid var(--sttts-quote);outline-offset:-2px}
-#chat [data-sttts-pic] img{display:block;width:100%;height:auto;cursor:zoom-in}
+   The placeholder is matched by [data-myphone-pic]: the tavern prefixes classes inside messages with custom-. */
+#chat [data-myphone-pic]{--myphone-quote:var(--SmartThemeQuoteColor,currentColor);--myphone-body:var(--SmartThemeBodyColor,currentColor);display:block;width:min(100%,300px);margin:8px 0 12px}
+#chat [data-myphone-pic][data-state="done"],#chat [data-myphone-pic][data-state="generating"]{width:min(100%,560px);margin:10px 0 14px}
+#chat [data-myphone-pic][data-state="done"] .myphone-pic-frame{box-shadow:none;background:none}
+#chat .myphone-pic-note{position:absolute;left:8px;right:8px;bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 6px 6px 12px;border-radius:10px;font-size:.8em;color:#fff;background:rgba(10,12,24,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+#chat .myphone-pic-note button{font:inherit;color:#fff;background:rgba(255,255,255,.16);border:0;border-radius:999px;padding:3px 10px;cursor:pointer;min-height:26px}
+#chat .myphone-pic-frame{position:relative;display:block;border-radius:12px;overflow:hidden;background:color-mix(in srgb,var(--myphone-body) 8%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--myphone-body) 16%,transparent)}
+#chat .myphone-pic-zoom{all:unset;display:block;width:100%;cursor:zoom-in}
+#chat .myphone-pic-zoom:focus-visible{outline:2px solid var(--myphone-quote);outline-offset:-2px}
+#chat [data-myphone-pic] img{display:block;width:100%;height:auto;cursor:zoom-in}
 /* Themes often size every picture in a message for 表情包 and icons (.mes_text img{max-width:3em!important}), and a story
    picture was squeezed into a corner of its frame. Its own size wins: #chat thrice outranks the selectors of a theme. */
-#chat#chat#chat [data-sttts-pic] img,#chat#chat#chat img[data-sttts-plain]{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;aspect-ratio:auto!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;float:none!important}
-#chat#chat#chat img[data-sttts-plain]{width:min(100%,560px)!important;margin:10px 0 14px!important}
-#chat#chat#chat .sttts-pic-zoom{display:block!important;width:100%!important;min-width:0!important;max-width:none!important;height:auto!important;margin:0!important;padding:0!important;border:0!important;background:none!important}
-#chat .sttts-pic-removed{display:inline-flex;align-items:center;gap:8px;font-size:.8em;color:color-mix(in srgb,var(--sttts-body) 60%,transparent)}
-#chat .sttts-pic-removed button{font:inherit;color:var(--sttts-quote);background:transparent;border:0;padding:2px 4px;cursor:pointer;min-height:24px}
-#chat [data-sttts-pic][data-state="generating"] .sttts-pic-removed{margin-bottom:6px}
+#chat#chat#chat [data-myphone-pic] img,#chat#chat#chat img[data-myphone-plain]{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;aspect-ratio:auto!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;float:none!important}
+#chat#chat#chat img[data-myphone-plain]{width:min(100%,560px)!important;margin:10px 0 14px!important}
+#chat#chat#chat .myphone-pic-zoom{display:block!important;width:100%!important;min-width:0!important;max-width:none!important;height:auto!important;margin:0!important;padding:0!important;border:0!important;background:none!important}
+#chat .myphone-pic-removed{display:inline-flex;align-items:center;gap:8px;font-size:.8em;color:color-mix(in srgb,var(--myphone-body) 60%,transparent)}
+#chat .myphone-pic-removed button{font:inherit;color:var(--myphone-quote);background:transparent;border:0;padding:2px 4px;cursor:pointer;min-height:24px}
+#chat [data-myphone-pic][data-state="generating"] .myphone-pic-removed{margin-bottom:6px}
 /* Folded: a small thumbnail and a line, so pictures do not fill a phone screen. */
-#chat [data-sttts-pic][data-folded]{width:auto;margin:4px 0 8px}
-#chat .sttts-pic-fold{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:.82em;color:var(--sttts-quote);background:color-mix(in srgb,var(--sttts-body) 7%,transparent);border:0;border-radius:999px;padding:4px 14px 4px 10px;cursor:pointer;min-height:32px;-webkit-user-select:none;user-select:none}
-#chat .sttts-pic-fold-mark{font-size:.8em;opacity:.8}
+#chat [data-myphone-pic][data-folded]{width:auto;margin:4px 0 8px}
+#chat .myphone-pic-fold{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:.82em;color:var(--myphone-quote);background:color-mix(in srgb,var(--myphone-body) 7%,transparent);border:0;border-radius:999px;padding:4px 14px 4px 10px;cursor:pointer;min-height:32px;-webkit-user-select:none;user-select:none}
+#chat .myphone-pic-fold-mark{font-size:.8em;opacity:.8}
 /* manipulation: phones must not take the second tap of a double tap for page zoom. */
-#chat .sttts-pic-zoom,#chat .sttts-pic-fold{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
-#chat .sttts-pic-pager{display:inline-flex;align-items:center;gap:2px;font-variant-numeric:tabular-nums;color:var(--sttts-quote)}
-#chat .sttts-pic-pager button{font-size:1.2em!important;min-width:28px}
-#chat .sttts-pic-pager button:disabled{opacity:.35;cursor:default}
-#chat .sttts-pic-wait{display:grid;place-items:center;aspect-ratio:832/1216;max-height:420px;padding:16px;text-align:center;font-size:.85em;color:color-mix(in srgb,var(--sttts-body) 75%,transparent);background:linear-gradient(110deg,transparent 30%,color-mix(in srgb,var(--sttts-body) 8%,transparent) 50%,transparent 70%) 0 0/200% 100%}
-#chat [data-sttts-pic][data-state="generating"] .sttts-pic-wait{animation:sttts-shimmer 1.4s linear infinite}
-#chat .sttts-pic-wait button,#chat .sttts-pic-bar button{font:inherit;font-size:.85em;color:var(--sttts-quote);background:transparent;border:1px solid currentColor;border-radius:999px;padding:4px 12px;cursor:pointer;min-height:30px}
-#chat .sttts-pic-bar{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:5px;font-size:.78em;color:color-mix(in srgb,var(--sttts-body) 65%,transparent)}
-#chat .sttts-pic-bar button{border:0;padding:2px 4px;min-height:24px}
-#chat [data-sttts-pic][data-state="error"] .sttts-pic-wait{color:var(--sttts-quote)}
-#chat [data-sttts-pic][data-state="idle"] .sttts-pic-wait,#chat [data-sttts-pic][data-state="error"] .sttts-pic-wait{aspect-ratio:auto;min-height:110px}
-@keyframes sttts-shimmer{to{background-position:-200% 0}}
-@media(max-width:540px){#chat [data-sttts-action="line"]{min-height:32px;height:32px}}
-@media(prefers-reduced-motion:reduce){#chat [data-sttts-action="line"],#chat [data-sttts-bar],#chat .sttts-pic-wait{transition:none;animation:none!important}}
+#chat .myphone-pic-zoom,#chat .myphone-pic-fold{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+#chat .myphone-pic-pager{display:inline-flex;align-items:center;gap:2px;font-variant-numeric:tabular-nums;color:var(--myphone-quote)}
+#chat .myphone-pic-pager button{font-size:1.2em!important;min-width:28px}
+#chat .myphone-pic-pager button:disabled{opacity:.35;cursor:default}
+#chat .myphone-pic-wait{display:grid;place-items:center;aspect-ratio:832/1216;max-height:420px;padding:16px;text-align:center;font-size:.85em;color:color-mix(in srgb,var(--myphone-body) 75%,transparent);background:linear-gradient(110deg,transparent 30%,color-mix(in srgb,var(--myphone-body) 8%,transparent) 50%,transparent 70%) 0 0/200% 100%}
+#chat [data-myphone-pic][data-state="generating"] .myphone-pic-wait{animation:myphone-shimmer 1.4s linear infinite}
+#chat .myphone-pic-wait button,#chat .myphone-pic-bar button{font:inherit;font-size:.85em;color:var(--myphone-quote);background:transparent;border:1px solid currentColor;border-radius:999px;padding:4px 12px;cursor:pointer;min-height:30px}
+#chat .myphone-pic-bar{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:5px;font-size:.78em;color:color-mix(in srgb,var(--myphone-body) 65%,transparent)}
+#chat .myphone-pic-bar button{border:0;padding:2px 4px;min-height:24px}
+#chat [data-myphone-pic][data-state="error"] .myphone-pic-wait{color:var(--myphone-quote)}
+#chat [data-myphone-pic][data-state="idle"] .myphone-pic-wait,#chat [data-myphone-pic][data-state="error"] .myphone-pic-wait{aspect-ratio:auto;min-height:110px}
+@keyframes myphone-shimmer{to{background-position:-200% 0}}
+@media(max-width:540px){#chat [data-myphone-action="line"]{min-height:32px;height:32px}}
+@media(prefers-reduced-motion:reduce){#chat [data-myphone-action="line"],#chat [data-myphone-bar],#chat .myphone-pic-wait{transition:none;animation:none!important}}
 
 /* The note under a reply whose voice tags could not all be read. */
-#chat .sttts-lint{margin:8px 0 2px;padding:2px 0 2px 10px;font-size:.82em;line-height:1.5;color:color-mix(in srgb,var(--sttts-body) 78%,transparent);border-left:2px solid color-mix(in srgb,var(--sttts-quote) 60%,transparent)}
-#chat .sttts-lint summary{cursor:pointer;list-style:none;color:var(--sttts-quote)}
-#chat .sttts-lint summary::-webkit-details-marker{display:none}
-#chat .sttts-lint summary::before{content:'⚠ '}
-#chat .sttts-lint[open] summary{margin-bottom:4px}
-#chat .sttts-lint ul{margin:4px 0;padding-left:1.2em}
-#chat .sttts-lint li{margin:3px 0}
-#chat .sttts-lint code{display:block;margin-top:2px;white-space:pre-wrap;word-break:break-all;font-size:.92em;opacity:.8;background:none;padding:0}
-#chat .sttts-lint p{margin:4px 0 0}
+#chat .myphone-lint{margin:8px 0 2px;padding:2px 0 2px 10px;font-size:.82em;line-height:1.5;color:color-mix(in srgb,var(--myphone-body) 78%,transparent);border-left:2px solid color-mix(in srgb,var(--myphone-quote) 60%,transparent)}
+#chat .myphone-lint summary{cursor:pointer;list-style:none;color:var(--myphone-quote)}
+#chat .myphone-lint summary::-webkit-details-marker{display:none}
+#chat .myphone-lint summary::before{content:'⚠ '}
+#chat .myphone-lint[open] summary{margin-bottom:4px}
+#chat .myphone-lint ul{margin:4px 0;padding-left:1.2em}
+#chat .myphone-lint li{margin:3px 0}
+#chat .myphone-lint code{display:block;margin-top:2px;white-space:pre-wrap;word-break:break-all;font-size:.92em;opacity:.8;background:none;padding:0}
+#chat .myphone-lint p{margin:4px 0 0}
 
 /* 音效 chips: where the story put a sound (♪ an effect, ≋ an ambience). Small and faint, so they do not get in the
    way of reading; a tap plays the sound again (an ambience's chip starts or stops it). */
-#chat [data-sttts-action="sound"]{
-  --sttts-body:var(--SmartThemeBodyColor,currentColor);
+#chat [data-myphone-action="sound"]{
+  --myphone-body:var(--SmartThemeBodyColor,currentColor);
   display:inline-flex;align-items:center;gap:3px;vertical-align:baseline;margin:0 2px;padding:0 7px 0 5px;min-height:0;height:1.45em;
-  font:inherit;font-size:.72em;line-height:1;color:color-mix(in srgb,var(--sttts-body) 55%,transparent);
-  border:0;border-radius:999px;background:color-mix(in srgb,var(--sttts-body) 8%,transparent);box-shadow:none;cursor:pointer;touch-action:manipulation;white-space:nowrap}
-#chat [data-sttts-action="sound"]::before{content:"♪";font-size:1.05em;opacity:.8}
-#chat [data-sttts-action="sound"][data-sttts-kind="ambience"]::before{content:"≋"}
-#chat [data-sttts-action="sound"]:hover{color:var(--sttts-body);background:color-mix(in srgb,var(--sttts-body) 14%,transparent)}
-#chat [data-sttts-action="sound"]:focus-visible{outline:2px solid color-mix(in srgb,var(--sttts-body) 60%,transparent);outline-offset:1px}
+  font:inherit;font-size:.72em;line-height:1;color:color-mix(in srgb,var(--myphone-body) 55%,transparent);
+  border:0;border-radius:999px;background:color-mix(in srgb,var(--myphone-body) 8%,transparent);box-shadow:none;cursor:pointer;touch-action:manipulation;white-space:nowrap}
+#chat [data-myphone-action="sound"]::before{content:"♪";font-size:1.05em;opacity:.8}
+#chat [data-myphone-action="sound"][data-myphone-kind="ambience"]::before{content:"≋"}
+#chat [data-myphone-action="sound"]:hover{color:var(--myphone-body);background:color-mix(in srgb,var(--myphone-body) 14%,transparent)}
+#chat [data-myphone-action="sound"]:focus-visible{outline:2px solid color-mix(in srgb,var(--myphone-body) 60%,transparent);outline-offset:1px}
 /* 主动发消息: where a story reply sent messages to the phone (the messages themselves are only on the phone). */
-.sttts-phone-note{display:inline-flex;align-items:center;gap:4px;margin:4px 0;padding:3px 10px;border-radius:999px;font-size:.85em;opacity:.75;background:color-mix(in srgb,currentColor 10%,transparent)}
+.myphone-phone-note{display:inline-flex;align-items:center;gap:4px;margin:4px 0;padding:3px 10px;border-radius:999px;font-size:.85em;opacity:.75;background:color-mix(in srgb,currentColor 10%,transparent)}
 /* 通话小窗 (call-island.js): a call going on while the phone is away, as a dynamic island over the story — a pill
    while it rings, a small card while talking (the lines so far, and a box to answer from). Dragged by its top. */
-.sttts-call-island{position:fixed;z-index:31000;display:flex;flex-direction:column;gap:8px;width:min(320px,calc(100vw - 16px));padding:8px;border-radius:30px;background:#000;color:#fff;box-shadow:0 10px 30px -8px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08);font:13px/1.4 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;animation:sttts-ci-in .45s cubic-bezier(.34,1.3,.64,1)}
-.sttts-call-island[data-kind=talking]{border-radius:26px;padding-bottom:10px}
-.sttts-call-island[hidden]{display:none}
-.sttts-call-island[data-dragging]{box-shadow:0 18px 40px -10px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.12)}
-.sttts-call-island .ci-head{display:flex;align-items:center;gap:10px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
-.sttts-call-island[data-dragging] .ci-head{cursor:grabbing}
-.sttts-call-island .ci-av{flex-shrink:0;width:36px;height:36px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:linear-gradient(135deg,#4a93ea,#7d80f2);font-weight:800;font-size:15px}
-.sttts-call-island .ci-av img{width:100%;height:100%;object-fit:cover}
-.sttts-call-island .ci-text{flex:1;min-width:0;display:grid}
-.sttts-call-island .ci-text b{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sttts-call-island .ci-text small{font-size:11.5px;color:#34c759;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sttts-call-island .ci-wave{display:flex;align-items:center;gap:2px;height:16px;color:#34c759;opacity:.35}
-.sttts-call-island .ci-wave i{display:block;width:3px;height:6px;border-radius:2px;background:currentColor}
-.sttts-call-island .ci-wave.on{opacity:1}
-.sttts-call-island .ci-wave.on i{animation:sttts-ci-wave .8s ease-in-out infinite}
-.sttts-call-island .ci-wave.on i:nth-child(2){animation-delay:-.25s}.sttts-call-island .ci-wave.on i:nth-child(3){animation-delay:-.5s}.sttts-call-island .ci-wave.on i:nth-child(4){animation-delay:-.1s}
-.sttts-call-island button{all:unset;box-sizing:border-box;cursor:pointer}
-.sttts-call-island .ci-end{flex-shrink:0;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#ff3b30;color:#fff}
-.sttts-call-island .ci-end svg{width:20px;height:20px}
-.sttts-call-island button:focus-visible{outline:2px solid #fff;outline-offset:2px}
-.sttts-call-island .ci-lines{max-height:min(150px,28vh);overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;display:flex;flex-direction:column;gap:5px;padding:2px 4px;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 14px);mask-image:linear-gradient(transparent,#000 14px)}
-.sttts-call-island .ci-lines::-webkit-scrollbar{display:none}
-.sttts-call-island .ci-lines p{margin:0;align-self:flex-start;max-width:90%;padding:5px 10px;border-radius:14px 14px 14px 4px;background:rgba(255,255,255,.12);font-size:12.5px;line-height:1.45;user-select:text;-webkit-user-select:text}
-.sttts-call-island .ci-lines p.me{align-self:flex-end;border-radius:14px 14px 4px 14px;background:#0a84ff}
-.sttts-call-island .ci-lines p[data-heard]{position:relative;padding-left:20px}
-.sttts-call-island .ci-dot{position:absolute;left:8px;top:11px;width:6px;height:6px;border-radius:50%;background:#34c759}
-.sttts-call-island .ci-lines p[data-heard=pending]{opacity:.6}
-.sttts-call-island .ci-lines p[data-heard=pending] .ci-dot{background:rgba(255,255,255,.4)}
-.sttts-call-island .ci-lines p[data-heard=generating] .ci-dot{animation:sttts-ci-blink 1s ease-in-out infinite}
-.sttts-call-island .ci-lines p[data-heard=playing]{background:rgba(52,199,89,.25);box-shadow:inset 0 0 0 1px rgba(52,199,89,.6)}
-.sttts-call-island .ci-lines p[data-heard=playing] .ci-dot{animation:sttts-ci-blink .6s ease-in-out infinite}
-.sttts-call-island .ci-lines p[data-heard=played] .ci-dot{background:rgba(255,255,255,.45)}
-.sttts-call-island .ci-say{display:flex;gap:6px;align-items:center}
-.sttts-call-island .ci-say input{flex:1;min-width:0;height:36px;padding:0 14px;border:0;border-radius:18px;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:14px;outline:none}
-.sttts-call-island .ci-say input::placeholder{color:rgba(255,255,255,.5)}
-.sttts-call-island .ci-send{flex-shrink:0;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#0a84ff;color:#fff}
-.sttts-call-island .ci-send.ask{background:#34c759}
-.sttts-call-island .ci-send:disabled{opacity:.4;cursor:default}
-.sttts-call-island .ci-send svg{width:18px;height:18px}
-@keyframes sttts-ci-wave{0%,100%{height:5px}50%{height:15px}}
-@keyframes sttts-ci-blink{50%{opacity:.3}}
-@keyframes sttts-ci-in{from{transform:var(--ci-from,translateX(-50%)) scale(.6);opacity:0}}
-@media (prefers-reduced-motion:reduce){.sttts-call-island,.sttts-call-island .ci-wave.on i,.sttts-call-island .ci-dot{animation:none!important}}
+.myphone-call-island{position:fixed;z-index:31000;display:flex;flex-direction:column;gap:8px;width:min(320px,calc(100vw - 16px));padding:8px;border-radius:30px;background:#000;color:#fff;box-shadow:0 10px 30px -8px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08);font:13px/1.4 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;animation:myphone-ci-in .45s cubic-bezier(.34,1.3,.64,1)}
+.myphone-call-island[data-kind=talking]{border-radius:26px;padding-bottom:10px}
+.myphone-call-island[hidden]{display:none}
+.myphone-call-island[data-dragging]{box-shadow:0 18px 40px -10px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.12)}
+.myphone-call-island .ci-head{display:flex;align-items:center;gap:10px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.myphone-call-island[data-dragging] .ci-head{cursor:grabbing}
+.myphone-call-island .ci-av{flex-shrink:0;width:36px;height:36px;border-radius:50%;overflow:hidden;display:grid;place-items:center;background:linear-gradient(135deg,#4a93ea,#7d80f2);font-weight:800;font-size:15px}
+.myphone-call-island .ci-av img{width:100%;height:100%;object-fit:cover}
+.myphone-call-island .ci-text{flex:1;min-width:0;display:grid}
+.myphone-call-island .ci-text b{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.myphone-call-island .ci-text small{font-size:11.5px;color:#34c759;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.myphone-call-island .ci-wave{display:flex;align-items:center;gap:2px;height:16px;color:#34c759;opacity:.35}
+.myphone-call-island .ci-wave i{display:block;width:3px;height:6px;border-radius:2px;background:currentColor}
+.myphone-call-island .ci-wave.on{opacity:1}
+.myphone-call-island .ci-wave.on i{animation:myphone-ci-wave .8s ease-in-out infinite}
+.myphone-call-island .ci-wave.on i:nth-child(2){animation-delay:-.25s}.myphone-call-island .ci-wave.on i:nth-child(3){animation-delay:-.5s}.myphone-call-island .ci-wave.on i:nth-child(4){animation-delay:-.1s}
+.myphone-call-island button{all:unset;box-sizing:border-box;cursor:pointer}
+.myphone-call-island .ci-end{flex-shrink:0;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#ff3b30;color:#fff}
+.myphone-call-island .ci-end svg{width:20px;height:20px}
+.myphone-call-island button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.myphone-call-island .ci-lines{max-height:min(150px,28vh);overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;display:flex;flex-direction:column;gap:5px;padding:2px 4px;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 14px);mask-image:linear-gradient(transparent,#000 14px)}
+.myphone-call-island .ci-lines::-webkit-scrollbar{display:none}
+.myphone-call-island .ci-lines p{margin:0;align-self:flex-start;max-width:90%;padding:5px 10px;border-radius:14px 14px 14px 4px;background:rgba(255,255,255,.12);font-size:12.5px;line-height:1.45;user-select:text;-webkit-user-select:text}
+.myphone-call-island .ci-lines p.me{align-self:flex-end;border-radius:14px 14px 4px 14px;background:#0a84ff}
+.myphone-call-island .ci-lines p[data-heard]{position:relative;padding-left:20px}
+.myphone-call-island .ci-dot{position:absolute;left:8px;top:11px;width:6px;height:6px;border-radius:50%;background:#34c759}
+.myphone-call-island .ci-lines p[data-heard=pending]{opacity:.6}
+.myphone-call-island .ci-lines p[data-heard=pending] .ci-dot{background:rgba(255,255,255,.4)}
+.myphone-call-island .ci-lines p[data-heard=generating] .ci-dot{animation:myphone-ci-blink 1s ease-in-out infinite}
+.myphone-call-island .ci-lines p[data-heard=playing]{background:rgba(52,199,89,.25);box-shadow:inset 0 0 0 1px rgba(52,199,89,.6)}
+.myphone-call-island .ci-lines p[data-heard=playing] .ci-dot{animation:myphone-ci-blink .6s ease-in-out infinite}
+.myphone-call-island .ci-lines p[data-heard=played] .ci-dot{background:rgba(255,255,255,.45)}
+.myphone-call-island .ci-say{display:flex;gap:6px;align-items:center}
+.myphone-call-island .ci-say input{flex:1;min-width:0;height:36px;padding:0 14px;border:0;border-radius:18px;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:14px;outline:none}
+.myphone-call-island .ci-say input::placeholder{color:rgba(255,255,255,.5)}
+.myphone-call-island .ci-send{flex-shrink:0;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#0a84ff;color:#fff}
+.myphone-call-island .ci-send.ask{background:#34c759}
+.myphone-call-island .ci-send:disabled{opacity:.4;cursor:default}
+.myphone-call-island .ci-send svg{width:18px;height:18px}
+@keyframes myphone-ci-wave{0%,100%{height:5px}50%{height:15px}}
+@keyframes myphone-ci-blink{50%{opacity:.3}}
+@keyframes myphone-ci-in{from{transform:var(--ci-from,translateX(-50%)) scale(.6);opacity:0}}
+@media (prefers-reduced-motion:reduce){.myphone-call-island,.myphone-call-island .ci-wave.on i,.myphone-call-island .ci-dot{animation:none!important}}
 /* 消息小窗 (msg-island.js): the call island's look, for a message that came while the phone was away. */
-.sttts-call-island .ci-close{background:rgba(255,255,255,.16)}
+.myphone-call-island .ci-close{background:rgba(255,255,255,.16)}
 /* 动态小窗 (note-island.js): one line of 朋友圈 news; the whole head is a button that opens 动态. */
-.sttts-note-island{flex-direction:row;align-items:center;border-radius:30px;animation:sttts-ci-in .32s cubic-bezier(.2,1.2,.4,1)}
-.sttts-note-island .ni-open{flex:1;min-width:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
-.sttts-note-island .ci-text b em{font-style:normal;font-weight:500;color:rgba(255,255,255,.55)}
-.sttts-note-island .ci-text small{color:rgba(255,255,255,.8)}
-.sttts-note-island .ni-more{flex-shrink:0;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,.16);font-size:11px;font-weight:700}
-.sttts-call-island .ci-close svg{width:16px;height:16px}
-.sttts-msg-island .ci-text small{color:rgba(255,255,255,.6)}
-.sttts-msg-island .mi-from{font-weight:800;color:#64d2ff}
+.myphone-note-island{flex-direction:row;align-items:center;border-radius:30px;animation:myphone-ci-in .32s cubic-bezier(.2,1.2,.4,1)}
+.myphone-note-island .ni-open{flex:1;min-width:0;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.myphone-note-island .ci-text b em{font-style:normal;font-weight:500;color:rgba(255,255,255,.55)}
+.myphone-note-island .ci-text small{color:rgba(255,255,255,.8)}
+.myphone-note-island .ni-more{flex-shrink:0;padding:2px 7px;border-radius:10px;background:rgba(255,255,255,.16);font-size:11px;font-weight:700}
+.myphone-call-island .ci-close svg{width:16px;height:16px}
+.myphone-msg-island .ci-text small{color:rgba(255,255,255,.6)}
+.myphone-msg-island .mi-from{font-weight:800;color:#64d2ff}
 /* 背景音乐 chip: the song the story picked (<bgm>); a tap plays it, or pauses it while it plays. */
-#chat [data-sttts-action="bgm"]{display:inline-flex;align-items:center;gap:4px;margin:0 0 .4em;padding:2px 10px;border:1px solid color-mix(in srgb,var(--SmartThemeQuoteColor,#7dadd6) 45%,transparent);border-radius:999px;background:color-mix(in srgb,var(--SmartThemeQuoteColor,#7dadd6) 12%,transparent);color:var(--SmartThemeQuoteColor,#5b8fc4);font:inherit;font-size:.82em;line-height:1.6;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
-#chat [data-sttts-action="bgm"]:hover{background:color-mix(in srgb,var(--SmartThemeQuoteColor,#7dadd6) 22%,transparent)}
-#chat .sttts-bgm{display:block}
+#chat [data-myphone-action="bgm"]{display:inline-flex;align-items:center;gap:4px;margin:0 0 .4em;padding:2px 10px;border:1px solid color-mix(in srgb,var(--SmartThemeQuoteColor,#7dadd6) 45%,transparent);border-radius:999px;background:color-mix(in srgb,var(--SmartThemeQuoteColor,#7dadd6) 12%,transparent);color:var(--SmartThemeQuoteColor,#5b8fc4);font:inherit;font-size:.82em;line-height:1.6;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+#chat [data-myphone-action="bgm"]:hover{background:color-mix(in srgb,var(--SmartThemeQuoteColor,#7dadd6) 22%,transparent)}
+#chat .myphone-bgm{display:block}
 /* 音乐小窗: a small black pill (disc, the line being sung, a wave); a tap opens it into a card. */
-.sttts-music-island{position:fixed;z-index:30990;width:max-content;max-width:min(240px,calc(100vw - 16px));padding:5px 12px 5px 5px;border-radius:999px;background:#000;color:#fff;box-shadow:0 8px 24px -8px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08);font:12px/1.35 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;animation:sttts-mi-in .45s cubic-bezier(.34,1.3,.64,1);transition:max-width .35s cubic-bezier(.34,1.2,.64,1),padding .35s cubic-bezier(.34,1.2,.64,1),border-radius .35s ease}
-.sttts-music-island[hidden]{display:none}
-.sttts-music-island[data-dragging]{cursor:grabbing}
-.sttts-music-island .mi-pill{display:flex;align-items:center;gap:8px;height:26px}
-.sttts-music-island .mi-card{display:none}
-.sttts-music-island[data-expanded="1"]{width:min(300px,calc(100vw - 16px));max-width:min(300px,calc(100vw - 16px));padding:10px 12px 12px;border-radius:28px}
-.sttts-music-island[data-expanded="1"] .mi-pill{display:none}
-.sttts-music-island[data-expanded="1"] .mi-card{display:block;animation:sttts-mi-open .3s ease}
-.sttts-music-island .mi-disc{flex:none;width:26px;height:26px;border-radius:50%;background:conic-gradient(from 0deg,#ff8ab3,#8fd8ff,#ffd36a,#ff8ab3);display:grid;place-items:center;animation:sttts-mi-spin 6s linear infinite;animation-play-state:paused}
-.sttts-music-island .mi-disc.big{width:38px;height:38px}
-.sttts-music-island[data-playing="1"] .mi-disc{animation-play-state:running}
-.sttts-music-island .mi-disc i{width:30%;height:30%;border-radius:50%;background:#000}
-.sttts-music-island .mi-line{min-width:0;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
-.sttts-music-island [data-long]{text-overflow:clip;text-align:left;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8px,#000 calc(100% - 12px),transparent);mask-image:linear-gradient(90deg,transparent,#000 8px,#000 calc(100% - 12px),transparent)}
-.sttts-music-island [data-long]>span{display:inline-block;padding:0 8px 0 4px;will-change:transform}
-.sttts-music-island .mi-bars{flex:none;display:flex;align-items:center;gap:2px;height:14px}
-.sttts-music-island .mi-bars i{width:2.5px;height:30%;border-radius:2px;background:#ff8ab3;transform-origin:center}
-.sttts-music-island[data-playing="1"] .mi-bars i{animation:sttts-mi-bar .9s ease-in-out infinite}
-.sttts-music-island .mi-bars i:nth-child(2){animation-delay:-.3s;background:#8fd8ff}
-.sttts-music-island .mi-bars i:nth-child(3){animation-delay:-.6s;background:#ffd36a}
-.sttts-music-island .mi-bars i:nth-child(4){animation-delay:-.15s}
-.sttts-music-island .mi-row{display:flex;align-items:center;gap:8px}
-.sttts-music-island .mi-text{flex:1;min-width:0;display:grid}
-.sttts-music-island .mi-text b,.sttts-music-island .mi-text small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sttts-music-island .mi-text b{font-size:13px}
-.sttts-music-island .mi-text small{color:rgba(255,255,255,.6);font-size:11px}
-.sttts-music-island .mi-btn{flex:none;width:30px;height:30px;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;display:grid;place-items:center;cursor:pointer;padding:0}
-.sttts-music-island .mi-btn svg{width:16px;height:16px}
-.sttts-music-island .mi-close{background:transparent;color:rgba(255,255,255,.55)}
-.sttts-music-island .mi-lyrics{margin-top:8px;text-align:center;overflow:hidden}
-.sttts-music-island .mi-lyrics p{margin:0;font-size:11px;line-height:1.5;color:rgba(255,255,255,.4);min-height:1.5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sttts-music-island .mi-lyrics p.now{font-size:14px;font-weight:700;color:#fff}
-.sttts-music-island[data-plain="1"] .mi-line,.sttts-music-island[data-plain="1"] .mi-lyrics{display:none}
-.sttts-music-island[data-plain="1"][data-expanded="1"]{width:min(260px,calc(100vw - 16px));max-width:min(260px,calc(100vw - 16px));padding:10px 12px}
-@keyframes sttts-mi-in{from{opacity:0;transform:var(--mi-from,translateX(-50%)) scale(.6)}}
-@keyframes sttts-mi-open{from{opacity:0}}
-@keyframes sttts-mi-spin{to{transform:rotate(360deg)}}
-@keyframes sttts-mi-bar{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1.6)}}
-@media (prefers-reduced-motion:reduce){.sttts-music-island,.sttts-music-island .mi-disc,.sttts-music-island .mi-bars i,.sttts-music-island .mi-card{animation:none!important;transition:none}}
+.myphone-music-island{position:fixed;z-index:30990;width:max-content;max-width:min(240px,calc(100vw - 16px));padding:5px 12px 5px 5px;border-radius:999px;background:#000;color:#fff;box-shadow:0 8px 24px -8px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08);font:12px/1.35 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;animation:myphone-mi-in .45s cubic-bezier(.34,1.3,.64,1);transition:max-width .35s cubic-bezier(.34,1.2,.64,1),padding .35s cubic-bezier(.34,1.2,.64,1),border-radius .35s ease}
+.myphone-music-island[hidden]{display:none}
+.myphone-music-island[data-dragging]{cursor:grabbing}
+.myphone-music-island .mi-pill{display:flex;align-items:center;gap:8px;height:26px}
+.myphone-music-island .mi-card{display:none}
+.myphone-music-island[data-expanded="1"]{width:min(300px,calc(100vw - 16px));max-width:min(300px,calc(100vw - 16px));padding:10px 12px 12px;border-radius:28px}
+.myphone-music-island[data-expanded="1"] .mi-pill{display:none}
+.myphone-music-island[data-expanded="1"] .mi-card{display:block;animation:myphone-mi-open .3s ease}
+.myphone-music-island .mi-disc{flex:none;width:26px;height:26px;border-radius:50%;background:conic-gradient(from 0deg,#ff8ab3,#8fd8ff,#ffd36a,#ff8ab3);display:grid;place-items:center;animation:myphone-mi-spin 6s linear infinite;animation-play-state:paused}
+.myphone-music-island .mi-disc.big{width:38px;height:38px}
+.myphone-music-island[data-playing="1"] .mi-disc{animation-play-state:running}
+.myphone-music-island .mi-disc i{width:30%;height:30%;border-radius:50%;background:#000}
+.myphone-music-island .mi-line{min-width:0;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.myphone-music-island [data-long]{text-overflow:clip;text-align:left;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8px,#000 calc(100% - 12px),transparent);mask-image:linear-gradient(90deg,transparent,#000 8px,#000 calc(100% - 12px),transparent)}
+.myphone-music-island [data-long]>span{display:inline-block;padding:0 8px 0 4px;will-change:transform}
+.myphone-music-island .mi-bars{flex:none;display:flex;align-items:center;gap:2px;height:14px}
+.myphone-music-island .mi-bars i{width:2.5px;height:30%;border-radius:2px;background:#ff8ab3;transform-origin:center}
+.myphone-music-island[data-playing="1"] .mi-bars i{animation:myphone-mi-bar .9s ease-in-out infinite}
+.myphone-music-island .mi-bars i:nth-child(2){animation-delay:-.3s;background:#8fd8ff}
+.myphone-music-island .mi-bars i:nth-child(3){animation-delay:-.6s;background:#ffd36a}
+.myphone-music-island .mi-bars i:nth-child(4){animation-delay:-.15s}
+.myphone-music-island .mi-row{display:flex;align-items:center;gap:8px}
+.myphone-music-island .mi-text{flex:1;min-width:0;display:grid}
+.myphone-music-island .mi-text b,.myphone-music-island .mi-text small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.myphone-music-island .mi-text b{font-size:13px}
+.myphone-music-island .mi-text small{color:rgba(255,255,255,.6);font-size:11px}
+.myphone-music-island .mi-btn{flex:none;width:30px;height:30px;border:0;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;display:grid;place-items:center;cursor:pointer;padding:0}
+.myphone-music-island .mi-btn svg{width:16px;height:16px}
+.myphone-music-island .mi-close{background:transparent;color:rgba(255,255,255,.55)}
+.myphone-music-island .mi-lyrics{margin-top:8px;text-align:center;overflow:hidden}
+.myphone-music-island .mi-lyrics p{margin:0;font-size:11px;line-height:1.5;color:rgba(255,255,255,.4);min-height:1.5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.myphone-music-island .mi-lyrics p.now{font-size:14px;font-weight:700;color:#fff}
+.myphone-music-island[data-plain="1"] .mi-line,.myphone-music-island[data-plain="1"] .mi-lyrics{display:none}
+.myphone-music-island[data-plain="1"][data-expanded="1"]{width:min(260px,calc(100vw - 16px));max-width:min(260px,calc(100vw - 16px));padding:10px 12px}
+@keyframes myphone-mi-in{from{opacity:0;transform:var(--mi-from,translateX(-50%)) scale(.6)}}
+@keyframes myphone-mi-open{from{opacity:0}}
+@keyframes myphone-mi-spin{to{transform:rotate(360deg)}}
+@keyframes myphone-mi-bar{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1.6)}}
+@media (prefers-reduced-motion:reduce){.myphone-music-island,.myphone-music-island .mi-disc,.myphone-music-island .mi-bars i,.myphone-music-island .mi-card{animation:none!important;transition:none}}
 /* 台词小窗: the latest reply's lines, to hear one by one (over a visual-novel sprite too). */
-.sttts-voice-island{box-sizing:border-box;position:fixed;z-index:30995;width:max-content;max-width:min(260px,calc(100vw - 16px));padding:5px 12px 5px 5px;border-radius:999px;background:#000;color:#fff;box-shadow:0 8px 24px -8px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08);font:12px/1.35 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;animation:sttts-mi-in .45s cubic-bezier(.34,1.3,.64,1);transition:max-width .35s cubic-bezier(.34,1.2,.64,1),padding .35s cubic-bezier(.34,1.2,.64,1),border-radius .35s ease}
-.sttts-voice-island[hidden]{display:none}
-.sttts-voice-island[data-dragging]{cursor:grabbing}
-.sttts-voice-island .vi-pill{display:flex;align-items:center;gap:8px;height:26px}
-.sttts-voice-island .vi-ico{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#64d2ff,#5e5ce6);color:#fff}
-.sttts-voice-island .vi-ico svg{width:15px;height:15px}
-.sttts-voice-island .vi-line{min-width:0;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
-.sttts-voice-island .vi-bars{flex:none;display:none;align-items:center;gap:2px;height:14px}
-.sttts-voice-island[data-playing="1"] .vi-bars{display:flex}
-.sttts-voice-island .vi-bars i{width:2.5px;height:30%;border-radius:2px;background:#64d2ff;animation:sttts-mi-bar .9s ease-in-out infinite}
-.sttts-voice-island .vi-bars i:nth-child(2){animation-delay:-.3s;background:#a5a3ff}
-.sttts-voice-island .vi-bars i:nth-child(3){animation-delay:-.6s}
-.sttts-voice-island .vi-card{display:none}
-.sttts-voice-island[data-expanded="1"]{width:min(320px,calc(100vw - 16px));max-width:min(320px,calc(100vw - 16px));padding:10px 10px 8px;border-radius:26px;touch-action:pan-y}
-.sttts-voice-island[data-expanded="1"] .vi-pill{display:none}
-.sttts-voice-island[data-expanded="1"] .vi-card{display:block;animation:sttts-mi-open .3s ease}
-.sttts-voice-island .vi-head{display:flex;align-items:center;gap:8px;padding:0 2px 8px;touch-action:none}
-.sttts-voice-island .vi-head b{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sttts-voice-island .vi-btn{flex:none;height:30px;min-width:30px;border:0;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:0 10px;font:inherit;font-weight:700;cursor:pointer}
-.sttts-voice-island .vi-btn svg{width:14px;height:14px}
-.sttts-voice-island .vi-close{padding:0;width:30px;background:transparent;color:rgba(255,255,255,.55)}
-.sttts-voice-island .vi-list{max-height:calc(min(46vh,320px) - 24px);overflow-y:auto;overscroll-behavior:contain;display:grid;align-content:start;gap:4px;touch-action:pan-y}
-.sttts-voice-island .vi-resize{height:24px;display:flex;align-items:center;justify-content:center;cursor:ns-resize;touch-action:none}
-.sttts-voice-island .vi-resize::before{content:'';width:36px;height:4px;border-radius:999px;background:rgba(255,255,255,.35)}
-.sttts-voice-island .vi-resize:focus-visible{outline:2px solid #64d2ff;border-radius:8px}
-.sttts-voice-island .vi-row{display:grid;gap:1px;width:100%;padding:8px 10px;border:0;border-radius:14px;background:rgba(255,255,255,.07);color:#fff;text-align:left;font:inherit;cursor:pointer}
-.sttts-voice-island .vi-row b{font-size:11px;color:#64d2ff}
-.sttts-voice-island .vi-row span{font-size:13px;line-height:1.45}
-.sttts-voice-island .vi-row small{font-size:11px;color:rgba(255,255,255,.5)}
-.sttts-voice-island .vi-row[data-state=playing]{background:rgba(100,210,255,.22);box-shadow:inset 0 0 0 1px rgba(100,210,255,.5)}
-.sttts-voice-island .vi-row[data-state=paused]{box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
-@media (prefers-reduced-motion:reduce){.sttts-voice-island,.sttts-voice-island .vi-bars i,.sttts-voice-island .vi-card{animation:none!important;transition:none}}
+.myphone-voice-island{box-sizing:border-box;position:fixed;z-index:30995;width:max-content;max-width:min(260px,calc(100vw - 16px));padding:5px 12px 5px 5px;border-radius:999px;background:#000;color:#fff;box-shadow:0 8px 24px -8px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08);font:12px/1.35 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;animation:myphone-mi-in .45s cubic-bezier(.34,1.3,.64,1);transition:max-width .35s cubic-bezier(.34,1.2,.64,1),padding .35s cubic-bezier(.34,1.2,.64,1),border-radius .35s ease}
+.myphone-voice-island[hidden]{display:none}
+.myphone-voice-island[data-dragging]{cursor:grabbing}
+.myphone-voice-island .vi-pill{display:flex;align-items:center;gap:8px;height:26px}
+.myphone-voice-island .vi-ico{flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#64d2ff,#5e5ce6);color:#fff}
+.myphone-voice-island .vi-ico svg{width:15px;height:15px}
+.myphone-voice-island .vi-line{min-width:0;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.myphone-voice-island .vi-bars{flex:none;display:none;align-items:center;gap:2px;height:14px}
+.myphone-voice-island[data-playing="1"] .vi-bars{display:flex}
+.myphone-voice-island .vi-bars i{width:2.5px;height:30%;border-radius:2px;background:#64d2ff;animation:myphone-mi-bar .9s ease-in-out infinite}
+.myphone-voice-island .vi-bars i:nth-child(2){animation-delay:-.3s;background:#a5a3ff}
+.myphone-voice-island .vi-bars i:nth-child(3){animation-delay:-.6s}
+.myphone-voice-island .vi-card{display:none}
+.myphone-voice-island[data-expanded="1"]{width:min(320px,calc(100vw - 16px));max-width:min(320px,calc(100vw - 16px));padding:10px 10px 8px;border-radius:26px;touch-action:pan-y}
+.myphone-voice-island[data-expanded="1"] .vi-pill{display:none}
+.myphone-voice-island[data-expanded="1"] .vi-card{display:block;animation:myphone-mi-open .3s ease}
+.myphone-voice-island .vi-head{display:flex;align-items:center;gap:8px;padding:0 2px 8px;touch-action:none}
+.myphone-voice-island .vi-head b{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.myphone-voice-island .vi-btn{flex:none;height:30px;min-width:30px;border:0;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:0 10px;font:inherit;font-weight:700;cursor:pointer}
+.myphone-voice-island .vi-btn svg{width:14px;height:14px}
+.myphone-voice-island .vi-close{padding:0;width:30px;background:transparent;color:rgba(255,255,255,.55)}
+.myphone-voice-island .vi-list{max-height:calc(min(46vh,320px) - 24px);overflow-y:auto;overscroll-behavior:contain;display:grid;align-content:start;gap:4px;touch-action:pan-y}
+.myphone-voice-island .vi-resize{height:24px;display:flex;align-items:center;justify-content:center;cursor:ns-resize;touch-action:none}
+.myphone-voice-island .vi-resize::before{content:'';width:36px;height:4px;border-radius:999px;background:rgba(255,255,255,.35)}
+.myphone-voice-island .vi-resize:focus-visible{outline:2px solid #64d2ff;border-radius:8px}
+.myphone-voice-island .vi-row{display:grid;gap:1px;width:100%;padding:8px 10px;border:0;border-radius:14px;background:rgba(255,255,255,.07);color:#fff;text-align:left;font:inherit;cursor:pointer}
+.myphone-voice-island .vi-row b{font-size:11px;color:#64d2ff}
+.myphone-voice-island .vi-row span{font-size:13px;line-height:1.45}
+.myphone-voice-island .vi-row small{font-size:11px;color:rgba(255,255,255,.5)}
+.myphone-voice-island .vi-row[data-state=playing]{background:rgba(100,210,255,.22);box-shadow:inset 0 0 0 1px rgba(100,210,255,.5)}
+.myphone-voice-island .vi-row[data-state=paused]{box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+@media (prefers-reduced-motion:reduce){.myphone-voice-island,.myphone-voice-island .vi-bars i,.myphone-voice-island .vi-card{animation:none!important;transition:none}}
 
-.sttts-context-menu{position:fixed;z-index:2147483000;display:flex;flex-direction:column;width:max-content;min-width:0;max-width:calc(100vw - 16px);box-sizing:border-box;padding:5px;border:1px solid var(--SmartThemeBorderColor,rgba(128,128,128,.4));border-radius:10px;background:var(--SmartThemeBlurTintColor,#242424);color:var(--SmartThemeBodyColor,#eee);box-shadow:0 5px 20px #0003;backdrop-filter:blur(18px);font:inherit}
-.sttts-context-menu button{width:auto;min-width:0;max-width:100%;box-sizing:border-box;margin:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;padding:10px 12px;min-height:40px;border-radius:6px;cursor:pointer;white-space:normal;overflow-wrap:anywhere}
-.sttts-context-menu button:hover,.sttts-context-menu button:focus-visible{background:var(--SmartThemeQuoteColor,#555);outline:1px solid var(--SmartThemeBorderColor,#888)}
-.sttts-tools-entry{background:transparent;border:0;color:inherit;font-size:inherit;cursor:pointer}
+.myphone-context-menu{position:fixed;z-index:2147483000;display:flex;flex-direction:column;width:max-content;min-width:0;max-width:calc(100vw - 16px);box-sizing:border-box;padding:5px;border:1px solid var(--SmartThemeBorderColor,rgba(128,128,128,.4));border-radius:10px;background:var(--SmartThemeBlurTintColor,#242424);color:var(--SmartThemeBodyColor,#eee);box-shadow:0 5px 20px #0003;backdrop-filter:blur(18px);font:inherit}
+.myphone-context-menu button{width:auto;min-width:0;max-width:100%;box-sizing:border-box;margin:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;padding:10px 12px;min-height:40px;border-radius:6px;cursor:pointer;white-space:normal;overflow-wrap:anywhere}
+.myphone-context-menu button:hover,.myphone-context-menu button:focus-visible{background:var(--SmartThemeQuoteColor,#555);outline:1px solid var(--SmartThemeBorderColor,#888)}
+.myphone-tools-entry{background:transparent;border:0;color:inherit;font-size:inherit;cursor:pointer}
 
 /* The collapsed line moves only when its measured text exceeds the pill. */
-.sttts-voice-island .vi-line{flex:1;text-overflow:clip}
-.sttts-voice-island .vi-scroll{display:inline-block;white-space:nowrap;vertical-align:top;max-width:none}
-.sttts-voice-island .vi-scrolling{animation:sttts-vi-scroll var(--vi-duration,8s) linear infinite alternate}
-.sttts-voice-island .vi-head{gap:5px}
-.sttts-voice-island .vi-all,.sttts-voice-island .vi-step{padding:0 8px;font-size:12px;white-space:nowrap}
-.sttts-voice-island .vi-step[aria-pressed=true]{background:rgba(100,210,255,.22)}
-@keyframes sttts-vi-scroll{0%,15%{transform:translateX(0)}85%,100%{transform:translateX(var(--vi-travel,0px))}}
-@media(prefers-reduced-motion:reduce){.sttts-voice-island .vi-scrolling{animation:none}.sttts-voice-island .vi-line{overflow-x:auto;touch-action:pan-x}}
+.myphone-voice-island .vi-line{flex:1;text-overflow:clip}
+.myphone-voice-island .vi-scroll{display:inline-block;white-space:nowrap;vertical-align:top;max-width:none}
+.myphone-voice-island .vi-scrolling{animation:myphone-vi-scroll var(--vi-duration,8s) linear infinite alternate}
+.myphone-voice-island .vi-head{gap:5px}
+.myphone-voice-island .vi-all,.myphone-voice-island .vi-step{padding:0 8px;font-size:12px;white-space:nowrap}
+.myphone-voice-island .vi-step[aria-pressed=true]{background:rgba(100,210,255,.22)}
+@keyframes myphone-vi-scroll{0%,15%{transform:translateX(0)}85%,100%{transform:translateX(var(--vi-travel,0px))}}
+@media(prefers-reduced-motion:reduce){.myphone-voice-island .vi-scrolling{animation:none}.myphone-voice-island .vi-line{overflow-x:auto;touch-action:pan-x}}
 
-#chat .mes_buttons button.sttts-tools-entry::before,#chat .mes_buttons button.sttts-tools-entry::after{content:none!important;display:none!important}
-#chat .mes_buttons button.sttts-tools-entry>svg{display:block!important;width:20px!important;height:20px!important;min-width:20px;pointer-events:none}
+#chat .mes_buttons button.myphone-tools-entry::before,#chat .mes_buttons button.myphone-tools-entry::after{content:none!important;display:none!important}
+#chat .mes_buttons button.myphone-tools-entry>svg{display:block!important;width:20px!important;height:20px!important;min-width:20px;pointer-events:none}
+
+.myphone-call-island .ci-accept{flex:none;min-width:46px;height:34px;padding:0 10px;border:0;border-radius:17px;background:#07b75a;color:white;font-size:12px;font-weight:600;cursor:pointer;}

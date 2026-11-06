@@ -1,5 +1,5 @@
 // ST-iPhonie floating entry. Plain DOM (no shadow root) so that dock/organizer scripts can clone its look
-// and forward clicks to it; every rule in floating.css is scoped under #sttts-floating.
+// and forward clicks to it; every rule in floating.css is scoped under #myphone-floating.
 // Two forms. On a computer or a tablet: the round ball, which tucks behind the screen edge when left alone. On a phone
 // (a small touch screen, where the phone opens full screen): a small bar on the screen edge; a tap turns it into a
 // block, a tap on the block opens the phone, and while a line plays the bar sends sound waves out from the edge. In
@@ -13,7 +13,7 @@ import {WAVES_W, WAVES_H, clearWaves, paintWaves} from './floating-waves.js';
 
 const SPARK = '<svg class="spark" viewBox="-10 -10 20 20" fill="currentColor" aria-hidden="true"><path d="M0-10C1-2 2-1 10 0 2 1 1 2 0 10-1 2-2 1-10 0-2-1-1-2 0-10z"/></svg>';
 const WAVE = '<svg class="wave" viewBox="0 0 32 32" aria-hidden="true"><g class="wave"><rect x="4" y="11" width="3" height="10" rx="1.5"/><rect x="9.25" y="6.5" width="3" height="19" rx="1.5"/><rect x="14.5" y="3" width="3" height="26" rx="1.5"/><rect x="19.75" y="8" width="3" height="16" rx="1.5"/><rect x="25" y="12" width="3" height="8" rx="1.5"/></g></svg>';
-const STYLE_ID = 'sttts-floating-style';
+const STYLE_ID = 'myphone-floating-style';
 // The wave's bars in their 32×32 box: the height at rest, the tallest the voice makes them, the shortest. The height
 // changes (not a stretch), so the round ends stay round.
 const REST = [10, 19, 26, 16, 8], TALL = [16, 23, 28, 23, 16], LOW = 4;
@@ -25,10 +25,10 @@ const BLOCK = 56, BAR_W = 10, BAR_H = 37;
 // How a plan is worked out: the springs' own steps, a keyframe every few of them, and the longest it goes on.
 const PLAN_STEP = 1 / 240, PLAN_EVERY = 4, PLAN_MOST = 5;
 const PLAYED = ['float', 'shape', 'orb', 'pill', 'lift', 'icon'];
-const TIPS = 'sttts-floating-tips';
+const TIPS = 'myphone-floating-tips';
 // The glow colours of floating.css (--glow-rgb), for the waves' canvas. Kept here: reading them from the page's styles
 // makes the browser work out the whole tavern page's styles in the middle of a frame.
-export const FLOAT_GLOW = Object.freeze({idle: '58,156,240', fish: '34,104,196', mini: '242,169,59', eleven: '194,68,122', mimo: '228,85,42', doubao: '96,120,19', custom: '46,148,100'});
+export const FLOAT_GLOW = Object.freeze({idle: '255,198,42', fish: '255,198,42', mini: '255,198,42', eleven: '255,198,42', mimo: '255,198,42', doubao: '255,198,42', custom: '255,198,42'});
 const clamp = (v, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
 
 function ensureStyle() {
@@ -76,7 +76,7 @@ export class FloatingPlayer {
     this.mode = 'rest';
     ensureStyle();
     this.root = document.createElement('div');
-    this.root.id = 'sttts-floating';
+    this.root.id = 'myphone-floating';
     this.root.setAttribute('role', 'group');
     this.root.setAttribute('aria-label', 'ST-iPhonie');
     this.root.innerHTML = `<div class="float" data-side="${this.side}" data-mode="rest" data-phase="idle" data-engine="fish"><canvas class="waves" aria-hidden="true"></canvas><span class="pulse"></span><span class="shape"><span class="lift"></span><span class="squash"><span class="pill"><span class="shine"></span></span></span><button class="orb" type="button" aria-label="打开小手机，可拖动"><span class="shine"></span>${WAVE}<span class="edge-mark"></span></button></span>${SPARK}<span class="hit" aria-hidden="true"></span><span class="hint" aria-hidden="true"></span></div>`;
@@ -179,7 +179,7 @@ export class FloatingPlayer {
     if (this.gpu && form === 'bar') this.box.dataset.gpu = ''; else delete this.box.dataset.gpu;
     for (const k of ['top', 'left', 'right', 'width', 'height', 'transform']) this.root.style.removeProperty(k);
     for (const k of ['width', 'height', 'transform']) this.box.style.removeProperty(k);
-    for (const k of ['transform', 'border-radius', 'opacity', 'box-shadow', '--sttts-gloss']) this.orb.style.removeProperty(k);
+    for (const k of ['transform', 'border-radius', 'opacity', 'box-shadow', '--myphone-gloss']) this.orb.style.removeProperty(k);
     for (const k of ['opacity', 'transform']) this.glyph.style.removeProperty(k);
     this.hit.style.removeProperty('display');
     this.hideHint();
@@ -675,7 +675,7 @@ export class FloatingPlayer {
     put(this.orb, 'opacity', ((1 - launch) * (1 - .4 * clamp(S.rest.x))).toFixed(3));
     const glow = (.32 + barish * v * .45 + press * .25 + lift * .1).toFixed(3);
     put(this.orb, 'boxShadow', `inset 0 0 0 ${(1 + g).toFixed(2)}px rgba(255,255,255,${(.35 + .55 * g).toFixed(3)}),0 ${(3 + g * 7 + lift * 10).toFixed(1)}px ${(8 + g * 16 + lift * 18).toFixed(1)}px ${(-3 - g * 5).toFixed(1)}px rgba(var(--glow-rgb),${glow}),0 1px ${(2 + lift * 6).toFixed(1)}px rgba(0,0,0,${(.14 + lift * .1).toFixed(3)})`);
-    put(this.orb, '--sttts-gloss', (.55 + .45 * g).toFixed(3));
+    put(this.orb, '--myphone-gloss', (.55 + .45 * g).toFixed(3));
     put(this.glyph, 'opacity', clamp((g - .35) / .65).toFixed(3));
     put(this.glyph, 'transform', `translateY(${(-v * 1.5).toFixed(2)}px) scale(${((.55 + .45 * g) * (1 + v * .06)).toFixed(3)})`);
     // The bar is thin, so a strip at the screen edge a little bigger than it takes the touch; nothing else around it does.

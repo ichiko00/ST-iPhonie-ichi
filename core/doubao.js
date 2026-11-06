@@ -24,7 +24,7 @@ export function buildDoubaoRequest(c, route, line) {
   const params = {text: line.text, speaker: route.voice.trim(), audio_params: {format: p.format, sample_rate: p.sample_rate, speech_rate: p.speech_rate, loudness_rate: p.loudness_rate}};
   if (c.model === 'seed-icl-2.0') params.model = p.cloneModel;
   if (Object.keys(additions).length) params.additions = JSON.stringify(additions);
-  return {engine: 'doubao', url, body: {user: {uid: 'st-iphonie'}, req_params: params}, resourceId: c.model, appId: String(p.appId || '').trim(), format: p.format, sampleRate: p.sample_rate, channels: 1};
+  return {engine: 'doubao', url, body: {user: {uid: 'myphone-app'}, req_params: params}, resourceId: c.model, appId: String(p.appId || '').trim(), format: p.format, sampleRate: p.sample_rate, channels: 1};
 }
 
 const DONE = 20000000, MAX_BYTES = 64 * 1024 * 1024;

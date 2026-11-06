@@ -2,11 +2,11 @@
 // while the phone is put away — a dynamic-island card drops in with the chat's latest messages and a box to answer:
 // words typed are sent, the empty box's bubble asks for a reply, as in the chat app. A double tap opens the phone on
 // that chat; × puts the card away until the next message. Dragged by its top (the place is remembered). It wears the
-// call island's look (style.css .sttts-call-island).
+// call island's look (style.css .myphone-call-island).
 
 import {joinStack, stackTop} from './island-stack.js';
 
-const KEY = 'sttts.msgIsland';
+const KEY = 'myphone.msgIsland';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const SEND = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>';
 const ASK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5h16v11H11l-5 4v-4H4zM8.5 10.5h.01M12 10.5h.01M15.5 10.5h.01"/></svg>';
@@ -30,7 +30,7 @@ export function messageText(m) {
 export function createMessageIsland({doc = document, load, phoneOpen, openChat, send, ask, read = () => {}, avatar = () => '', label = name => name}) {
   const win = doc.defaultView;
   const el = doc.createElement('div');
-  el.className = 'sttts-call-island sttts-msg-island';
+  el.className = 'myphone-call-island myphone-msg-island';
   el.dataset.kind = 'talking';
   el.hidden = true;
   el.setAttribute('role', 'dialog');

@@ -43,7 +43,7 @@ export function createSoundHost({context, settings, backend, notice = () => {}, 
   }
   const running = () => ctx?.state === 'running';
   /** Tells the music a sound is starting: some phones stop the music for it, and the music goes on. */
-  function heard() { try { doc?.dispatchEvent?.(new CustomEvent('sttts-sound')); } catch {} }
+  function heard() { try { doc?.dispatchEvent?.(new CustomEvent('myphone-sound')); } catch {} }
   function ramp(param, value, seconds) {
     const t = ctx.currentTime;
     try { param.cancelScheduledValues(t); param.setValueAtTime(param.value, t); param.linearRampToValueAtTime(value, t + Math.max(0.01, seconds)); } catch { param.value = value; }
@@ -232,7 +232,7 @@ export function createSoundHost({context, settings, backend, notice = () => {}, 
   const rawOf = id => { const m = message(id); return m && !m.is_user && !m.is_system ? String(m.mes ?? '') : null; };
   /** Still below the screen: not read yet. */
   function below(id, index) {
-    const el = doc?.querySelector?.(`#chat .mes[mesid="${id}"] [data-sttts-sound="${index}"]`);
+    const el = doc?.querySelector?.(`#chat .mes[mesid="${id}"] [data-myphone-sound="${index}"]`);
     if (!el?.getBoundingClientRect) return false;
     const r = el.getBoundingClientRect(), box = doc.querySelector('#chat')?.getBoundingClientRect?.(), bottom = Math.min(box?.bottom ?? Infinity, globalThis.innerHeight ?? Infinity);
     return r.height > 0 && r.top > bottom - 16;

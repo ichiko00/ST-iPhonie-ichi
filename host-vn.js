@@ -15,7 +15,7 @@ import {findRoute, storeName} from './core/routes.js';
 const versionsOf = record => !record ? [] : Array.isArray(record.versions) ? record.versions : record.url ? [{...record}] : [];
 /** The drawn picture of a story picture block, as shown in the chat (the chosen version). */
 function pictureUrl(message, hash) {
-  const record = message?.extra?.sttts_pics?.[hash], list = versionsOf(record);
+  const record = message?.extra?.myphone_pics?.[hash], list = versionsOf(record);
   if (!list.length) return '';
   const index = Math.min(list.length - 1, Math.max(0, Number.isInteger(record.index) ? record.index : list.length - 1));
   return list[index]?.url || '';
@@ -65,13 +65,13 @@ export function createVnHost({context, settings, backend, linesOf, voiced, play,
     const beforeImage = new Map(), walker = doc.createTreeWalker(box, 5);let before = '';
     for(let node; (node=walker.nextNode());) {
       if(node.nodeType===1&&node.tagName==='IMG')beforeImage.set(node,before);
-      if(node.nodeType!==3||node.parentElement?.closest('style,script,button,select,textarea,[hidden],[aria-hidden="true"],.sttts-pic,.sttts-phone-note'))continue;
+      if(node.nodeType!==3||node.parentElement?.closest('style,script,button,select,textarea,[hidden],[aria-hidden="true"],.myphone-pic,.myphone-phone-note'))continue;
       before=(before+(node.textContent.match(/[\p{L}\p{N}]/gu)||[]).join('')).slice(-300);
     }
     let previous = 0;
     for (const img of box.querySelectorAll('img')) {
       const url = img.currentSrc || img.src;
-      if (!url || seen.has(abs(url)) || img.closest('[class*="sttts"]')) continue;
+      if (!url || seen.has(abs(url)) || img.closest('[class*="myphone"]')) continue;
       if (img.naturalWidth && img.naturalWidth < 160 || img.naturalHeight && img.naturalHeight < 160) continue;
       seen.add(abs(url));
       const slot=slots.shift();let start = null;
@@ -201,13 +201,13 @@ export function createVnHost({context, settings, backend, linesOf, voiced, play,
   }
 
   /** The 形象 each character wears in the open chat ({name: outfit id}), kept in the chat itself. */
-  function wear() { const w = context()?.chatMetadata?.sttts_vn_wear; return w && typeof w === 'object' ? {...w} : {}; }
+  function wear() { const w = context()?.chatMetadata?.myphone_vn_wear; return w && typeof w === 'object' ? {...w} : {}; }
   function setWear(name, id) {
     const ctx = context();
     if (!ctx?.chatMetadata || !ctx.chat?.length) throw Error('先在酒馆里打开一个聊天');
     const w = wear();
     if (id) w[String(name)] = String(id); else delete w[String(name)];
-    ctx.chatMetadata.sttts_vn_wear = w;
+    ctx.chatMetadata.myphone_vn_wear = w;
     (ctx.saveMetadataDebounced || ctx.saveMetadata)?.call(ctx);
     return w;
   }
@@ -262,7 +262,7 @@ export function createVnHost({context, settings, backend, linesOf, voiced, play,
     if (blob) {
       if (models.length >= MODEL_LIMIT) throw Error(`一个角色最多存 ${MODEL_LIMIT} 个模型，先删掉一个不用的`);
       const info = await modelInfo(new Uint8Array(await blob.arrayBuffer()));
-      const key = Date.now().toString(36) + Math.random().toString(36).slice(2, 6), file = `sttts-model-${key}.${info.kind === 'vrm' ? 'vrm' : 'zip'}`;
+      const key = Date.now().toString(36) + Math.random().toString(36).slice(2, 6), file = `myphone-model-${key}.${info.kind === 'vrm' ? 'vrm' : 'zip'}`;
       const ctx = context();
       const response = await fetch('/api/files/upload', {method: 'POST', headers: ctx.getRequestHeaders(), body: JSON.stringify({name: file, data: await backend.base64(blob)})});
       if (!response.ok) throw Error(response.status === 413 ? '模型文件太大，酒馆（或它前面的服务器）不让上传这么大的文件' : '模型没能存进酒馆（' + response.status + '）');
@@ -328,7 +328,7 @@ export function createVnHost({context, settings, backend, linesOf, voiced, play,
       blob = await ownFile(blob);
       if (list.length >= MOVE_FILE_LIMIT) throw Error(`动作文件最多存 ${MOVE_FILE_LIMIT} 个，先删掉不用的`);
       const info = vrmaInfo(new Uint8Array(await blob.arrayBuffer()));
-      const key = Date.now().toString(36) + Math.random().toString(36).slice(2, 6), file = `sttts-move-${key}.vrma`;
+      const key = Date.now().toString(36) + Math.random().toString(36).slice(2, 6), file = `myphone-move-${key}.vrma`;
       const response = await fetch('/api/files/upload', {method: 'POST', headers: context().getRequestHeaders(), body: JSON.stringify({name: file, data: await backend.base64(blob)})});
       if (!response.ok) throw Error('动作文件没能存进酒馆（' + response.status + '）');
       const base = String(blob.name || '').replace(/\.vrma$/i, '').trim();

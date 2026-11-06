@@ -22,20 +22,20 @@ import {moveFor} from './core/model-moves.js';
 import {createFx} from './vn-fx.js';
 import {typedMouth} from './core/model-files.js';
 
-const STYLE_ID = 'sttts-vn-style';
+const STYLE_ID = 'myphone-vn-style';
 const CSS = `
-.sttts-vn{--vn-box:rgba(18,20,44,var(--vn-op));--vn-box2:rgba(34,26,64,var(--vn-op));--vn-ink:#f6f4ff;--vn-soft:rgba(246,244,255,.68);--vn-plate:#ff8fb1;--vn-plate-ink:#fff;--vn-line:rgba(255,255,255,.22);--vn-glow:rgba(255,143,177,.45);--vn-font:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+.myphone-vn{--vn-box:rgba(18,20,44,var(--vn-op));--vn-box2:rgba(34,26,64,var(--vn-op));--vn-ink:#f6f4ff;--vn-soft:rgba(246,244,255,.68);--vn-plate:#ff8fb1;--vn-plate-ink:#fff;--vn-line:rgba(255,255,255,.22);--vn-glow:rgba(255,143,177,.45);--vn-font:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
  position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;z-index:32000;overflow:hidden;background:#07070d;color:var(--vn-ink);font:16px/1.75 var(--vn-font);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;overscroll-behavior:contain;cursor:default;opacity:0;transition:opacity .45s}
-.sttts-vn[data-in]{opacity:1}
-.sttts-vn[data-box=day]{--vn-box:rgba(255,255,255,var(--vn-op));--vn-box2:rgba(236,244,255,var(--vn-op));--vn-ink:#26304a;--vn-soft:rgba(38,48,74,.62);--vn-plate:#4f9cf5;--vn-line:rgba(79,156,245,.35);--vn-glow:rgba(79,156,245,.35)}
-.sttts-vn[data-box=sakura]{--vn-box:rgba(255,236,243,var(--vn-op));--vn-box2:rgba(255,214,229,var(--vn-op));--vn-ink:#5b2740;--vn-soft:rgba(91,39,64,.6);--vn-plate:#e85d8f;--vn-line:rgba(232,93,143,.4);--vn-glow:rgba(232,93,143,.35)}
-.sttts-vn[data-box=ink]{--vn-box:rgba(12,12,12,var(--vn-op));--vn-box2:rgba(28,24,20,var(--vn-op));--vn-ink:#f3ead8;--vn-soft:rgba(243,234,216,.6);--vn-plate:#c9a45c;--vn-plate-ink:#1a140a;--vn-line:rgba(201,164,92,.45);--vn-glow:rgba(201,164,92,.35);--vn-font:"Songti SC","STSong","Noto Serif SC","SimSun",serif}
+.myphone-vn[data-in]{opacity:1}
+.myphone-vn[data-box=day]{--vn-box:rgba(255,255,255,var(--vn-op));--vn-box2:rgba(236,244,255,var(--vn-op));--vn-ink:#26304a;--vn-soft:rgba(38,48,74,.62);--vn-plate:#4f9cf5;--vn-line:rgba(79,156,245,.35);--vn-glow:rgba(79,156,245,.35)}
+.myphone-vn[data-box=sakura]{--vn-box:rgba(255,236,243,var(--vn-op));--vn-box2:rgba(255,214,229,var(--vn-op));--vn-ink:#5b2740;--vn-soft:rgba(91,39,64,.6);--vn-plate:#e85d8f;--vn-line:rgba(232,93,143,.4);--vn-glow:rgba(232,93,143,.35)}
+.myphone-vn[data-box=ink]{--vn-box:rgba(12,12,12,var(--vn-op));--vn-box2:rgba(28,24,20,var(--vn-op));--vn-ink:#f3ead8;--vn-soft:rgba(243,234,216,.6);--vn-plate:#c9a45c;--vn-plate-ink:#1a140a;--vn-line:rgba(201,164,92,.45);--vn-glow:rgba(201,164,92,.35);--vn-font:"Songti SC","STSong","Noto Serif SC","SimSun",serif}
 /* 跟随酒馆: the tavern theme's own colours; 跟随小手机: the phone's, handed over as --vn-p-*. */
-.sttts-vn[data-box=tavern]{--vn-box:color-mix(in srgb,var(--SmartThemeBlurTintColor,#1b1b22) calc(var(--vn-op) * 100%),transparent);--vn-box2:color-mix(in srgb,var(--SmartThemeChatTintColor,var(--SmartThemeBlurTintColor,#24242c)) calc(var(--vn-op) * 100%),transparent);--vn-ink:var(--SmartThemeBodyColor,#e6e6ee);--vn-soft:var(--SmartThemeEmColor,#b8b8c4);--vn-plate:var(--SmartThemeQuoteColor,#e18a24);--vn-plate-ink:#fff;--vn-line:var(--SmartThemeBorderColor,rgba(255,255,255,.2));--vn-glow:var(--SmartThemeShadowColor,rgba(0,0,0,.35))}
-.sttts-vn[data-box=phone]{--vn-box:color-mix(in srgb,var(--vn-p-box) calc(var(--vn-op) * 100%),transparent);--vn-box2:color-mix(in srgb,var(--vn-p-box2) calc(var(--vn-op) * 100%),transparent);--vn-ink:var(--vn-p-ink);--vn-soft:var(--vn-p-soft);--vn-plate:var(--vn-p-plate);--vn-plate-ink:var(--vn-p-plateInk);--vn-line:var(--vn-p-line);--vn-glow:color-mix(in srgb,var(--vn-p-plate) 40%,transparent)}
-.sttts-vn *{box-sizing:border-box}
-.sttts-vn button{all:unset;box-sizing:border-box;cursor:pointer;font-family:var(--vn-font)}
-.sttts-vn button:focus-visible{outline:2px solid var(--vn-plate);outline-offset:2px;border-radius:8px}
+.myphone-vn[data-box=tavern]{--vn-box:color-mix(in srgb,var(--SmartThemeBlurTintColor,#1b1b22) calc(var(--vn-op) * 100%),transparent);--vn-box2:color-mix(in srgb,var(--SmartThemeChatTintColor,var(--SmartThemeBlurTintColor,#24242c)) calc(var(--vn-op) * 100%),transparent);--vn-ink:var(--SmartThemeBodyColor,#e6e6ee);--vn-soft:var(--SmartThemeEmColor,#b8b8c4);--vn-plate:var(--SmartThemeQuoteColor,#e18a24);--vn-plate-ink:#fff;--vn-line:var(--SmartThemeBorderColor,rgba(255,255,255,.2));--vn-glow:var(--SmartThemeShadowColor,rgba(0,0,0,.35))}
+.myphone-vn[data-box=phone]{--vn-box:color-mix(in srgb,var(--vn-p-box) calc(var(--vn-op) * 100%),transparent);--vn-box2:color-mix(in srgb,var(--vn-p-box2) calc(var(--vn-op) * 100%),transparent);--vn-ink:var(--vn-p-ink);--vn-soft:var(--vn-p-soft);--vn-plate:var(--vn-p-plate);--vn-plate-ink:var(--vn-p-plateInk);--vn-line:var(--vn-p-line);--vn-glow:color-mix(in srgb,var(--vn-p-plate) 40%,transparent)}
+.myphone-vn *{box-sizing:border-box}
+.myphone-vn button{all:unset;box-sizing:border-box;cursor:pointer;font-family:var(--vn-font)}
+.myphone-vn button:focus-visible{outline:2px solid var(--vn-plate);outline-offset:2px;border-radius:8px}
 .vn-bg{position:absolute;inset:0;overflow:hidden;background:radial-gradient(ellipse at 50% 30%,#3a3560,#120f22 70%)}
 .vn-bg-layer{position:absolute;inset:-2%;background:center/cover no-repeat;opacity:0;transition:opacity .9s ease,filter .9s ease}
 .vn-bg-layer[data-on]{opacity:1}
@@ -44,21 +44,21 @@ const CSS = `
 .vn-fit{position:absolute;inset:0;background:50% 40%/contain no-repeat;opacity:0;transition:opacity .6s ease}
 /* On a tall screen a whole CG sits in the room above the text box. */
 @media (orientation:portrait){.vn-fit{background-position:50% 26%}}
-.sttts-vn[data-cg]:is([data-whole],[data-hidden]) .vn-fit{opacity:1}
-.sttts-vn[data-cg]:is([data-whole],[data-hidden]) .vn-bg-layer{filter:blur(18px) brightness(.55)}
-.sttts-vn[data-soft] .vn-bg-layer,.sttts-vn[data-soft] .vn-fit{filter:brightness(.74) saturate(.92)}
+.myphone-vn[data-cg]:is([data-whole],[data-hidden]) .vn-fit{opacity:1}
+.myphone-vn[data-cg]:is([data-whole],[data-hidden]) .vn-bg-layer{filter:blur(18px) brightness(.55)}
+.myphone-vn[data-soft] .vn-bg-layer,.myphone-vn[data-soft] .vn-fit{filter:brightness(.74) saturate(.92)}
 /* 隐藏 over a CG: the picture alone. */
 .vn-cast{transition:opacity .35s}
-.sttts-vn[data-hidden][data-cg] .vn-cast{opacity:0}
-.sttts-vn[data-fx] .vn-bg-layer[data-on]{animation:vn-drift 28s ease-in-out infinite alternate}
-.sttts-vn[data-fx] .vn-bg-layer[data-on][data-reveal]{animation:vn-reveal 1.1s cubic-bezier(.22,1,.36,1),vn-drift 28s ease-in-out infinite alternate}
-.sttts-vn[data-fx] .vn-fit[data-reveal]{animation:vn-reveal 1.1s cubic-bezier(.22,1,.36,1)}
+.myphone-vn[data-hidden][data-cg] .vn-cast{opacity:0}
+.myphone-vn[data-fx] .vn-bg-layer[data-on]{animation:vn-drift 28s ease-in-out infinite alternate}
+.myphone-vn[data-fx] .vn-bg-layer[data-on][data-reveal]{animation:vn-reveal 1.1s cubic-bezier(.22,1,.36,1),vn-drift 28s ease-in-out infinite alternate}
+.myphone-vn[data-fx] .vn-fit[data-reveal]{animation:vn-reveal 1.1s cubic-bezier(.22,1,.36,1)}
 @keyframes vn-drift{from{transform:scale(1) translate(0,0)}to{transform:scale(1.07) translate(-1.2%,-.8%)}}
 @keyframes vn-reveal{from{clip-path:circle(0% at 50% 45%)}to{clip-path:circle(80% at 50% 45%)}}
 /* 回忆, 梦里: an old photograph. */
 .vn-stage{transition:filter 1s}
-.sttts-vn[data-memory] .vn-stage{filter:sepia(.55) saturate(.75) contrast(.95)}
-.sttts-vn[data-memory] .vn-stage::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:3;background:radial-gradient(ellipse at center,transparent 50%,rgba(255,240,214,.6) 100%)}
+.myphone-vn[data-memory] .vn-stage{filter:sepia(.55) saturate(.75) contrast(.95)}
+.myphone-vn[data-memory] .vn-stage::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:3;background:radial-gradient(ellipse at center,transparent 50%,rgba(255,240,214,.6) 100%)}
 .vn-fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
 .vn-tint,.vn-black{position:absolute;inset:0;pointer-events:none;opacity:0;z-index:3}
 .vn-tint[data-tint=red]{background:radial-gradient(ellipse at center,transparent 58%,rgba(230,30,50,.42) 100%)}
@@ -66,12 +66,12 @@ const CSS = `
 .vn-tint[data-tint=pink]{background:radial-gradient(ellipse at center,transparent 58%,rgba(255,120,170,.38) 100%)}
 .vn-tint[data-tint=dark]{background:radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.55) 100%)}
 .vn-tint[data-tint=beat]{background:radial-gradient(ellipse at center,transparent 38%,rgba(200,20,60,.6) 100%)}
-.sttts-vn[data-fx] .vn-tint[data-on]{animation:vn-tint 1.9s ease}
-.sttts-vn[data-fx] .vn-tint[data-on][data-tint=beat]{animation:vn-beat 1.5s ease}
+.myphone-vn[data-fx] .vn-tint[data-on]{animation:vn-tint 1.9s ease}
+.myphone-vn[data-fx] .vn-tint[data-on][data-tint=beat]{animation:vn-beat 1.5s ease}
 @keyframes vn-tint{0%{opacity:0}30%{opacity:.85}60%{opacity:.6}100%{opacity:0}}
 @keyframes vn-beat{0%,100%{opacity:0}12%{opacity:1}26%{opacity:.15}40%{opacity:.9}62%{opacity:0}}
 .vn-black{background:#000;z-index:4}
-.sttts-vn[data-fx] .vn-black[data-on]{animation:vn-black 2.3s ease}
+.myphone-vn[data-fx] .vn-black[data-on]{animation:vn-black 2.3s ease}
 @keyframes vn-black{0%{opacity:0}25%,55%{opacity:1}100%{opacity:0}}
 .vn-cast{position:absolute;inset:0;pointer-events:none}
 .vn-actor{position:absolute;bottom:0;left:50%;height:min(92%,150vw);transform:translateX(-50%);transform-origin:50% 100%;transition:left .55s cubic-bezier(.22,1,.36,1),opacity .45s,filter .35s;opacity:0;filter:drop-shadow(0 10px 24px rgba(0,0,0,.35))}
@@ -85,51 +85,51 @@ const CSS = `
 .vn-actor img.vn-was{position:absolute;left:50%;bottom:0;transform:translateX(-50%);opacity:1;transition:opacity .35s}
 .vn-actor img.vn-was[data-gone]{opacity:0}
 .vn-actor[data-speaking]{z-index:2}
-.sttts-vn[data-fx] .vn-actor[data-hop] :is(img,canvas){animation:vn-hop .5s cubic-bezier(.3,1.6,.5,1)}
+.myphone-vn[data-fx] .vn-actor[data-hop] :is(img,canvas){animation:vn-hop .5s cubic-bezier(.3,1.6,.5,1)}
 @keyframes vn-hop{0%,100%{transform:none}35%{transform:translateY(-4.5%)}}
-.sttts-vn[data-fx] .vn-actor[data-enter] :is(img,canvas){animation:vn-enter .55s cubic-bezier(.22,1,.36,1)}
+.myphone-vn[data-fx] .vn-actor[data-enter] :is(img,canvas){animation:vn-enter .55s cubic-bezier(.22,1,.36,1)}
 @keyframes vn-enter{from{transform:translate(var(--vn-from,0),4%);opacity:0}}
-.sttts-vn[data-fx] .vn-actor[data-bounce] :is(img,canvas){animation:vn-bounce .75s ease}
+.myphone-vn[data-fx] .vn-actor[data-bounce] :is(img,canvas){animation:vn-bounce .75s ease}
 @keyframes vn-bounce{0%,100%{transform:none}22%{transform:translateY(-3.5%)}45%{transform:none}65%{transform:translateY(-1.6%)}82%{transform:none}}
-.sttts-vn[data-fx] .vn-actor[data-tremble] :is(img,canvas){animation:vn-tremble .7s linear}
+.myphone-vn[data-fx] .vn-actor[data-tremble] :is(img,canvas){animation:vn-tremble .7s linear}
 @keyframes vn-tremble{0%,100%{transform:none}10%,50%,90%{transform:translateX(-.7%)}30%,70%{transform:translateX(.7%)}}
-.sttts-vn[data-fx][data-shake=big] .vn-stage{animation:vn-shake-big .75s linear}
+.myphone-vn[data-fx][data-shake=big] .vn-stage{animation:vn-shake-big .75s linear}
 @keyframes vn-shake-big{0%,100%{transform:none}10%{transform:translate(-18px,8px) rotate(-.6deg)}20%{transform:translate(16px,-10px) rotate(.5deg)}30%{transform:translate(-14px,6px)}45%{transform:translate(10px,-5px)}60%{transform:translate(-7px,3px)}80%{transform:translate(3px,-1px)}}
-.sttts-vn[data-fx][data-shake] .vn-stage{animation:vn-shake .42s linear}
+.myphone-vn[data-fx][data-shake] .vn-stage{animation:vn-shake .42s linear}
 @keyframes vn-shake{0%,100%{transform:none}15%{transform:translate(-9px,3px)}30%{transform:translate(8px,-4px)}45%{transform:translate(-6px,2px)}60%{transform:translate(5px,-2px)}80%{transform:translate(-2px,1px)}}
 .vn-stage{position:absolute;inset:0}
 .vn-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
-.sttts-vn[data-fx] .vn-flash[data-on]{animation:vn-flash .7s ease-out}
-.sttts-vn[data-fx] .vn-flash[data-on][data-kind=lightning]{animation:vn-lightning 1s linear}
+.myphone-vn[data-fx] .vn-flash[data-on]{animation:vn-flash .7s ease-out}
+.myphone-vn[data-fx] .vn-flash[data-on][data-kind=lightning]{animation:vn-lightning 1s linear}
 .vn-flash[data-kind=boom]{background:#ffb35c}
 @keyframes vn-flash{from{opacity:.75}to{opacity:0}}
 @keyframes vn-lightning{0%{opacity:.95}8%{opacity:0}16%{opacity:.75}26%{opacity:0}34%{opacity:.4}100%{opacity:0}}
 .vn-box{position:absolute;left:50%;bottom:max(14px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(1120px,calc(100% - 24px));min-height:clamp(132px,24vh,210px);padding:30px clamp(18px,3vw,40px) 22px;border-radius:20px;background:linear-gradient(180deg,var(--vn-box),var(--vn-box2));border:1px solid var(--vn-line);box-shadow:0 18px 50px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.12);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:opacity .3s,transform .3s;z-index:5}
-.sttts-vn[data-face] .vn-box{padding-left:clamp(108px,15vw,150px)}
+.myphone-vn[data-face] .vn-box{padding-left:clamp(108px,15vw,150px)}
 .vn-face{position:absolute;left:clamp(14px,2vw,24px);bottom:18px;width:clamp(78px,11vw,112px);aspect-ratio:1;border-radius:18px;overflow:hidden;border:2px solid var(--vn-line);box-shadow:0 6px 18px rgba(0,0,0,.3);display:none;background:var(--vn-box2)}
-.sttts-vn[data-face] .vn-face{display:block}
+.myphone-vn[data-face] .vn-face{display:block}
 .vn-face img{width:100%;height:100%;object-fit:cover;display:block}
 .vn-face img.vn-bust{object-position:50% 0;transform:scale(1.6);transform-origin:50% 0}
 .vn-face span{display:grid;place-items:center;width:100%;height:100%;font-size:38px;font-weight:800;color:var(--vn-plate)}
 .vn-name{position:absolute;top:-19px;left:clamp(16px,2.6vw,34px);min-width:110px;padding:5px 22px;border-radius:12px 12px 12px 4px;background:var(--vn-plate);color:var(--vn-plate-ink);font-weight:800;font-size:17px;letter-spacing:.08em;text-align:center;box-shadow:0 6px 18px var(--vn-glow);transform:skewX(-8deg)}
 .vn-name>span{display:inline-block;transform:skewX(8deg)}
-.sttts-vn[data-fx] .vn-name[data-pop]{animation:vn-plate .4s cubic-bezier(.3,1.5,.5,1)}
+.myphone-vn[data-fx] .vn-name[data-pop]{animation:vn-plate .4s cubic-bezier(.3,1.5,.5,1)}
 @keyframes vn-plate{from{opacity:0;transform:skewX(-8deg) translateY(8px) scale(.9)}}
 .vn-name[hidden]{display:none}
 .vn-text{margin:0;min-height:3.5em;font-size:var(--vn-size);line-height:1.8;letter-spacing:.02em;white-space:pre-wrap;overflow-wrap:anywhere;text-shadow:0 1px 2px rgba(0,0,0,.18)}
-.sttts-vn:is([data-box=day],[data-box=sakura],[data-box=phone]) .vn-text{text-shadow:none}
-.sttts-vn[data-box=tavern] .vn-name{text-shadow:0 1px 2px rgba(0,0,0,.35)}
-.sttts-vn[data-narrate] .vn-text{color:var(--vn-soft);font-style:normal}
-.sttts-vn[data-user] .vn-name{background:var(--vn-ink);color:var(--vn-box2)}
+.myphone-vn:is([data-box=day],[data-box=sakura],[data-box=phone]) .vn-text{text-shadow:none}
+.myphone-vn[data-box=tavern] .vn-name{text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.myphone-vn[data-narrate] .vn-text{color:var(--vn-soft);font-style:normal}
+.myphone-vn[data-user] .vn-name{background:var(--vn-ink);color:var(--vn-box2)}
 .vn-rest{visibility:hidden}
 .vn-next{position:absolute;right:22px;bottom:12px;font-size:13px;color:var(--vn-plate);opacity:0;transition:opacity .2s}
-.sttts-vn[data-done] .vn-next{opacity:1;animation:vn-next 1s ease-in-out infinite}
+.myphone-vn[data-done] .vn-next{opacity:1;animation:vn-next 1s ease-in-out infinite}
 @keyframes vn-next{50%{transform:translateY(4px)}}
 .vn-voice{position:absolute;right:44px;bottom:12px;display:none;gap:3px;align-items:flex-end;height:18px;padding:4px 9px;border-radius:999px;background:var(--vn-plate);box-shadow:0 4px 12px var(--vn-glow)}
 .vn-voice i{width:3px;height:6px;border-radius:2px;background:var(--vn-plate-ink);animation:vn-bar .9s ease-in-out infinite}
 .vn-voice i:nth-child(2){animation-delay:.15s}.vn-voice i:nth-child(3){animation-delay:.3s}.vn-voice i:nth-child(4){animation-delay:.45s}
-.sttts-vn[data-voice=playing] .vn-voice,.sttts-vn[data-voice=generating] .vn-voice{display:flex}
-.sttts-vn[data-voice=generating] .vn-voice i{animation-duration:1.8s;opacity:.6}
+.myphone-vn[data-voice=playing] .vn-voice,.myphone-vn[data-voice=generating] .vn-voice{display:flex}
+.myphone-vn[data-voice=generating] .vn-voice i{animation-duration:1.8s;opacity:.6}
 @keyframes vn-bar{50%{height:12px}}
 .vn-menu{position:absolute;right:6px;bottom:calc(100% + 8px);display:flex;gap:4px;z-index:6;justify-content:flex-end}
 .vn-menu button{padding:4px 10px;border-radius:999px;font-size:13px;font-weight:700;color:#fff;background:rgba(10,12,28,.5);border:1px solid rgba(255,255,255,.18);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);letter-spacing:.06em;transition:background .2s}
@@ -143,13 +143,13 @@ const CSS = `
 .vn-menu .vn-more button:hover{background:rgba(255,255,255,.1)}
 .vn-menu .vn-more button[aria-pressed]{background:none;color:#fff}
 .vn-menu .vn-more button[aria-pressed=true]::after{content:' ✓';color:var(--vn-plate)}
-.sttts-vn[data-fx] .vn-more:not([hidden]){animation:vn-pop .2s ease-out}
+.myphone-vn[data-fx] .vn-more:not([hidden]){animation:vn-pop .2s ease-out}
 @keyframes vn-pop{from{opacity:0;transform:translateY(6px) scale(.97)}}
-.sttts-vn[data-hidden] .vn-box{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(16px)}
+.myphone-vn[data-hidden] .vn-box{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(16px)}
 .vn-input{display:none;gap:8px;margin-top:10px}
-.sttts-vn[data-end] .vn-input{display:flex}
+.myphone-vn[data-end] .vn-input{display:flex}
 .vn-input textarea{flex:1;min-height:46px;max-height:30vh;resize:none;padding:10px 12px;border-radius:12px;border:1px solid var(--vn-line);background:rgba(255,255,255,.1);color:var(--vn-ink);font:15px/1.6 var(--vn-font);user-select:text;-webkit-user-select:text;outline:none}
-.sttts-vn:is([data-box=day],[data-box=sakura]) .vn-input textarea{background:rgba(255,255,255,.7)}
+.myphone-vn:is([data-box=day],[data-box=sakura]) .vn-input textarea{background:rgba(255,255,255,.7)}
 .vn-input textarea:focus{border-color:var(--vn-plate)}
 .vn-input button{align-self:flex-end;padding:11px 18px;border-radius:12px;background:var(--vn-plate);color:var(--vn-plate-ink);font-weight:800;white-space:nowrap}
 .vn-input button[disabled]{opacity:.5;pointer-events:none}
@@ -171,14 +171,14 @@ const CSS = `
 .vn-title em{font-style:normal;font-size:13px;opacity:.55;letter-spacing:.2em}
 .vn-title::before,.vn-title::after{content:'';justify-self:center;width:min(320px,60vw);height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent)}
 .vn-title[data-out]{opacity:0;pointer-events:none}
-.sttts-vn[data-fx] .vn-title strong{animation:vn-rise 1.1s cubic-bezier(.22,1,.36,1)}
+.myphone-vn[data-fx] .vn-title strong{animation:vn-rise 1.1s cubic-bezier(.22,1,.36,1)}
 @keyframes vn-rise{from{opacity:0;transform:translateY(14px);letter-spacing:.5em}}
 /* 镜头: the scene (background and people, not the text box) pushes in, snaps, sways or tilts toward whoever speaks. */
 .vn-bg,.vn-cast{transform-origin:var(--vn-focus,50%) var(--vn-focus-y,38%)}
-.sttts-vn[data-fx][data-cam=push] :is(.vn-bg,.vn-cast){animation:vn-cam-push 2.8s cubic-bezier(.33,0,.2,1)}
-.sttts-vn[data-fx][data-cam=snap] :is(.vn-bg,.vn-cast){animation:vn-cam-snap 1.2s cubic-bezier(.2,.9,.25,1)}
-.sttts-vn[data-fx][data-cam=sway] :is(.vn-bg,.vn-cast){animation:vn-cam-sway 2.2s ease-in-out}
-.sttts-vn[data-fx][data-cam=tilt] :is(.vn-bg,.vn-cast){animation:vn-cam-tilt 2.2s cubic-bezier(.33,0,.2,1)}
+.myphone-vn[data-fx][data-cam=push] :is(.vn-bg,.vn-cast){animation:vn-cam-push 2.8s cubic-bezier(.33,0,.2,1)}
+.myphone-vn[data-fx][data-cam=snap] :is(.vn-bg,.vn-cast){animation:vn-cam-snap 1.2s cubic-bezier(.2,.9,.25,1)}
+.myphone-vn[data-fx][data-cam=sway] :is(.vn-bg,.vn-cast){animation:vn-cam-sway 2.2s ease-in-out}
+.myphone-vn[data-fx][data-cam=tilt] :is(.vn-bg,.vn-cast){animation:vn-cam-tilt 2.2s cubic-bezier(.33,0,.2,1)}
 @keyframes vn-cam-push{0%{transform:none}40%,72%{transform:scale(1.055)}100%{transform:none}}
 @keyframes vn-cam-snap{0%{transform:none}14%{transform:scale(1.1)}38%{transform:scale(1.075)}100%{transform:none}}
 @keyframes vn-cam-sway{0%,100%{transform:none}22%{transform:scale(1.03) translate(.5%,-.3%) rotate(.3deg)}48%{transform:scale(1.03) translate(-.45%,.25%) rotate(-.25deg)}74%{transform:scale(1.03) translate(.3%,.2%) rotate(.18deg)}}
@@ -186,21 +186,21 @@ const CSS = `
 /* 集中线: lines rushing in toward whoever speaks (surprise, anger). */
 .vn-lines{position:absolute;inset:-12%;pointer-events:none;opacity:0;z-index:3;--vn-line-ink:rgba(255,255,255,.55);background:repeating-conic-gradient(from 0deg at var(--vn-focus,50%) 40%,transparent 0deg 2.1deg,var(--vn-line-ink) 2.3deg 2.6deg,transparent 2.8deg 4.9deg,var(--vn-line-ink) 5deg 5.15deg,transparent 5.3deg 7.4deg);-webkit-mask:radial-gradient(ellipse at var(--vn-focus,50%) 40%,transparent 30%,#000 72%);mask:radial-gradient(ellipse at var(--vn-focus,50%) 40%,transparent 30%,#000 72%)}
 .vn-lines[data-kind=dark]{--vn-line-ink:rgba(30,0,8,.6)}
-.sttts-vn[data-fx] .vn-lines[data-on]{animation:vn-lines .8s ease-out}
+.myphone-vn[data-fx] .vn-lines[data-on]{animation:vn-lines .8s ease-out}
 @keyframes vn-lines{0%{opacity:0;transform:scale(1.22)}16%{opacity:1}100%{opacity:0;transform:scale(1)}}
 .vn-tint[data-tint=warm]{background:radial-gradient(ellipse at 12% 0%,rgba(255,206,140,.42),transparent 58%),radial-gradient(ellipse at center,transparent 62%,rgba(255,190,120,.22) 100%)}
 /* A CG behind a blur does not drift (a moving blur is the heaviest thing on the stage). */
-.sttts-vn[data-cg]:is([data-whole],[data-hidden]) .vn-bg-layer[data-on]{animation:none}
-.sttts-vn[data-fx]:not([data-lite]) .vn-bg-layer[data-on]{will-change:transform}
+.myphone-vn[data-cg]:is([data-whole],[data-hidden]) .vn-bg-layer[data-on]{animation:none}
+.myphone-vn[data-fx]:not([data-lite]) .vn-bg-layer[data-on]{will-change:transform}
 /* 手机: no drifting background, no blur behind the text box and the menus, no shadow redrawn under moving people. */
-.sttts-vn[data-lite][data-fx] .vn-bg-layer[data-on]:not([data-reveal]){animation:none}
-.sttts-vn[data-lite][data-fx] .vn-bg-layer[data-on][data-reveal]{animation:vn-reveal 1.1s cubic-bezier(.22,1,.36,1)}
-.sttts-vn[data-lite] :is(.vn-box,.vn-menu button,.vn-more,.vn-log){-webkit-backdrop-filter:none;backdrop-filter:none}
-.sttts-vn[data-lite] .vn-actor{filter:none}
-.sttts-vn[data-lite] .vn-actor[data-dim]{filter:brightness(.58) saturate(.85)}
+.myphone-vn[data-lite][data-fx] .vn-bg-layer[data-on]:not([data-reveal]){animation:none}
+.myphone-vn[data-lite][data-fx] .vn-bg-layer[data-on][data-reveal]{animation:vn-reveal 1.1s cubic-bezier(.22,1,.36,1)}
+.myphone-vn[data-lite] :is(.vn-box,.vn-menu button,.vn-more,.vn-log){-webkit-backdrop-filter:none;backdrop-filter:none}
+.myphone-vn[data-lite] .vn-actor{filter:none}
+.myphone-vn[data-lite] .vn-actor[data-dim]{filter:brightness(.58) saturate(.85)}
 /* 立绘 alive: breathing a little all the time, bobbing while they talk (other properties than the moves use). */
-.sttts-vn[data-fx] .vn-actor{animation:vn-breathe var(--vn-breath,5.4s) ease-in-out var(--vn-phase,0s) infinite}
-.sttts-vn[data-fx] .vn-actor[data-talking]{animation:vn-breathe var(--vn-breath,5.4s) ease-in-out var(--vn-phase,0s) infinite,vn-talk .32s ease-in-out infinite alternate}
+.myphone-vn[data-fx] .vn-actor{animation:vn-breathe var(--vn-breath,5.4s) ease-in-out var(--vn-phase,0s) infinite}
+.myphone-vn[data-fx] .vn-actor[data-talking]{animation:vn-breathe var(--vn-breath,5.4s) ease-in-out var(--vn-phase,0s) infinite,vn-talk .32s ease-in-out infinite alternate}
 @keyframes vn-breathe{0%,100%{scale:1 1}50%{scale:1.005 1.012}}
 @keyframes vn-talk{from{translate:0 0}to{translate:0 -.5%}}
 /* Poses held while a line is said. */
@@ -213,19 +213,19 @@ const CSS = `
 .vn-actor[data-pose=sink] :is(img,canvas){transform:translateY(2.5%);filter:saturate(.8) brightness(.93)}
 .vn-actor[data-pose=droop] :is(img,canvas){transform:translateY(3.2%) rotate(-1.4deg);filter:saturate(.75) brightness(.9)}
 /* One-shot moves (the story's 点头, 摇头, 鞠躬 … and the feelings'). */
-.sttts-vn[data-fx] .vn-actor[data-sway] :is(img,canvas){animation:vn-sway .9s ease-in-out}
-.sttts-vn[data-fx] .vn-actor[data-stomp] :is(img,canvas){animation:vn-stomp .5s cubic-bezier(.3,1.4,.5,1)}
-.sttts-vn[data-fx] .vn-actor[data-lunge] :is(img,canvas){animation:vn-lunge .55s cubic-bezier(.2,.9,.3,1)}
-.sttts-vn[data-fx] .vn-actor[data-recoil] :is(img,canvas){animation:vn-recoil .6s cubic-bezier(.2,.9,.3,1)}
-.sttts-vn[data-fx] .vn-actor[data-nod] :is(img,canvas){animation:vn-nod .8s ease-in-out}
-.sttts-vn[data-fx] .vn-actor[data-headshake] :is(img,canvas){animation:vn-headshake .8s ease-in-out}
-.sttts-vn[data-fx] .vn-actor[data-wiggle] :is(img,canvas){animation:vn-wiggle .9s ease-in-out}
-.sttts-vn[data-fx] .vn-actor[data-bow] :is(img,canvas){animation:vn-bow 1.3s ease-in-out}
-.sttts-vn[data-fx] .vn-actor[data-giggle] :is(img,canvas){animation:vn-giggle .7s ease-in-out}
-.sttts-vn[data-fx] .vn-actor[data-shrug] :is(img,canvas){animation:vn-shrug .8s ease-in-out}
-.sttts-vn[data-fx] .vn-actor[data-jump] :is(img,canvas){animation:vn-jump .7s cubic-bezier(.3,1.5,.5,1)}
-.sttts-vn[data-fx] .vn-actor[data-puff] :is(img,canvas){animation:vn-puff .6s ease-in-out}
-.sttts-vn[data-fx] .vn-actor[data-settle] :is(img,canvas){animation:vn-settle .6s ease-out}
+.myphone-vn[data-fx] .vn-actor[data-sway] :is(img,canvas){animation:vn-sway .9s ease-in-out}
+.myphone-vn[data-fx] .vn-actor[data-stomp] :is(img,canvas){animation:vn-stomp .5s cubic-bezier(.3,1.4,.5,1)}
+.myphone-vn[data-fx] .vn-actor[data-lunge] :is(img,canvas){animation:vn-lunge .55s cubic-bezier(.2,.9,.3,1)}
+.myphone-vn[data-fx] .vn-actor[data-recoil] :is(img,canvas){animation:vn-recoil .6s cubic-bezier(.2,.9,.3,1)}
+.myphone-vn[data-fx] .vn-actor[data-nod] :is(img,canvas){animation:vn-nod .8s ease-in-out}
+.myphone-vn[data-fx] .vn-actor[data-headshake] :is(img,canvas){animation:vn-headshake .8s ease-in-out}
+.myphone-vn[data-fx] .vn-actor[data-wiggle] :is(img,canvas){animation:vn-wiggle .9s ease-in-out}
+.myphone-vn[data-fx] .vn-actor[data-bow] :is(img,canvas){animation:vn-bow 1.3s ease-in-out}
+.myphone-vn[data-fx] .vn-actor[data-giggle] :is(img,canvas){animation:vn-giggle .7s ease-in-out}
+.myphone-vn[data-fx] .vn-actor[data-shrug] :is(img,canvas){animation:vn-shrug .8s ease-in-out}
+.myphone-vn[data-fx] .vn-actor[data-jump] :is(img,canvas){animation:vn-jump .7s cubic-bezier(.3,1.5,.5,1)}
+.myphone-vn[data-fx] .vn-actor[data-puff] :is(img,canvas){animation:vn-puff .6s ease-in-out}
+.myphone-vn[data-fx] .vn-actor[data-settle] :is(img,canvas){animation:vn-settle .6s ease-out}
 @keyframes vn-sway{0%,100%{transform:none}30%{transform:rotate(1.6deg)}70%{transform:rotate(-1.2deg)}}
 @keyframes vn-stomp{0%,100%{transform:none}25%{transform:translateY(-2.5%)}50%{transform:translateY(1%) scale(1.02,.98)}}
 @keyframes vn-lunge{0%,100%{transform:none}35%{transform:scale(1.08) translateY(1.5%)}}
@@ -240,47 +240,47 @@ const CSS = `
 @keyframes vn-puff{0%,100%{transform:none}40%{transform:scale(1.04)}}
 @keyframes vn-settle{0%{transform:translateY(-1%)}100%{transform:none}}
 /* More shots: a close-up on the speaker, a sudden zoom, a pull back, a slow drift. A close-up blurs what is behind. */
-.sttts-vn[data-fx][data-cam=close] :is(.vn-bg,.vn-cast){animation:vn-cam-close 4.2s cubic-bezier(.3,0,.2,1)}
-.sttts-vn[data-fx][data-cam=zoom] :is(.vn-bg,.vn-cast){animation:vn-cam-zoom 1.6s cubic-bezier(.15,.9,.2,1)}
-.sttts-vn[data-fx][data-cam=pull] :is(.vn-bg,.vn-cast){animation:vn-cam-pull 2.8s cubic-bezier(.3,0,.2,1)}
-.sttts-vn[data-fx][data-cam=drift] :is(.vn-bg,.vn-cast){animation:vn-cam-drift 4s ease-in-out}
+.myphone-vn[data-fx][data-cam=close] :is(.vn-bg,.vn-cast){animation:vn-cam-close 4.2s cubic-bezier(.3,0,.2,1)}
+.myphone-vn[data-fx][data-cam=zoom] :is(.vn-bg,.vn-cast){animation:vn-cam-zoom 1.6s cubic-bezier(.15,.9,.2,1)}
+.myphone-vn[data-fx][data-cam=pull] :is(.vn-bg,.vn-cast){animation:vn-cam-pull 2.8s cubic-bezier(.3,0,.2,1)}
+.myphone-vn[data-fx][data-cam=drift] :is(.vn-bg,.vn-cast){animation:vn-cam-drift 4s ease-in-out}
 @keyframes vn-cam-close{0%{transform:none}30%,80%{transform:scale(1.16)}100%{transform:none}}
 @keyframes vn-cam-zoom{0%{transform:none}10%{transform:scale(1.13)}70%{transform:scale(1.1)}100%{transform:none}}
 @keyframes vn-cam-pull{0%{transform:scale(1.12)}100%{transform:none}}
 @keyframes vn-cam-drift{0%,100%{transform:none}50%{transform:scale(1.04) translateX(-1.2%)}}
-.sttts-vn[data-fx]:not([data-lite])[data-cam=close] .vn-bg{filter:blur(2.5px) brightness(.9);transition:filter .6s}
+.myphone-vn[data-fx]:not([data-lite])[data-cam=close] .vn-bg{filter:blur(2.5px) brightness(.9);transition:filter .6s}
 /* The light of the scene (time of day, lamplight), over everything on the stage. */
 .vn-grade{position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0;transition:opacity 1.6s ease}
-.sttts-vn[data-fx][data-grade] .vn-grade{opacity:1}
-.sttts-vn[data-grade=night] .vn-grade{background:linear-gradient(180deg,rgba(26,38,104,.5),rgba(10,12,48,.55));mix-blend-mode:multiply}
-.sttts-vn[data-grade=dusk] .vn-grade{background:linear-gradient(180deg,rgba(140,80,190,.5),rgba(255,140,60,.6));mix-blend-mode:soft-light}
-.sttts-vn[data-grade=dawn] .vn-grade{background:linear-gradient(180deg,rgba(255,196,170,.6),rgba(255,236,200,.35));mix-blend-mode:soft-light}
-.sttts-vn[data-grade=day] .vn-grade{background:radial-gradient(ellipse at 20% 0%,rgba(255,250,220,.4),transparent 62%);mix-blend-mode:screen}
-.sttts-vn[data-grade=warm] .vn-grade{background:radial-gradient(ellipse at 50% 40%,rgba(255,190,110,.55),rgba(120,50,10,.6) 100%);mix-blend-mode:soft-light}
-.sttts-vn[data-grade=cold] .vn-grade{background:linear-gradient(180deg,rgba(150,166,196,.4),rgba(80,92,116,.4));mix-blend-mode:multiply}
+.myphone-vn[data-fx][data-grade] .vn-grade{opacity:1}
+.myphone-vn[data-grade=night] .vn-grade{background:linear-gradient(180deg,rgba(26,38,104,.5),rgba(10,12,48,.55));mix-blend-mode:multiply}
+.myphone-vn[data-grade=dusk] .vn-grade{background:linear-gradient(180deg,rgba(140,80,190,.5),rgba(255,140,60,.6));mix-blend-mode:soft-light}
+.myphone-vn[data-grade=dawn] .vn-grade{background:linear-gradient(180deg,rgba(255,196,170,.6),rgba(255,236,200,.35));mix-blend-mode:soft-light}
+.myphone-vn[data-grade=day] .vn-grade{background:radial-gradient(ellipse at 20% 0%,rgba(255,250,220,.4),transparent 62%);mix-blend-mode:screen}
+.myphone-vn[data-grade=warm] .vn-grade{background:radial-gradient(ellipse at 50% 40%,rgba(255,190,110,.55),rgba(120,50,10,.6) 100%);mix-blend-mode:soft-light}
+.myphone-vn[data-grade=cold] .vn-grade{background:linear-gradient(180deg,rgba(150,166,196,.4),rgba(80,92,116,.4));mix-blend-mode:multiply}
 /* Light pouring in. */
 .vn-rays{position:absolute;inset:-20%;z-index:2;pointer-events:none;opacity:0;transform-origin:18% 0;background:repeating-conic-gradient(from 200deg at 18% -10%,rgba(255,244,214,0) 0deg 6deg,rgba(255,244,214,.24) 8deg 11deg,rgba(255,244,214,0) 13deg 20deg);-webkit-mask:linear-gradient(170deg,#000 10%,transparent 75%);mask:linear-gradient(170deg,#000 10%,transparent 75%);mix-blend-mode:screen;transition:opacity 1.4s}
-.sttts-vn[data-fx][data-rays] .vn-rays{opacity:1;animation:vn-rays 9s ease-in-out infinite alternate}
+.myphone-vn[data-fx][data-rays] .vn-rays{opacity:1;animation:vn-rays 9s ease-in-out infinite alternate}
 @keyframes vn-rays{from{transform:rotate(-2deg)}to{transform:rotate(2deg)}}
 /* A blow lands: the picture flashes to its negative and shakes. Something goes wrong: it glitches. */
-.sttts-vn[data-fx][data-impact] .vn-stage{animation:vn-impact .5s linear both}
+.myphone-vn[data-fx][data-impact] .vn-stage{animation:vn-impact .5s linear both}
 @keyframes vn-impact{0%{filter:invert(1) contrast(1.6) grayscale(1);transform:translate(-16px,8px)}14%{filter:none;transform:translate(14px,-9px)}28%{filter:invert(1) contrast(1.4) grayscale(1);transform:translate(-10px,5px)}44%{filter:none;transform:translate(7px,-3px)}70%{transform:translate(-3px,1px)}100%{filter:none;transform:none}}
-.sttts-vn[data-fx][data-glitch] .vn-stage{animation:vn-glitch .8s steps(8) both}
+.myphone-vn[data-fx][data-glitch] .vn-stage{animation:vn-glitch .8s steps(8) both}
 @keyframes vn-glitch{0%{transform:none;filter:none}12%{transform:translate(-8px,2px);filter:hue-rotate(80deg) saturate(1.6);clip-path:inset(12% 0 58% 0)}24%{transform:translate(6px,-3px);clip-path:inset(46% 0 20% 0)}36%{transform:translate(-4px,0);filter:hue-rotate(-60deg);clip-path:none}50%{transform:translate(3px,1px);filter:drop-shadow(5px 0 rgba(255,0,60,.6)) drop-shadow(-5px 0 rgba(0,220,255,.6))}64%{transform:none;filter:none;clip-path:inset(70% 0 6% 0)}76%{clip-path:none;filter:drop-shadow(4px 0 rgba(255,0,60,.5)) drop-shadow(-4px 0 rgba(0,220,255,.5))}100%{transform:none;filter:none;clip-path:none}}
 /* Letterbox bars for a quiet, heavy moment. */
 .vn-bars::before,.vn-bars::after{content:'';position:absolute;left:0;right:0;height:9vh;background:#000;z-index:4;transition:transform .8s cubic-bezier(.22,1,.36,1);pointer-events:none}
 .vn-bars::before{top:0;transform:translateY(-100%)}
 .vn-bars::after{bottom:0;transform:translateY(100%)}
-.sttts-vn[data-fx][data-bars] .vn-bars::before,.sttts-vn[data-fx][data-bars] .vn-bars::after{transform:none}
+.myphone-vn[data-fx][data-bars] .vn-bars::before,.myphone-vn[data-fx][data-bars] .vn-bars::after{transform:none}
 /* Cut-in: a band sweeps across with the speaker's face and the shout. */
 .vn-cutin{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:0;overflow:hidden}
 .vn-cutin i{position:absolute;left:-15%;right:-15%;top:24%;height:34%;transform:skewY(-7deg) translateX(110%);background:linear-gradient(100deg,var(--vn-plate),color-mix(in srgb,var(--vn-plate) 55%,#000));box-shadow:0 0 0 4px rgba(255,255,255,.9),0 18px 40px rgba(0,0,0,.45);overflow:hidden}
 .vn-cutin i::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(100deg,transparent 0 22px,rgba(255,255,255,.22) 22px 24px);animation:vn-speed .35s linear infinite}
 .vn-cutin b{position:absolute;right:14%;top:-60%;width:46%;height:220%;background:var(--vn-face) 50% 7%/auto 240% no-repeat;transform:skewY(7deg)}
 .vn-cutin span{position:absolute;left:12%;right:50%;top:50%;transform:translateY(-50%) skewY(7deg);color:#fff;font-weight:900;font-size:clamp(22px,4.8vw,60px);line-height:1.2;letter-spacing:.06em;text-shadow:0 3px 0 rgba(0,0,0,.35),0 0 18px rgba(0,0,0,.35);overflow-wrap:anywhere}
-.sttts-vn[data-fx] .vn-cutin[data-on]{animation:vn-cutin-fade 1.4s ease forwards}
-.sttts-vn[data-fx] .vn-cutin[data-on] i{animation:vn-cutin 1.4s cubic-bezier(.2,.9,.25,1) forwards}
-.sttts-vn[data-hidden] .vn-cutin{display:none}
+.myphone-vn[data-fx] .vn-cutin[data-on]{animation:vn-cutin-fade 1.4s ease forwards}
+.myphone-vn[data-fx] .vn-cutin[data-on] i{animation:vn-cutin 1.4s cubic-bezier(.2,.9,.25,1) forwards}
+.myphone-vn[data-hidden] .vn-cutin{display:none}
 @keyframes vn-cutin-fade{0%{opacity:0}8%,82%{opacity:1}100%{opacity:0}}
 @keyframes vn-cutin{0%{transform:skewY(-7deg) translateX(110%)}18%{transform:skewY(-7deg) translateX(0)}78%{transform:skewY(-7deg) translateX(-3%)}100%{transform:skewY(-7deg) translateX(-115%)}}
 @keyframes vn-speed{to{background-position:-120px 0}}
@@ -288,15 +288,15 @@ const CSS = `
 .vn-card{position:absolute;inset:0;z-index:6;display:grid;place-content:center;justify-items:center;gap:14px;background:#07070d;color:#f4f2ff;opacity:0;pointer-events:none}
 .vn-card strong{font:800 clamp(24px,4.4vw,44px)/1.3 "Songti SC","STSong","Noto Serif SC",serif;letter-spacing:.3em;padding-left:.3em}
 .vn-card::before,.vn-card::after{content:'';width:min(280px,50vw);height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent);justify-self:center}
-.sttts-vn[data-fx] .vn-card[data-on]{animation:vn-card 2.6s ease forwards}
-.sttts-vn[data-fx] .vn-card[data-on] strong{animation:vn-rise 1.2s cubic-bezier(.22,1,.36,1) .25s both}
+.myphone-vn[data-fx] .vn-card[data-on]{animation:vn-card 2.6s ease forwards}
+.myphone-vn[data-fx] .vn-card[data-on] strong{animation:vn-rise 1.2s cubic-bezier(.22,1,.36,1) .25s both}
 @keyframes vn-card{0%{opacity:0}18%,70%{opacity:1}100%{opacity:0}}
 /* A new CG comes in one of several ways. */
-.sttts-vn[data-fx] .vn-bg-layer[data-on][data-reveal=wipe],.sttts-vn[data-fx] .vn-fit[data-reveal=wipe]{animation:vn-wipe 1s cubic-bezier(.65,0,.35,1),vn-drift 28s ease-in-out infinite alternate}
-.sttts-vn[data-fx] .vn-bg-layer[data-on][data-reveal=diag],.sttts-vn[data-fx] .vn-fit[data-reveal=diag]{animation:vn-diag 1.1s cubic-bezier(.65,0,.35,1),vn-drift 28s ease-in-out infinite alternate}
-.sttts-vn[data-fx] .vn-bg-layer[data-on][data-reveal=zoom],.sttts-vn[data-fx] .vn-fit[data-reveal=zoom]{animation:vn-zoomin 1.2s cubic-bezier(.22,1,.36,1),vn-drift 28s ease-in-out infinite alternate}
-.sttts-vn[data-fx] .vn-bg-layer[data-on][data-reveal=white],.sttts-vn[data-fx] .vn-fit[data-reveal=white]{animation:vn-whitein 1.3s ease,vn-drift 28s ease-in-out infinite alternate}
-.sttts-vn[data-lite][data-fx] .vn-bg-layer[data-on][data-reveal],.sttts-vn[data-lite][data-fx] .vn-fit[data-reveal]{animation:vn-reveal 1.1s cubic-bezier(.22,1,.36,1)}
+.myphone-vn[data-fx] .vn-bg-layer[data-on][data-reveal=wipe],.myphone-vn[data-fx] .vn-fit[data-reveal=wipe]{animation:vn-wipe 1s cubic-bezier(.65,0,.35,1),vn-drift 28s ease-in-out infinite alternate}
+.myphone-vn[data-fx] .vn-bg-layer[data-on][data-reveal=diag],.myphone-vn[data-fx] .vn-fit[data-reveal=diag]{animation:vn-diag 1.1s cubic-bezier(.65,0,.35,1),vn-drift 28s ease-in-out infinite alternate}
+.myphone-vn[data-fx] .vn-bg-layer[data-on][data-reveal=zoom],.myphone-vn[data-fx] .vn-fit[data-reveal=zoom]{animation:vn-zoomin 1.2s cubic-bezier(.22,1,.36,1),vn-drift 28s ease-in-out infinite alternate}
+.myphone-vn[data-fx] .vn-bg-layer[data-on][data-reveal=white],.myphone-vn[data-fx] .vn-fit[data-reveal=white]{animation:vn-whitein 1.3s ease,vn-drift 28s ease-in-out infinite alternate}
+.myphone-vn[data-lite][data-fx] .vn-bg-layer[data-on][data-reveal],.myphone-vn[data-lite][data-fx] .vn-fit[data-reveal]{animation:vn-reveal 1.1s cubic-bezier(.22,1,.36,1)}
 @keyframes vn-wipe{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0)}}
 @keyframes vn-diag{from{clip-path:polygon(0 0,0 0,-40% 100%,-40% 100%)}to{clip-path:polygon(0 0,140% 0,100% 100%,-40% 100%)}}
 @keyframes vn-zoomin{from{transform:scale(1.3);opacity:0}to{transform:scale(1);opacity:1}}
@@ -304,34 +304,34 @@ const CSS = `
 /* The words: each comes in as it is typed, in the line's tone. */
 .vn-ch{display:inline-block;opacity:0;white-space:pre-wrap}
 .vn-ch.on{opacity:1}
-.sttts-vn[data-fx] .vn-ch.on{animation:vn-ch .24s ease-out both}
+.myphone-vn[data-fx] .vn-ch.on{animation:vn-ch .24s ease-out both}
 @keyframes vn-ch{from{opacity:0;transform:translateY(.22em)}to{opacity:1;transform:none}}
-.sttts-vn[data-fx][data-tone=shout] .vn-ch.on{animation:vn-ch-slam .26s cubic-bezier(.2,1.5,.4,1) both}
+.myphone-vn[data-fx][data-tone=shout] .vn-ch.on{animation:vn-ch-slam .26s cubic-bezier(.2,1.5,.4,1) both}
 @keyframes vn-ch-slam{from{opacity:0;transform:scale(1.9)}to{opacity:1;transform:none}}
-.sttts-vn[data-fx][data-tone=bounce] .vn-ch.on{animation:vn-ch-hop .34s cubic-bezier(.3,1.7,.5,1) both}
+.myphone-vn[data-fx][data-tone=bounce] .vn-ch.on{animation:vn-ch-hop .34s cubic-bezier(.3,1.7,.5,1) both}
 @keyframes vn-ch-hop{from{opacity:0;transform:translateY(.5em) scale(.8)}to{opacity:1;transform:none}}
-.sttts-vn[data-fx]:is([data-tone=slow],[data-tone=whisper]) .vn-ch.on{animation:vn-ch-soft .8s ease both}
+.myphone-vn[data-fx]:is([data-tone=slow],[data-tone=whisper]) .vn-ch.on{animation:vn-ch-soft .8s ease both}
 @keyframes vn-ch-soft{from{opacity:0;transform:translateY(-.15em)}to{opacity:1;transform:none}}
-.sttts-vn[data-fx][data-tone=tremble] .vn-ch.on{animation:vn-ch .2s ease-out both,vn-ch-jit .16s steps(2) .2s infinite}
-.sttts-vn[data-fx][data-tone=tremble] .vn-ch.on:nth-child(odd){animation:vn-ch .2s ease-out both,vn-ch-jit2 .16s steps(2) .2s infinite}
-.sttts-vn[data-lite][data-fx][data-tone=tremble] .vn-ch.on{animation:vn-ch .2s ease-out both}
+.myphone-vn[data-fx][data-tone=tremble] .vn-ch.on{animation:vn-ch .2s ease-out both,vn-ch-jit .16s steps(2) .2s infinite}
+.myphone-vn[data-fx][data-tone=tremble] .vn-ch.on:nth-child(odd){animation:vn-ch .2s ease-out both,vn-ch-jit2 .16s steps(2) .2s infinite}
+.myphone-vn[data-lite][data-fx][data-tone=tremble] .vn-ch.on{animation:vn-ch .2s ease-out both}
 @keyframes vn-ch-jit{50%{transform:translate(.04em,-.03em)}}
 @keyframes vn-ch-jit2{50%{transform:translate(-.04em,.03em)}}
-.sttts-vn[data-tone=shout] .vn-text{font-size:calc(var(--vn-size) * 1.16);font-weight:800;letter-spacing:.04em}
-.sttts-vn[data-tone=whisper] .vn-text{font-size:calc(var(--vn-size) * .92);letter-spacing:.1em;opacity:.86}
-.sttts-vn[data-fx] .vn-box[data-jolt]{animation:vn-jolt .38s linear}
+.myphone-vn[data-tone=shout] .vn-text{font-size:calc(var(--vn-size) * 1.16);font-weight:800;letter-spacing:.04em}
+.myphone-vn[data-tone=whisper] .vn-text{font-size:calc(var(--vn-size) * .92);letter-spacing:.1em;opacity:.86}
+.myphone-vn[data-fx] .vn-box[data-jolt]{animation:vn-jolt .38s linear}
 /* The box glows with the line's feeling. */
 .vn-box{transition:opacity .3s,transform .3s,box-shadow .6s}
-.sttts-vn[data-fx][data-feel=angry] .vn-box{box-shadow:0 0 0 1px rgba(255,90,90,.55),0 0 28px rgba(230,40,60,.35),0 18px 50px rgba(0,0,0,.4)}
-.sttts-vn[data-fx][data-feel=sad] .vn-box,.sttts-vn[data-fx][data-feel=tired] .vn-box{box-shadow:0 0 0 1px rgba(120,160,255,.5),0 0 28px rgba(70,110,220,.3),0 18px 50px rgba(0,0,0,.4)}
-.sttts-vn[data-fx]:is([data-feel=shy],[data-feel=tender]) .vn-box{box-shadow:0 0 0 1px rgba(255,150,190,.6),0 0 30px rgba(255,120,170,.35),0 18px 50px rgba(0,0,0,.4)}
-.sttts-vn[data-fx]:is([data-feel=happy],[data-feel=moved]) .vn-box{box-shadow:0 0 0 1px rgba(255,214,140,.6),0 0 30px rgba(255,190,90,.3),0 18px 50px rgba(0,0,0,.4)}
-.sttts-vn[data-fx]:is([data-feel=fearful],[data-feel=nervous]) .vn-box{box-shadow:0 0 0 1px rgba(170,140,230,.5),0 0 26px rgba(90,40,160,.35),0 18px 50px rgba(0,0,0,.45)}
+.myphone-vn[data-fx][data-feel=angry] .vn-box{box-shadow:0 0 0 1px rgba(255,90,90,.55),0 0 28px rgba(230,40,60,.35),0 18px 50px rgba(0,0,0,.4)}
+.myphone-vn[data-fx][data-feel=sad] .vn-box,.myphone-vn[data-fx][data-feel=tired] .vn-box{box-shadow:0 0 0 1px rgba(120,160,255,.5),0 0 28px rgba(70,110,220,.3),0 18px 50px rgba(0,0,0,.4)}
+.myphone-vn[data-fx]:is([data-feel=shy],[data-feel=tender]) .vn-box{box-shadow:0 0 0 1px rgba(255,150,190,.6),0 0 30px rgba(255,120,170,.35),0 18px 50px rgba(0,0,0,.4)}
+.myphone-vn[data-fx]:is([data-feel=happy],[data-feel=moved]) .vn-box{box-shadow:0 0 0 1px rgba(255,214,140,.6),0 0 30px rgba(255,190,90,.3),0 18px 50px rgba(0,0,0,.4)}
+.myphone-vn[data-fx]:is([data-feel=fearful],[data-feel=nervous]) .vn-box{box-shadow:0 0 0 1px rgba(170,140,230,.5),0 0 26px rgba(90,40,160,.35),0 18px 50px rgba(0,0,0,.45)}
 @keyframes vn-jolt{0%,100%{transform:translateX(-50%)}20%{transform:translateX(calc(-50% - 7px))}40%{transform:translateX(calc(-50% + 6px))}60%{transform:translateX(calc(-50% - 4px))}80%{transform:translateX(calc(-50% + 2px))}}
 @media (max-width:600px){
- .sttts-vn{font-size:15px}
+ .myphone-vn{font-size:15px}
  .vn-box{min-height:clamp(120px,27vh,190px);padding:26px 16px 18px;border-radius:16px;width:calc(100% - 16px);bottom:max(8px,env(safe-area-inset-bottom))}
- .sttts-vn[data-face] .vn-box{padding-left:86px}
+ .myphone-vn[data-face] .vn-box{padding-left:86px}
  .vn-face{width:64px;left:12px;bottom:14px;border-radius:14px}
  .vn-name{font-size:15px;min-width:86px;padding:4px 16px;top:-16px}
  .vn-menu{right:0;gap:4px;bottom:calc(100% + 22px)}
@@ -339,7 +339,7 @@ const CSS = `
  .vn-actor{height:min(80%,200vw)}
  .vn-log li{grid-template-columns:4.5em 1fr auto;gap:8px}
 }
-@media (prefers-reduced-motion:reduce){.sttts-vn *{animation:none!important;transition-duration:.01s!important}}
+@media (prefers-reduced-motion:reduce){.myphone-vn *{animation:none!important;transition-duration:.01s!important}}
 `;
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const SPOTS = {1: [50], 2: [30, 70], 3: [19, 50, 81]}, NARROW = {1: [50], 2: [27, 73], 3: [16, 50, 84]};
@@ -360,7 +360,7 @@ export function openVnStage({doc = document, source, look, voice, face, sprite, 
   const win = doc.defaultView;
   if (!doc.getElementById(STYLE_ID)) { const style = doc.createElement('style'); style.id = STYLE_ID; style.textContent = CSS; doc.head.append(style); }
   const root = doc.createElement('div');
-  root.className = 'sttts-vn';
+  root.className = 'myphone-vn';
   root.setAttribute('role', 'dialog');
   root.setAttribute('aria-modal', 'true');
   root.setAttribute('aria-label', '视觉小说');

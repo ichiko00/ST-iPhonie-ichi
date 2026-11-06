@@ -7,7 +7,7 @@
 //     when the cloud cannot be reached the job goes ahead with the local rules and remoteError says why.
 // Job states: waiting (in line) · spacing (keeping the gap) · remote (waiting in the cloud queue) · busy (429, waiting to retry) · running.
 
-const LAST_KEY = 'sttts.nai.lastRequest';
+const LAST_KEY = 'myphone.nai.lastRequest';
 const cancelled = () => Object.assign(Error('已取消'), {cancelled: true});
 
 function memoryStorage() {
@@ -91,7 +91,7 @@ export class DrawQueue {
       while (this.jobs.length) {
         const job = this.jobs[0];
         const run = () => this.run(job);
-        await (this.locks?.request ? this.locks.request('st-iphonie-novelai', run) : run());
+        await (this.locks?.request ? this.locks.request('myphone-app-novelai', run) : run());
         const index = this.jobs.indexOf(job);
         if (index >= 0) this.jobs.splice(index, 1);
         this.changed();

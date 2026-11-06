@@ -1,5 +1,5 @@
 // In-chat pictures: fills the placeholders left by <img>…</img> tags, generates them with NovelAI,
-// uploads the result to the tavern's image folder and remembers it on the message (message.extra.sttts_pics),
+// uploads the result to the tavern's image folder and remembers it on the message (message.extra.myphone_pics),
 // so every device that opens the chat sees the same picture.
 //
 // A finished picture shows only the image. One tap folds it to a line of text (and back); a double tap opens the
@@ -40,7 +40,7 @@ export function createPictureHost({context, redrawMessage = (id, message) => con
   let first = null;
   const DOUBLE_TAP = 400, SLOW_TAP = 800;
 
-  const stored = (message, hash) => message?.extra?.sttts_pics?.[hash] || null;
+  const stored = (message, hash) => message?.extra?.myphone_pics?.[hash] || null;
   /** The version on screen, with its position: {…version, index, count}; null when there is none. */
   function shown(message, hash) {
     const record = stored(message, hash), list = versionsOf(record);
@@ -50,8 +50,8 @@ export function createPictureHost({context, redrawMessage = (id, message) => con
   }
   function keep(message, hash, list, index) {
     message.extra ??= {};
-    message.extra.sttts_pics ??= {};
-    message.extra.sttts_pics[hash] = list.length ? {versions: list, index: Math.min(list.length - 1, Math.max(0, index))} : {removed: true, versions: [], at: Date.now()};
+    message.extra.myphone_pics ??= {};
+    message.extra.myphone_pics[hash] = list.length ? {versions: list, index: Math.min(list.length - 1, Math.max(0, index))} : {removed: true, versions: [], at: Date.now()};
   }
   const jobKey = (id, tag) => `pic:${context()?.chatId ?? ''}:${id}:${tag.hash}`;
   const saveSoon = () => (context().saveChatDebounced || context().saveChat)?.();
@@ -135,7 +135,7 @@ export function createPictureHost({context, redrawMessage = (id, message) => con
       const unwanted = String(negative ?? '').trim();
       const result = await backend.generateImage({...inputs, ...(unwanted ? {negative: [inputs.negative, unwanted].filter(Boolean).join(', ')} : {}), allowPaid: permission === 'paid', name: '插件', key, label: `${who || '其他插件'} · ${words.slice(0, 24)}`});
       // The picture is in the album either way: no address is no reason to lose it.
-      const url = await upload(result.blob, 'st-iphonie-' + Date.now(), 'ST-iPhonie').catch(() => '');
+      const url = await upload(result.blob, 'myphone-app-' + Date.now(), 'ST-iPhonie').catch(() => '');
       return {url, blob: result.blob, photoId: result.photoId, seed: result.seed, width: result.params.width, height: result.params.height, model: result.params.model, engine: result.engine, prompt: result.prompt};
     } finally { signal?.removeEventListener('abort', stop); }
   }
@@ -151,7 +151,7 @@ export function createPictureHost({context, redrawMessage = (id, message) => con
     try {
       const inputs = pictureInputs(settings(), tag, message.mes);
       const result = await backend.generateImage({...inputs, allowPaid: permission === 'paid', name: 'chat', key, label: '正文图片 · ' + tag.prompt.slice(0, 24)});
-      const url = await upload(result.blob, 'st-iphonie-' + Date.now());
+      const url = await upload(result.blob, 'myphone-app-' + Date.now());
       // Only store the picture when the same message is still there with this tag.
       const now = context().chat[id];
       if (now === message && parsePictures(now.mes).some(t => t.hash === tag.hash)) {
@@ -339,48 +339,48 @@ export function createPictureHost({context, redrawMessage = (id, message) => con
     return `排队中，前面还有 ${job.position} 张`;
   }
 
-  function frame(inner) { return `<span class="sttts-pic-frame">${inner}</span>`; }
+  function frame(inner) { return `<span class="myphone-pic-frame">${inner}</span>`; }
   function fill(el, id, message, tag) {
     const record = stored(message, tag.hash), pic = shown(message, tag.hash), key = jobKey(id, tag), job = jobs.get(key);
     const s = settings(), folded = folds.get(id + ':' + tag.hash) ?? s.draw.fold;
     const state = job?.state || (pic ? 'done' : record?.removed ? 'removed' : 'idle');
     const waiting = state === 'generating' ? queueText(key) : '';
     const signature = [state, pic?.url, pic?.count, folded, waiting, job?.message].join('|');
-    if (el.dataset.stttsRendered === signature) return;
-    el.dataset.stttsRendered = signature;
+    if (el.dataset.myphoneRendered === signature) return;
+    el.dataset.myphoneRendered = signature;
     el.dataset.state = state;
     el.toggleAttribute('data-folded', state === 'done' && folded);
     if (state === 'done' && folded) {
-      el.innerHTML = `<button type="button" class="sttts-pic-fold" data-sttts-pic-action="tap" aria-label="展开图片，双击放大查看"><span class="sttts-pic-fold-mark" aria-hidden="true">▸</span>图片已收起${pic.count > 1 ? ` · ${pic.count} 个版本` : ''} · 点一下展开</button>`;
+      el.innerHTML = `<button type="button" class="myphone-pic-fold" data-myphone-pic-action="tap" aria-label="展开图片，双击放大查看"><span class="myphone-pic-fold-mark" aria-hidden="true">▸</span>图片已收起${pic.count > 1 ? ` · ${pic.count} 个版本` : ''} · 点一下展开</button>`;
     } else if (state === 'done') {
-      el.innerHTML = frame(`<button type="button" class="sttts-pic-zoom" data-sttts-pic-action="tap" aria-label="点一下收起，双击放大查看${pic.count > 1 ? `（${pic.count} 个版本）` : ''}、参数和操作"><img src="${esc(pic.url)}" alt="${esc(tag.prompt)}" loading="lazy"></button>`);
+      el.innerHTML = frame(`<button type="button" class="myphone-pic-zoom" data-myphone-pic-action="tap" aria-label="点一下收起，双击放大查看${pic.count > 1 ? `（${pic.count} 个版本）` : ''}、参数和操作"><img src="${esc(pic.url)}" alt="${esc(tag.prompt)}" loading="lazy"></button>`);
     } else if (state === 'removed') {
-      el.innerHTML = `<span class="sttts-pic-removed">图片已删除<button type="button" data-sttts-pic-action="draw">重新生成</button></span>`;
+      el.innerHTML = `<span class="myphone-pic-removed">图片已删除<button type="button" data-myphone-pic-action="draw">重新生成</button></span>`;
     } else if (state === 'generating') {
       // Redrawing keeps the current picture on screen with a small note over it.
       el.innerHTML = pic
-        ? frame(`<button type="button" class="sttts-pic-zoom" data-sttts-pic-action="tap" aria-label="点一下收起，双击放大查看"><img src="${esc(pic.url)}" alt="${esc(tag.prompt)}" loading="lazy"></button><span class="sttts-pic-note">${esc(waiting)}<button type="button" data-sttts-pic-action="cancel">取消</button></span>`)
-        : frame(`<span class="sttts-pic-wait">${esc(waiting)}<br><button type="button" data-sttts-pic-action="cancel">取消</button></span>`);
+        ? frame(`<button type="button" class="myphone-pic-zoom" data-myphone-pic-action="tap" aria-label="点一下收起，双击放大查看"><img src="${esc(pic.url)}" alt="${esc(tag.prompt)}" loading="lazy"></button><span class="myphone-pic-note">${esc(waiting)}<button type="button" data-myphone-pic-action="cancel">取消</button></span>`)
+        : frame(`<span class="myphone-pic-wait">${esc(waiting)}<br><button type="button" data-myphone-pic-action="cancel">取消</button></span>`);
     } else if (state === 'error') {
-      el.innerHTML = frame(`<span class="sttts-pic-wait">${esc(job.message)}<br><button type="button" data-sttts-pic-action="draw">重试</button></span>`);
+      el.innerHTML = frame(`<span class="myphone-pic-wait">${esc(job.message)}<br><button type="button" data-myphone-pic-action="draw">重试</button></span>`);
     } else {
       const reason = !s.draw.enabled ? '正文出图没有开启' : !backend.drawReady() ? backend.drawMissing() : !s.draw.auto ? '自动出图已关闭' : s.draw.engine === 'gpt' && s.draw.gpt.ask ? 'GPT 生图每张都要花钱，点了才画' : '这张图没有自动生成';
-      el.innerHTML = frame(`<span class="sttts-pic-wait">${reason}<br><button type="button" data-sttts-pic-action="draw">点击生成</button></span>`);
+      el.innerHTML = frame(`<span class="myphone-pic-wait">${reason}<br><button type="button" data-myphone-pic-action="draw">点击生成</button></span>`);
     }
   }
 
   /** Fills every picture placeholder in the rendered chat. The tavern's sanitizer renames classes in messages
-   *  (sttts-pic becomes custom-sttts-pic), so placeholders are found by their data attributes. */
+   *  (myphone-pic becomes custom-myphone-pic), so placeholders are found by their data attributes. */
   function decorate(currentMessage) {
     for (const element of document.querySelectorAll('#chat .mes[mesid]')) {
-      const placeholders = element.querySelectorAll('[data-sttts-pic]');
+      const placeholders = element.querySelectorAll('[data-myphone-pic]');
       if (!placeholders.length) continue;
       const id = Number(element.getAttribute('mesid')), message = context().chat[id];
       if (!message || !currentMessage(id)) continue;
       const tags = parsePictures(message.mes);
       for (const el of placeholders) {
-        if (el.dataset.stttsToken !== marker) continue;
-        const tag = tags.find(t => t.hash === el.dataset.stttsHash);
+        if (el.dataset.myphoneToken !== marker) continue;
+        const tag = tags.find(t => t.hash === el.dataset.myphoneHash);
         if (tag) fill(el, id, message, tag);
       }
     }
@@ -389,15 +389,15 @@ export function createPictureHost({context, redrawMessage = (id, message) => con
   /** Handles clicks inside picture blocks. Returns true when the click was ours. */
   function click(event) {
     if (lateSecondTap(event)) return true;
-    const button = event.target.closest('[data-sttts-pic-action]');
-    const box = button?.closest('[data-sttts-pic]');
-    if (!box || box.dataset.stttsToken !== marker) return false;
+    const button = event.target.closest('[data-myphone-pic-action]');
+    const box = button?.closest('[data-myphone-pic]');
+    if (!box || box.dataset.myphoneToken !== marker) return false;
     event.preventDefault();
     const id = Number(box.closest('.mes[mesid]')?.getAttribute('mesid')), message = context().chat[id];
-    const tag = message && parsePictures(message.mes).find(t => t.hash === box.dataset.stttsHash);
+    const tag = message && parsePictures(message.mes).find(t => t.hash === box.dataset.myphoneHash);
     if (!tag) return true;
-    if (button.dataset.stttsPicAction === 'tap') tap(id, message, tag, button);
-    else act(button.dataset.stttsPicAction, id, message, tag, button);
+    if (button.dataset.myphonePicAction === 'tap') tap(id, message, tag, button);
+    else act(button.dataset.myphonePicAction, id, message, tag, button);
     return true;
   }
   /** One tap folds or unfolds; a second tap within DOUBLE_TAP opens the viewer instead. */
@@ -406,7 +406,7 @@ export function createPictureHost({context, redrawMessage = (id, message) => con
     if (first && !first.done && first.key === key) {
       clearTimeout(first.timer);
       first = null;
-      act('zoom', id, message, tag, source.closest('[data-sttts-pic]')?.querySelector('img') ? source : null);
+      act('zoom', id, message, tag, source.closest('[data-myphone-pic]')?.querySelector('img') ? source : null);
       return;
     }
     if (first && !first.done) { clearTimeout(first.timer); toggle(first); }
@@ -499,7 +499,7 @@ export function createPictureHost({context, redrawMessage = (id, message) => con
       fresh = parsePictures(message.mes).find(t => t.index === tag.index);
       if (!fresh) throw Error('改完认不出这张图了，检查一下格式');
       const record = stored(message, tag.hash);
-      if (record && fresh.hash !== tag.hash) { message.extra.sttts_pics[fresh.hash] = record; delete message.extra.sttts_pics[tag.hash]; }
+      if (record && fresh.hash !== tag.hash) { message.extra.myphone_pics[fresh.hash] = record; delete message.extra.myphone_pics[tag.hash]; }
       await context().saveChat();
       redrawMessage(id, message);
       scheduleRender();
@@ -521,7 +521,7 @@ export function createPictureHost({context, redrawMessage = (id, message) => con
   /** Pictures stored in the open chat, counting every version. */
   function pictureStats() {
     let count = 0;
-    for (const m of context()?.chat || []) for (const record of Object.values(m?.extra?.sttts_pics || {})) count += versionsOf(record).length;
+    for (const m of context()?.chat || []) for (const record of Object.values(m?.extra?.myphone_pics || {})) count += versionsOf(record).length;
     return {count};
   }
   /** Deletes every picture (all versions) of the open chat from the tavern; their tags show "点击生成" again. */
@@ -529,12 +529,12 @@ export function createPictureHost({context, redrawMessage = (id, message) => con
     const ctx = context();
     let count = 0, failed = 0;
     for (const m of ctx.chat || []) {
-      const pics = m?.extra?.sttts_pics;
+      const pics = m?.extra?.myphone_pics;
       if (!pics) continue;
       for (const record of Object.values(pics)) for (const version of versionsOf(record)) {
         try { await removeFile(version.url); count++; } catch { failed++; }
       }
-      delete m.extra.sttts_pics;
+      delete m.extra.myphone_pics;
     }
     await ctx.saveChat();
     scheduleRender();
@@ -556,7 +556,7 @@ export function createPictureHost({context, redrawMessage = (id, message) => con
     if (!message) throw Error('这条消息已经不存在');
     const photo = await backend.library.getPhoto(photoId);
     if (!photo) throw Error('图片已不在相册中');
-    const url = await upload(photo.blob, 'st-iphonie-' + Date.now());
+    const url = await upload(photo.blob, 'myphone-app-' + Date.now());
     message.extra ??= {};
     if (!Array.isArray(message.extra.media)) message.extra.media = [];
     message.extra.inline_image = !(message.extra.media.length && !message.extra.inline_image);

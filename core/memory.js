@@ -34,7 +34,7 @@ export function normalizeMemory(value) {
   const base = defaultMemory(), v = value && typeof value === 'object' ? value : {};
   return {enabled: v.enabled !== false, batch: count(v.batch, MEMORY_LIMITS.batch, base.batch), stage: count(v.stage, MEMORY_LIMITS.stage, base.stage),
     epic: count(v.epic, MEMORY_LIMITS.epic, base.epic), recall: count(v.recall, MEMORY_LIMITS.recall, base.recall), story: v.story === true,
-    storyKeys: Array.isArray(v.storyKeys) ? [...new Set(v.storyKeys.map(k => String(k).trim().slice(0, 120)).filter(k => k && !k.startsWith('sttts.')))].slice(0, 20) : base.storyKeys};
+    storyKeys: Array.isArray(v.storyKeys) ? [...new Set(v.storyKeys.map(k => String(k).trim().slice(0, 120)).filter(k => k && !k.startsWith('myphone.')))].slice(0, 20) : base.storyKeys};
 }
 
 // ---------- The book: one per chat ----------

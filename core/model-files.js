@@ -248,7 +248,7 @@ export function live2dSettings(info, files, urlOf) {
     json.expressions = [...(json.expressions || []), ...(info.extra || []).map(x => ({name: x.name, file: x.file}))].map(x => ({...x, file: swap(x.file)})).filter(x => x.file);
     for (const [g, list] of Object.entries(json.motions || {})) json.motions[g] = (list || []).map(m => { const o = {...m, file: swap(m.file)}; if (m.sound) o.sound = swap(m.sound) || undefined; return o; }).filter(m => m.file);
   }
-  json.url = 'https://st-iphonie.model/' + encodeURIComponent(info.settings);
+  json.url = 'https://myphone-app.model/' + encodeURIComponent(info.settings);
   return json;
 }
 /** What a picked file (or folder, as a zip) is: {kind, version, title, …} for the page, or an error saying why not. */

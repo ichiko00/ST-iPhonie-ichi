@@ -2,31 +2,31 @@
 // everything (the image viewer too) and keeps its keys to itself.
 
 const CSS = `
-.sttts-ask{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;box-sizing:border-box;z-index:41000;display:grid;place-items:center;padding:16px;background:rgba(8,10,20,.55);font:14px/1.5 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:#eef0f8}
-.sttts-ask-card{width:min(560px,100%);max-height:calc(100dvh - 32px);display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:18px;background:#1d2030;box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:auto}
-.sttts-ask-head{display:flex;align-items:center;gap:8px}
-.sttts-ask-card h2{margin:0;font-size:16px;font-weight:700;color:#fff}
-.sttts-ask-card p{margin:0;font-size:12.5px;opacity:.72}
-.sttts-ask .sttts-ask-card textarea{all:unset;display:block;box-sizing:border-box;width:100%;min-height:150px;flex:1;resize:vertical;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.16);background:#141622;color:#eef0f8;caret-color:#7cc4ff;font:13px/1.55 ui-monospace,Consolas,monospace;-webkit-text-fill-color:#eef0f8}
-.sttts-ask .sttts-ask-card textarea:focus,.sttts-ask .sttts-ask-wish input:focus{outline:2px solid #7cc4ff;outline-offset:1px;border-color:transparent}
-.sttts-ask-note{margin:0;max-height:32vh;overflow:auto;padding:10px 12px;border-radius:12px;background:rgba(124,196,255,.08);border:1px solid rgba(124,196,255,.22);white-space:pre-wrap;font:13px/1.6 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:#dfe9f5}
-.sttts-ask-note[data-error]{background:rgba(255,120,120,.1);border-color:rgba(255,120,120,.3)}
-.sttts-ask-note button{margin-left:8px;min-height:28px;padding:0 12px;font-size:12.5px}
-.sttts-ask-wish{display:flex;gap:8px}
-.sttts-ask .sttts-ask-wish input{all:unset;flex:1;min-width:0;box-sizing:border-box;height:40px;padding:0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.16);background:#141622;color:#eef0f8;caret-color:#7cc4ff;font:13.5px "PingFang SC","Microsoft YaHei",system-ui,sans-serif;-webkit-text-fill-color:#eef0f8}
-.sttts-ask .sttts-ask-card textarea,.sttts-ask .sttts-ask-wish input{background:#141622!important;color:#eef0f8!important;-webkit-text-fill-color:#eef0f8!important;border:1px solid rgba(255,255,255,.16)!important;border-radius:12px!important;box-shadow:none!important;backdrop-filter:none!important;text-shadow:none!important;opacity:1!important}
-.sttts-ask .sttts-ask-card textarea{font-family:ui-monospace,Consolas,monospace!important;font-size:13px!important}
-.sttts-ask .sttts-ask-wish input{font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif!important;font-size:13.5px!important}
-.sttts-ask .sttts-ask-wish input::placeholder{color:rgba(238,240,248,.42);-webkit-text-fill-color:rgba(238,240,248,.42)}
-.sttts-ask-actions{display:flex;align-items:center;gap:8px}
-.sttts-ask-actions .sttts-ask-gap{flex:1}
-.sttts-ask button{all:unset;box-sizing:border-box;min-height:40px;padding:0 16px;border-radius:999px;display:inline-grid;place-items:center;cursor:pointer;font-weight:700;background:rgba(255,255,255,.1);color:#fff;white-space:nowrap}
-.sttts-ask button[data-tool],.sttts-ask button[data-undo]{font-weight:600;background:transparent;border:1px solid rgba(255,255,255,.22)}
-.sttts-ask button[data-info]{min-height:22px;width:22px;padding:0;font-size:12px;font-weight:700;border:1px solid rgba(255,255,255,.35);background:transparent;opacity:.75}
-.sttts-ask button[data-info][aria-expanded="true"]{opacity:1;background:rgba(124,196,255,.2)}
-.sttts-ask button[aria-busy="true"]{opacity:.55;cursor:progress}
-.sttts-ask button[data-ok]{min-width:76px;background:#7cc4ff;color:#0d1b2a}
-.sttts-ask button:focus-visible{outline:2px solid #7cc4ff;outline-offset:2px}
+.myphone-ask{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;box-sizing:border-box;z-index:41000;display:grid;place-items:center;padding:16px;background:rgba(8,10,20,.55);font:14px/1.5 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:#eef0f8}
+.myphone-ask-card{width:min(560px,100%);max-height:calc(100dvh - 32px);display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:18px;background:#1d2030;box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:auto}
+.myphone-ask-head{display:flex;align-items:center;gap:8px}
+.myphone-ask-card h2{margin:0;font-size:16px;font-weight:700;color:#fff}
+.myphone-ask-card p{margin:0;font-size:12.5px;opacity:.72}
+.myphone-ask .myphone-ask-card textarea{all:unset;display:block;box-sizing:border-box;width:100%;min-height:150px;flex:1;resize:vertical;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.16);background:#141622;color:#eef0f8;caret-color:#7cc4ff;font:13px/1.55 ui-monospace,Consolas,monospace;-webkit-text-fill-color:#eef0f8}
+.myphone-ask .myphone-ask-card textarea:focus,.myphone-ask .myphone-ask-wish input:focus{outline:2px solid #7cc4ff;outline-offset:1px;border-color:transparent}
+.myphone-ask-note{margin:0;max-height:32vh;overflow:auto;padding:10px 12px;border-radius:12px;background:rgba(124,196,255,.08);border:1px solid rgba(124,196,255,.22);white-space:pre-wrap;font:13px/1.6 "PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:#dfe9f5}
+.myphone-ask-note[data-error]{background:rgba(255,120,120,.1);border-color:rgba(255,120,120,.3)}
+.myphone-ask-note button{margin-left:8px;min-height:28px;padding:0 12px;font-size:12.5px}
+.myphone-ask-wish{display:flex;gap:8px}
+.myphone-ask .myphone-ask-wish input{all:unset;flex:1;min-width:0;box-sizing:border-box;height:40px;padding:0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.16);background:#141622;color:#eef0f8;caret-color:#7cc4ff;font:13.5px "PingFang SC","Microsoft YaHei",system-ui,sans-serif;-webkit-text-fill-color:#eef0f8}
+.myphone-ask .myphone-ask-card textarea,.myphone-ask .myphone-ask-wish input{background:#141622!important;color:#eef0f8!important;-webkit-text-fill-color:#eef0f8!important;border:1px solid rgba(255,255,255,.16)!important;border-radius:12px!important;box-shadow:none!important;backdrop-filter:none!important;text-shadow:none!important;opacity:1!important}
+.myphone-ask .myphone-ask-card textarea{font-family:ui-monospace,Consolas,monospace!important;font-size:13px!important}
+.myphone-ask .myphone-ask-wish input{font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif!important;font-size:13.5px!important}
+.myphone-ask .myphone-ask-wish input::placeholder{color:rgba(238,240,248,.42);-webkit-text-fill-color:rgba(238,240,248,.42)}
+.myphone-ask-actions{display:flex;align-items:center;gap:8px}
+.myphone-ask-actions .myphone-ask-gap{flex:1}
+.myphone-ask button{all:unset;box-sizing:border-box;min-height:40px;padding:0 16px;border-radius:999px;display:inline-grid;place-items:center;cursor:pointer;font-weight:700;background:rgba(255,255,255,.1);color:#fff;white-space:nowrap}
+.myphone-ask button[data-tool],.myphone-ask button[data-undo]{font-weight:600;background:transparent;border:1px solid rgba(255,255,255,.22)}
+.myphone-ask button[data-info]{min-height:22px;width:22px;padding:0;font-size:12px;font-weight:700;border:1px solid rgba(255,255,255,.35);background:transparent;opacity:.75}
+.myphone-ask button[data-info][aria-expanded="true"]{opacity:1;background:rgba(124,196,255,.2)}
+.myphone-ask button[aria-busy="true"]{opacity:.55;cursor:progress}
+.myphone-ask button[data-ok]{min-width:76px;background:#7cc4ff;color:#0d1b2a}
+.myphone-ask button:focus-visible{outline:2px solid #7cc4ff;outline-offset:2px}
 `;
 
 /**
@@ -55,14 +55,14 @@ export function editTags({doc = document, text = '', about = '', ask, title = '�
  */
 export function askText({doc = document, title = '', text = '', hint = '', ok = '好', tools = [], wish = null} = {}) {
   const win = doc.defaultView;
-  if (!doc.getElementById('sttts-ask-css')) { const style = doc.createElement('style'); style.id = 'sttts-ask-css'; style.textContent = CSS; doc.head.append(style); }
-  else doc.getElementById('sttts-ask-css').textContent = CSS;
+  if (!doc.getElementById('myphone-ask-css')) { const style = doc.createElement('style'); style.id = 'myphone-ask-css'; style.textContent = CSS; doc.head.append(style); }
+  else doc.getElementById('myphone-ask-css').textContent = CSS;
   const root = doc.createElement('div');
-  root.className = 'sttts-ask';
+  root.className = 'myphone-ask';
   root.setAttribute('role', 'dialog');
   root.setAttribute('aria-modal', 'true');
-  root.innerHTML = '<div class="sttts-ask-card"><div class="sttts-ask-head"><h2></h2></div><p hidden></p><textarea spellcheck="false"></textarea><pre class="sttts-ask-note" aria-live="polite" hidden></pre>'
-    + '<div class="sttts-ask-actions"><span class="sttts-ask-gap"></span><button type="button" data-cancel>取消</button><button type="button" data-ok></button></div></div>';
+  root.innerHTML = '<div class="myphone-ask-card"><div class="myphone-ask-head"><h2></h2></div><p hidden></p><textarea spellcheck="false"></textarea><pre class="myphone-ask-note" aria-live="polite" hidden></pre>'
+    + '<div class="myphone-ask-actions"><span class="myphone-ask-gap"></span><button type="button" data-cancel>取消</button><button type="button" data-ok></button></div></div>';
   root.querySelector('h2').textContent = title;
   const info = root.querySelector('p');
   if (hint) {
@@ -70,19 +70,19 @@ export function askText({doc = document, title = '', text = '', hint = '', ok = 
     const button = doc.createElement('button');
     button.type = 'button'; button.dataset.info = ''; button.textContent = 'i';
     button.setAttribute('aria-label', '说明'); button.setAttribute('aria-expanded', 'false');
-    root.querySelector('.sttts-ask-head').append(button);
+    root.querySelector('.myphone-ask-head').append(button);
   }
   root.querySelector('[data-ok]').textContent = ok;
-  const bar = root.querySelector('.sttts-ask-actions'), note = root.querySelector('.sttts-ask-note'), area = root.querySelector('textarea');
+  const bar = root.querySelector('.myphone-ask-actions'), note = root.querySelector('.myphone-ask-note'), area = root.querySelector('textarea');
   tools.forEach((tool, i) => {
     const button = doc.createElement('button');
     button.type = 'button'; button.dataset.tool = String(i); button.textContent = tool.label;
-    bar.insertBefore(button, bar.querySelector('.sttts-ask-gap'));
+    bar.insertBefore(button, bar.querySelector('.myphone-ask-gap'));
   });
   let line = null;
   if (wish) {
     const row = doc.createElement('div');
-    row.className = 'sttts-ask-wish';
+    row.className = 'myphone-ask-wish';
     row.innerHTML = '<input type="text"><button type="button" data-tool="wish"></button>';
     line = row.querySelector('input');
     line.placeholder = wish.placeholder || ''; line.setAttribute('aria-label', wish.placeholder || wish.label);

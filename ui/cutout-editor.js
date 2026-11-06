@@ -49,20 +49,20 @@ export function cutoutRenderer(img, canvas) {
 }
 
 const CSS = `
-.sttts-cutout{position:fixed;left:0;top:0;box-sizing:border-box;margin:0;padding:0;border:0;max-width:none;max-height:none;width:100vw;height:100vh;height:100dvh;z-index:40001;background:#111522;color:#fff;touch-action:none;overscroll-behavior:contain;user-select:none;-webkit-user-select:none;font:14px/1.4 system-ui,sans-serif}
-.sttts-cutout::backdrop{background:transparent}
-.sttts-cutout-stage{position:absolute;inset:64px 0 88px;overflow:hidden;touch-action:none}
-.sttts-cutout-stage canvas{position:absolute;left:0;top:0;display:block;max-width:none;max-height:none;transform-origin:0 0;cursor:crosshair;touch-action:none;background:conic-gradient(#cbd0da 25%,#fff 0 50%,#cbd0da 0 75%,#fff 0) 0 0/16px 16px}
-.sttts-cutout-top{position:absolute;top:max(12px,env(safe-area-inset-top));right:12px}
-.sttts-cutout-bar{position:absolute;bottom:max(14px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;padding:4px;border-radius:28px;background:#252b40;max-width:calc(100vw - 16px);box-sizing:border-box;overflow-x:auto;scrollbar-width:none}
-.sttts-cutout button{all:unset;box-sizing:border-box;display:grid;place-items:center;flex-shrink:0;width:44px;height:44px;border-radius:50%;cursor:pointer;color:#fff}
-.sttts-cutout button:hover{background:#ffffff18}.sttts-cutout button:focus-visible{outline:2px solid #7cc4ff}.sttts-cutout button:disabled{opacity:.3;cursor:default}
-.sttts-cutout .icon{width:22px;height:22px}.sttts-cutout [data-cutout=redo] svg{transform:scaleX(-1)}
-.sttts-cutout output{min-width:48px;text-align:center;font-variant-numeric:tabular-nums;font-size:12px}
-.sttts-cutout-modes{position:absolute;top:max(14px,env(safe-area-inset-top));left:12px;display:flex;padding:3px;border-radius:22px;background:#252b40}
-.sttts-cutout .sttts-cutout-modes button{width:auto;height:38px;padding:0 15px;border-radius:19px;font-weight:700}
-.sttts-cutout .sttts-cutout-modes button[aria-pressed=true]{background:#fff;color:#111522}
-.sttts-cutout-tip{position:absolute;left:50%;top:calc(max(14px,env(safe-area-inset-top)) + 50px);transform:translateX(-50%);max-width:calc(100vw - 24px);box-sizing:border-box;padding:5px 12px;border-radius:14px;background:#111522d9;font-size:12.5px;line-height:1.4;text-align:center;pointer-events:none;transition:opacity .3s}
+.myphone-cutout{position:fixed;left:0;top:0;box-sizing:border-box;margin:0;padding:0;border:0;max-width:none;max-height:none;width:100vw;height:100vh;height:100dvh;z-index:40001;background:#111522;color:#fff;touch-action:none;overscroll-behavior:contain;user-select:none;-webkit-user-select:none;font:14px/1.4 system-ui,sans-serif}
+.myphone-cutout::backdrop{background:transparent}
+.myphone-cutout-stage{position:absolute;inset:64px 0 88px;overflow:hidden;touch-action:none}
+.myphone-cutout-stage canvas{position:absolute;left:0;top:0;display:block;max-width:none;max-height:none;transform-origin:0 0;cursor:crosshair;touch-action:none;background:conic-gradient(#cbd0da 25%,#fff 0 50%,#cbd0da 0 75%,#fff 0) 0 0/16px 16px}
+.myphone-cutout-top{position:absolute;top:max(12px,env(safe-area-inset-top));right:12px}
+.myphone-cutout-bar{position:absolute;bottom:max(14px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;padding:4px;border-radius:28px;background:#252b40;max-width:calc(100vw - 16px);box-sizing:border-box;overflow-x:auto;scrollbar-width:none}
+.myphone-cutout button{all:unset;box-sizing:border-box;display:grid;place-items:center;flex-shrink:0;width:44px;height:44px;border-radius:50%;cursor:pointer;color:#fff}
+.myphone-cutout button:hover{background:#ffffff18}.myphone-cutout button:focus-visible{outline:2px solid #7cc4ff}.myphone-cutout button:disabled{opacity:.3;cursor:default}
+.myphone-cutout .icon{width:22px;height:22px}.myphone-cutout [data-cutout=redo] svg{transform:scaleX(-1)}
+.myphone-cutout output{min-width:48px;text-align:center;font-variant-numeric:tabular-nums;font-size:12px}
+.myphone-cutout-modes{position:absolute;top:max(14px,env(safe-area-inset-top));left:12px;display:flex;padding:3px;border-radius:22px;background:#252b40}
+.myphone-cutout .myphone-cutout-modes button{width:auto;height:38px;padding:0 15px;border-radius:19px;font-weight:700}
+.myphone-cutout .myphone-cutout-modes button[aria-pressed=true]{background:#fff;color:#111522}
+.myphone-cutout-tip{position:absolute;left:50%;top:calc(max(14px,env(safe-area-inset-top)) + 50px);transform:translateX(-50%);max-width:calc(100vw - 24px);box-sizing:border-box;padding:5px 12px;border-radius:14px;background:#111522d9;font-size:12.5px;line-height:1.4;text-align:center;pointer-events:none;transition:opacity .3s}
 `;
 
 /** Moves the live preview canvas into a full-screen editor and restores it on close. */
@@ -72,18 +72,18 @@ export function openCutoutEditor({doc, canvas, history, onErase, onRestore = () 
   try { while (doc.defaultView.parent !== doc.defaultView && doc.defaultView.parent.document.body) doc = doc.defaultView.parent.document; } catch {}
   const win = doc.defaultView, controller = new win.AbortController();
   const listen = (el, name, fn, options = {}) => el.addEventListener(name, fn, {...options, signal: controller.signal});
-  if (!doc.getElementById('sttts-cutout-style')) {
-    const style = doc.createElement('style'); style.id = 'sttts-cutout-style'; style.textContent = CSS; doc.head.append(style);
+  if (!doc.getElementById('myphone-cutout-style')) {
+    const style = doc.createElement('style'); style.id = 'myphone-cutout-style'; style.textContent = CSS; doc.head.append(style);
   }
   const placeholder = canvas.ownerDocument.createComment('cutout-preview'), oldStyle = canvas.getAttribute('style');
   canvas.before(placeholder);
   // The phone itself uses showModal() on mobile: a z-index overlay in body is always behind that top layer.
   const root = doc.createElement(typeof win.HTMLDialogElement?.prototype.showModal === 'function' ? 'dialog' : 'div');
-  root.className = 'sttts-cutout'; root.tabIndex = -1;
+  root.className = 'myphone-cutout'; root.tabIndex = -1;
   root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', '编辑去背景');
   const button = (action, label, art) => `<button type="button" data-cutout="${action}" aria-label="${label}" title="${label}">${art}</button>`;
-  root.innerHTML = `<div class="sttts-cutout-stage"></div><div class="sttts-cutout-modes" role="group" aria-label="点一下做什么"><button type="button" data-cutout-mode="erase" aria-pressed="true">去掉</button><button type="button" data-cutout-mode="keep" aria-pressed="false">补回</button></div><p class="sttts-cutout-tip" aria-live="polite"></p><div class="sttts-cutout-top">${button('close', '完成', icon('check'))}</div><div class="sttts-cutout-bar">${button('undo', '撤回', icon('undo'))}${button('redo', '重做', icon('undo'))}${button('out', '缩小', '−')}<output></output>${button('in', '放大', '+')}${button('download', '下载', icon('download'))}</div>`;
-  const stage = root.querySelector('.sttts-cutout-stage'); doc.body.append(root);
+  root.innerHTML = `<div class="myphone-cutout-stage"></div><div class="myphone-cutout-modes" role="group" aria-label="点一下做什么"><button type="button" data-cutout-mode="erase" aria-pressed="true">去掉</button><button type="button" data-cutout-mode="keep" aria-pressed="false">补回</button></div><p class="myphone-cutout-tip" aria-live="polite"></p><div class="myphone-cutout-top">${button('close', '完成', icon('check'))}</div><div class="myphone-cutout-bar">${button('undo', '撤回', icon('undo'))}${button('redo', '重做', icon('undo'))}${button('out', '缩小', '−')}<output></output>${button('in', '放大', '+')}${button('download', '下载', icon('download'))}</div>`;
+  const stage = root.querySelector('.myphone-cutout-stage'); doc.body.append(root);
   try { root.showModal?.(); }
   catch (error) { root.remove(); placeholder.remove(); throw error; }
   // Only take the preview out after the editor has successfully entered the visible layer.
@@ -94,7 +94,7 @@ export function openCutoutEditor({doc, canvas, history, onErase, onRestore = () 
   // A brush of the same size on the screen: zoomed in, it paints finer.
   const BRUSH = 16;
   function tip(text) {
-    const line = root.querySelector('.sttts-cutout-tip');
+    const line = root.querySelector('.myphone-cutout-tip');
     line.textContent = text; line.style.opacity = '1';
     win.clearTimeout(tipTimer);
     tipTimer = win.setTimeout(() => { line.style.opacity = '0'; }, 3200);

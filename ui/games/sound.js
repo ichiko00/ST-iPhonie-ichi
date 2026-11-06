@@ -2,7 +2,7 @@
 // context for all the games, started by the first touch (browsers keep it silent before that). Sound on or off is
 // kept in this browser.
 
-const KEY = 'st-iphonie-game-sound';
+const KEY = 'myphone-app-game-sound';
 const NOTE = n => 440 * 2 ** ((n - 69) / 12);
 
 export function gameSounds(win) {

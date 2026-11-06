@@ -8,7 +8,7 @@
 import {joinStack, stackTop} from './island-stack.js';
 import {hasWords} from './core/music.js';
 
-const KEY = 'sttts.musicIsland';
+const KEY = 'myphone.musicIsland';
 const PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>';
 const PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
 const NEXT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 6l8.5 6L6 18zM16 6h2v12h-2z"/></svg>';
@@ -57,7 +57,7 @@ function movingLine(box, win) {
 export function createMusicIsland({doc = document, status, phoneOpen, callShown = () => false, open, toggle, next}) {
   const win = doc.defaultView;
   const el = doc.createElement('div');
-  el.className = 'sttts-music-island';
+  el.className = 'myphone-music-island';
   el.hidden = true;
   el.setAttribute('role', 'region');
   el.innerHTML = `<div class="mi-pill"><span class="mi-disc" aria-hidden="true"><i></i></span><span class="mi-line" data-mi-box><span data-mi-line></span></span><span class="mi-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>

@@ -62,6 +62,9 @@ import { vibeKey, vibeMode, vibeReady, readVibeFile, imageVibe, encodingVibe, me
 /** musicFetch's answer when a 取歌地址 gave the song itself. */
 const AUDIO = Symbol('audio');
 
+import {attachStoryNotes} from './story-transfer.js';
+import {attachSocialNote} from './social-transfer.js';
+import {socialMethods, socialApi} from './social-backend.js';
 export const BACKEND_API_VERSION = '1.0.0';
 const ENGINES = ['fish', 'mini', 'eleven', 'mimo', 'doubao', 'custom'];
 /** A small JPEG data URI of a base64 picture, for the vibe list; '' where pictures cannot be drawn (no canvas). */
@@ -176,10 +179,10 @@ export class TTSBackend {
         // 论坛 and 查手机 (core/forum.js, core/peek.js).
         this.apps = new AppStore(this.settings.scope, { indexedDB });
         // 记忆 (core/memory.js): one book per chat, and the vectors of its older messages. A database of its own: big.
-        this.memoryStore = new AppStore(this.settings.scope, { indexedDB, database: 'st-iphonie-memory-v1' });
+        this.memoryStore = new AppStore(this.settings.scope, { indexedDB, database: 'myphone-app-memory-v1' });
         // 音效 (core/sounds.js): the sound library and the names the story asked for that it has none of. Its own database: big.
-        this.sounds = new AppStore(this.settings.scope, { indexedDB, database: 'st-iphonie-sounds-v1' });
-        this.music = new AppStore(this.settings.scope, { indexedDB, database: 'st-iphonie-music-v1' });
+        this.sounds = new AppStore(this.settings.scope, { indexedDB, database: 'myphone-app-sounds-v1' });
+        this.music = new AppStore(this.settings.scope, { indexedDB, database: 'myphone-app-music-v1' });
         // 画画的作品: the phone draws in them; here they are only read and put back (backups, 保存到酒馆).
         this.paintWorks = paintStore({ indexedDB });
         this.ledger = new Ledger({ store: this.apps, device: () => this.#device() });
@@ -319,7 +322,8 @@ export class TTSBackend {
         const stores = want.flatMap(part => PART_STORES[part]);
         const library = stores.length ? await this.library.exportRows(stores) : {};
         let settings = null;
-        if (want.includes('settings')) { settings = this.getState(); delete settings.scope; delete settings.floating; }
+        if (want.includes('settings')) { settings = this.getState(); delete settings.scope; delete settings.floating; attachSocialNote(library,settings.chat.social); }
+        if(want.includes('chats')) attachStoryNotes(library,await this.chats.exportStoryArchives());
         const chats = want.includes('chats') ? await this.chats.exportThreads() : null, moments = want.includes('moments') ? await this.moments.exportPosts() : null;
         // Keys only with a password: sealed here, never written as they are.
         let keys = null;
@@ -341,7 +345,7 @@ export class TTSBackend {
         if (want.includes('photos')) rows.albums = await this.partRows('albums');
         const blob = await writeBackup({ version, settings, library, chats, moments, keys, vibeGroups, memories, assistant, vnFiles, rows });
         const day = new Date(), pad = n => String(n).padStart(2, '0');
-        return { blob, name: `ST-iPhonie 备份 ${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}` };
+        return { blob, name: `MyPhone 兼容备份 ${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}` };
     }
     /** What a backup file holds, to show before restoring. */
     async inspectBackup(file) {
@@ -359,7 +363,7 @@ export class TTSBackend {
         this.assertOpen();
         const want = new Set(parts.filter(part => BACKUP_PARTS[part])), done = {};
         if (!want.size) throw Error('请至少选一项要恢复的内容');
-        const backup = await readBackup(file, { wanted: fieldsOf([...want]) });
+        const backup = await readBackup(file, { wanted: new Set([...fieldsOf([...want]),...((want.has('settings')||want.has('chats'))?['notes']:[])]) });
         // Keys first: a wrong password stops the restore before anything else changes.
         let keys = null;
         if (want.has('keys') && backup.keys) keys = await openKeys(backup.keys, password);
@@ -399,6 +403,7 @@ export class TTSBackend {
             this.emit('draw', { vibes: true });
             done.vibeGroups = this.settings.draw.vibe.groups.length;
         }
+        if(want.has('chats')&&backup.chats&&(backup.storyArchives||replace)) await this.chats.importStoryArchives(backup.storyArchives||[],{replace});
         if (want.has('chats') && backup.chats) { done.chats = await this.chats.importThreads(backup.chats, { replace }); this.emit('chat', { threadId: '' }); }
         if (want.has('moments') && backup.moments) { done.moments = await this.moments.importPosts(backup.moments, { replace }); this.emit('moments', {}); }
         if (want.has('memories') && backup.memories) done.memories = await this.importChatMemories(backup.memories, {replace, restoring: true});
@@ -890,6 +895,7 @@ export class TTSBackend {
     /** The user sends a red packet, a transfer or a gift: paid from the wallet first, given back if it cannot be sent. */
     async sendPaid(threadId, message) {
         const thread = await this.chats.get(threadId);
+        if (thread?.type === 'dm') this.socialAssert(thread.members[0],this.socialScopeFor(thread));
         if (!thread) throw Error('这段聊天已不存在');
         let item = clone(message || {}), cost = 0, note = '';
         if (item.kind === 'gift') {
@@ -906,7 +912,7 @@ export class TTSBackend {
         } else throw Error('这条消息不用付钱');
         const kind = item.kind, who = thread.name;
         if (cost > 0) this.walletMove(-cost, { kind, note, who });
-        try { return await this.chatMutate(threadId, () => this.chats.append(threadId, [item], { read: true })); }
+        try { return await this.chatMutate(threadId, () => this.appendChat(threadId, [item], { read: true })); }
         catch (error) { if (cost > 0) this.walletMove(cost, { kind: 'refund', note: (note || LEDGER_KINDS[kind]) + '（没发出去）', who }); throw error; }
     }
     /**
@@ -936,7 +942,7 @@ export class TTSBackend {
     /** The tavern's user files: {read(name, {blob}), write(name, data), remove(name)}. Without it, syncing is off. */
     setSyncFiles(files) { this.syncFiles = files; }
     #syncMemory(value) {
-        const key = 'st-iphonie-sync:' + this.settings.scope;
+        const key = 'myphone-app-sync:' + this.settings.scope;
         try {
             const storage = this.syncStorage();
             if (value === undefined) return JSON.parse(storage?.getItem(key) || 'null') || {};
@@ -947,8 +953,8 @@ export class TTSBackend {
     #device() {
         try {
             const storage = this.syncStorage();
-            let id = storage?.getItem('st-iphonie-device');
-            if (!id) { id = crypto.randomUUID(); storage?.setItem('st-iphonie-device', id); }
+            let id = storage?.getItem('myphone-app-device');
+            if (!id) { id = crypto.randomUUID(); storage?.setItem('myphone-app-device', id); }
             return id;
         } catch { return 'unknown'; }
     }
@@ -1817,7 +1823,7 @@ export class TTSBackend {
     }
     /** 来电 options: {auto, every, dailyMax, ring}. */
     saveCalls(patch) {
-        const next = this.getState(), allowed = ['auto', 'every', 'dailyMax', 'ring'];
+        const next = this.getState(), allowed = ['story','auto', 'every', 'dailyMax', 'ring'];
         next.calls = normalizeCalls({ ...next.calls, ...Object.fromEntries(Object.entries(patch || {}).filter(([key]) => allowed.includes(key))) });
         return this.save(next).calls;
     }
@@ -3020,6 +3026,7 @@ export class TTSBackend {
     async refriend(threadId) {
         this.assertOpen();
         const thread = await this.chats.get(threadId);
+        if (thread?.type === 'dm') this.socialAssert(thread.members[0],this.socialScopeFor(thread));
         if (thread?.friend?.by !== 'me') throw Error('TA 已经是你的好友了');
         const name = thread.members[0], requests = thread.friend.requests || [];
         await this.chats.append(threadId, [{ from: 'me', kind: 'system', text: `你已添加了${name}，现在可以开始聊天了` }, ...requests.map(r => ({ from: name, kind: 'text', text: r.text }))], { read: true });
@@ -3039,8 +3046,9 @@ export class TTSBackend {
         this.assertOpen();
         if (!this.contacts().some(c => c.name === name)) throw Error(`联系人里没有「${name}」`);
         const thread = await this.dmThread(name);
-        if (thread.blocked) return thread;
+        if(thread.blocked){this.socialSet(name,{state:'blocked'});return thread;}
         await this.chats.update(thread.id, { blocked: { at: Date.now(), held: [], requests: [] } });
+        this.socialSet(name,{state:'blocked',allowAlt:true});
         const saved = await this.chats.append(thread.id, [{ from: 'me', kind: 'system', text: `你已把${name}加入黑名单` }], { read: true });
         this.emit('chat', { threadId: thread.id, friend: true });
         return saved;
@@ -3051,6 +3059,8 @@ export class TTSBackend {
         const thread = await this.chats.get(threadId);
         if (!thread?.blocked) throw Error('TA 不在黑名单里');
         await this.chats.update(threadId, { blocked: null });
+        this.socialSet(thread.members[0],{state:'friend'});
+        for(const other of await this.threads())if(other.id!==threadId&&other.type==='dm'&&other.members[0]===thread.members[0]&&other.blocked)await this.chats.update(other.id,{blocked:null});
         const saved = await this.chats.append(threadId, [{ from: 'me', kind: 'system', text: `你已把${thread.members[0]}移出黑名单` }], { read: true });
         this.emit('chat', { threadId, friend: true });
         return saved;
@@ -3075,6 +3085,8 @@ export class TTSBackend {
         if (accept) {
             await this.chats.append(threadId, [{ from: 'me', kind: 'system', text: `你通过了${name}的好友申请，现在可以开始聊天了` }, ...requests.map(r => ({ from: name, kind: 'text', text: r.text }))], { read: true });
             const saved = await this.chats.update(threadId, { friend: null, blocked: null, befriended: Date.now() });
+            this.socialSet(name,{state:'friend'});
+            for(const other of await this.threads())if(other.id!==threadId&&other.type==='dm'&&other.members[0]===name&&other.blocked)await this.chats.update(other.id,{blocked:null});
             this.emit('chat', { threadId, friend: true });
             return saved;
         }
@@ -3087,6 +3099,7 @@ export class TTSBackend {
     /** The user's messages to someone who deleted them: sent, then refused with the usual note. */
     async appendChat(id, messages, options) {
         const thread = await this.chats.get(id);
+        if (thread?.type === 'dm') this.socialAssert(thread.members[0],this.socialScopeFor(thread));
         let saved = await this.chats.append(id, messages, options);
         if (thread?.friend?.by === 'them' && messages.some(m => m?.from === 'me' && m.kind !== 'system')) {
             const name = thread.members[0];
@@ -3592,6 +3605,7 @@ export class TTSBackend {
             phoneSpace: () => ({ ...clone(this.space), on: !!this.here() }),
             saveChatPreset: preset => this.saveChatPreset(preset), deleteChatPreset: id => this.deleteChatPreset(id), selectChatPreset: id => this.selectChatPreset(id),
             previewChatPrompt: preset => this.previewChatPrompt(preset), validateChatPreset: preset => { try { validateChatPreset(normalizeChatPreset(clone(preset))); return ''; } catch (error) { return message(error); } },
+            ...socialApi(this),
             saveChatOptions: patch => this.saveChatOptions(clone(patch)),
             wallet: () => this.wallet(), buyDecoration: (kind, key) => this.buyDecoration(kind, key), saveGift: gift => this.saveGift(gift), deleteGift: id => this.deleteGift(id),
             sendPaid: (threadId, message) => this.sendPaid(threadId, message), takeSent: (threadId, messageId, accept) => this.takeSent(threadId, messageId, accept !== false),
@@ -3647,3 +3661,5 @@ export class TTSBackend {
 }
 installDrawSettings(TTSBackend);
 installSongs(TTSBackend);
+
+Object.assign(TTSBackend.prototype, socialMethods);

@@ -14,7 +14,7 @@ import {paintStore} from './paint/store.js';
 import {hsvToRgb, rgbToHsv, rgbToHex, hexToRgb, colorWheel} from './paint/color.js';
 
 const SIZES = [['portrait', '竖向', 1200, 1600], ['square', '方形', 1500, 1500], ['landscape', '横向', 1600, 1200], ['phone', '手机壁纸', 1080, 1920]];
-const TOOLS_KEY = 'st-iphonie-paint-tools';
+const TOOLS_KEY = 'myphone-app-paint-tools';
 const svg = d => `<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
 const I = {
   brush: svg('<path d="M14.5 3.5l6 6-9 9c-1.2 1.2-3.3 1.4-5 .6L3 21l1.9-3.5c-.8-1.7-.6-3.8.6-5z" fill="currentColor"/>'),

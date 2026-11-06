@@ -81,10 +81,10 @@ export class CloudQueue {
 export async function sha256Hex(text) { return hashHex(String(text)); }
 function browserId() {
   try {
-    let id = globalThis.localStorage?.getItem('sttts.queue.uid');
-    if (!id) { id = crypto.randomUUID(); globalThis.localStorage?.setItem('sttts.queue.uid', id); }
+    let id = globalThis.localStorage?.getItem('myphone.queue.uid');
+    if (!id) { id = crypto.randomUUID(); globalThis.localStorage?.setItem('myphone.queue.uid', id); }
     return id;
-  } catch { return 'sttts-' + crypto.randomUUID(); }
+  } catch { return 'myphone-' + crypto.randomUUID(); }
 }
 
 export class KeyHashQueue {

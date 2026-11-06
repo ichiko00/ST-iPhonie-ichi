@@ -37,7 +37,7 @@ const $ = s => document.querySelector(s);
 const app = $('#app'), canvas = $('#view'), hud = $('#hud'), invRoot = $('#inv');
 const isTouch = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 const inTavern = parent !== window;
-const SET_KEY = 'st-iphonie-blocks-settings';
+const SET_KEY = 'myphone-app-blocks-settings';
 const DEFAULTS = {dist: isTouch ? 5 : 8, fov: 70, sens: 1, gamma: 0.5, volume: 0.7, scale: isTouch ? 0.7 : 1, wave: true, clouds: true, bob: true, autoJump: true,
   // 光影 and the distant view: phones start with the light ones, computers in the middle (high is for a real graphics card)
   shaders: isTouch ? 'low' : 'mid', lod: isTouch ? 48 : 96};
@@ -390,7 +390,7 @@ async function quitToTitle() {
 }
 async function leaveGame() {
   if (G) await quitToTitle();
-  parent.postMessage({type: 'st-iphonie-game:close'}, location.origin);
+  parent.postMessage({type: 'myphone-app-game:close'}, location.origin);
 }
 function respawn() {
   const b = G.body;

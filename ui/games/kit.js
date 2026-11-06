@@ -1,7 +1,7 @@
 // What the games share: best scores (this browser), the theme's colours for drawing, swipes and the arrow pad, canvases
 // sharp on any screen, and a loop that stops when the game is left.
 
-const KEY = 'st-iphonie-games';
+const KEY = 'myphone-app-games';
 /** Best scores and saved games, per browser (only a convenience: a private window keeps none). */
 export function store(win, report = () => {}) {
   // A storage that fails is told once (to the 日志), not on every move.

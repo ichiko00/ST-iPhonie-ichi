@@ -153,7 +153,7 @@ class DrawSettings {
     async comfyUploadPicture(file) {
         this.assertOpen();
         const kind = /^image\/(\w+)/.exec(file.type || '')?.[1] || 'png';
-        return comfyUpload({ fetch: this.imageFetch, url: this.settings.draw.comfy.url, blob: file, name: file.name || `st-iphonie-${Date.now()}.${kind}` });
+        return comfyUpload({ fetch: this.imageFetch, url: this.settings.draw.comfy.url, blob: file, name: file.name || `myphone-app-${Date.now()}.${kind}` });
     }
     /**
      * What a workflow written for the tavern's own image generation also takes: the avatars of the chat in use, as

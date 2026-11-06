@@ -1,5 +1,5 @@
 {
-  "name": "st-iphonie-queue",
+  "name": "myphone-app-queue",
   "private": true,
   "description": "Shared NovelAI queue for ST-iPhonie (Cloudflare Worker + Durable Object).",
   "scripts": {

@@ -16,7 +16,7 @@ export const lostError = cause => Object.assign(new Error(`${LOST_MESSAGE}。重
 /** A moment before reconnecting: WebKit's storage process may be starting again. */
 export const breath = () => new Promise(resolve => setTimeout(resolve, 150));
 
-const STORES = {'st-tts-library-v1': '资料库（相册、收藏、备忘录）', 'st-tts-audio-v1': '语音缓存', 'st-iphonie-chats-v1': '聊天记录', 'st-iphonie-moments-v1': '朋友圈', 'st-iphonie-apps-v1': '论坛、查手机、账本', 'st-iphonie-memory-v1': '记忆', 'st-iphonie-sounds-v1': '音效', 'st-iphonie-music-v1': '音乐和写的歌'};
+const STORES = {'myphone-tts-library-v1': '资料库（相册、收藏、备忘录）', 'myphone-tts-audio-v1': '语音缓存', 'myphone-app-chats-v1': '聊天记录', 'myphone-app-moments-v1': '朋友圈', 'myphone-app-apps-v1': '论坛、查手机、账本', 'myphone-app-memory-v1': '记忆', 'myphone-app-sounds-v1': '音效', 'myphone-app-music-v1': '音乐和写的歌'};
 const within = (work, ms = 4000) => Promise.race([work, new Promise((_, reject) => setTimeout(() => reject(Object.assign(Error('一直没有回应'), {name: 'Timeout'})), ms))]);
 const done = request => new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
 /** Opens a store as it is, or null when there is none. It is never made here: an empty one under that name would stay without its tables. */
@@ -31,7 +31,7 @@ function existing(factory, name) {
 }
 /** Whether a row, and a row with a file in it, can be kept here at all, in a store made for it and then removed. */
 async function canKeep(factory) {
-  const name = 'st-iphonie-check-v1', opening = factory.open(name, 1);
+  const name = 'myphone-app-check-v1', opening = factory.open(name, 1);
   opening.onupgradeneeded = () => opening.result.createObjectStore('rows', {keyPath: 'id'});
   const db = await done(opening);
   try {

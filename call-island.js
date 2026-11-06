@@ -6,7 +6,7 @@
 
 import {joinStack, stackTop} from './island-stack.js';
 
-const KEY = 'sttts.callIsland';
+const KEY = 'myphone.callIsland';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const clock = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const PHONE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a.956.956 0 0 1-.29-.7c0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28a11.27 11.27 0 0 0-2.67-1.85.996.996 0 0 1-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z"/></svg>';
@@ -18,10 +18,10 @@ const ASK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" strok
  * open(): shows the phone. hangup(call): ends (or declines) it. say(text) / reply(): as in the phone's call screen.
  * avatar(name): a picture URL or ''. Returns {refresh(call?), dispose()}.
  */
-export function createCallIsland({doc = document, status, phoneOpen, open, hangup, say = async () => {}, reply = async () => {}, avatar = () => ''}) {
+export function createCallIsland({doc = document, status, phoneOpen, open, hangup, answer = async()=>{}, say = async () => {}, reply = async () => {}, avatar = () => ''}) {
   const win = doc.defaultView;
   const el = doc.createElement('div');
-  el.className = 'sttts-call-island';
+  el.className = 'myphone-call-island';
   el.hidden = true;
   el.setAttribute('role', 'dialog');
   doc.body.append(el);
@@ -46,6 +46,7 @@ export function createCallIsland({doc = document, status, phoneOpen, open, hangu
     if (c.error) return '没有回应';
     if (c.thinking) return '在想……';
     if (c.speaking) return '正在说';
+    if(c.story)return '通话进行中 · 正文已同步';
     return c.lines?.at(-1)?.from === 'me' ? '说完了点气泡，TA 才会回' : '轮到你了';
   }
   const talking = () => call?.state === 'talking';
@@ -57,7 +58,7 @@ export function createCallIsland({doc = document, status, phoneOpen, open, hangu
     el.innerHTML = `<div class="ci-head" title="拖动移动；双击回到小手机"><span class="ci-av">${pic ? `<img src="${esc(pic)}" alt="">` : esc(String(c.name || '?').slice(0, 1))}</span>
         <span class="ci-text"><b>${esc(c.name)}</b><small data-ci-status></small></span>
         <span class="ci-wave" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-        <button type="button" class="ci-end" data-ci="end">${PHONE}</button></div>
+        ${c.state==='ringing'&&c.dir==='in'?'<button type="button" class="ci-accept" data-ci="answer" aria-label="接听来电">接听</button>':''}<button type="button" class="ci-end" data-ci="end">${PHONE}</button></div>
       ${kind === 'talking' ? `<div class="ci-lines" data-ci-lines aria-live="polite"></div>
       <form class="ci-say" data-ci-form><input data-ci-input maxlength="1000" autocomplete="off" enterkeyhint="send" placeholder="说点什么……" aria-label="对 ${esc(c.name)} 说"><button type="submit" class="ci-send" data-ci="send"></button></form>` : ''}`;
     linesHTML = '';
@@ -152,6 +153,7 @@ export function createCallIsland({doc = document, status, phoneOpen, open, hangu
   el.addEventListener('scroll', e => { if (e.target.matches?.('[data-ci-lines]')) e.target.dataset.read = e.target.scrollHeight - e.target.scrollTop - e.target.clientHeight > 40 ? '1' : ''; }, true);
   const run = task => Promise.resolve().then(task).catch(() => {});
   el.addEventListener('click', e => {
+    if (e.target.closest('[data-ci=answer]')) run(()=>answer());
     if (e.target.closest('[data-ci=end]')) { const c = call; if (c) run(() => hangup(c)); }
   });
   el.addEventListener('submit', e => {

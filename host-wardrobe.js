@@ -77,7 +77,7 @@ export function createWardrobeHost({context, settings, backend, notice = () => {
     if (!cache.loaded) refresh();
     const user = userName(), out = [];
     if (cache.pending.length) {
-      out.push({key: 'sttts.entry.wardrobe', text: wearText(cache.pending, user, settings().promptRules), position: 1, depth: 1, role: 0});
+      out.push({key: 'myphone.entry.wardrobe', text: wearText(cache.pending, user, settings().promptRules), position: 1, depth: 1, role: 0});
       if (type && !['quiet', 'impersonate'].includes(type) && !dryRun) {
         const used = cache.pending;
         cache = {...cache, pending: []};
@@ -85,7 +85,7 @@ export function createWardrobeHost({context, settings, backend, notice = () => {
       }
     }
     const rule = outfitRule(cache.owners.map(o => ownerName(o, user)), settings().promptRules);
-    if (rule) out.push({key: 'sttts.entry.outfit', text: rule, position: 1, depth: 1, role: 0});
+    if (rule) out.push({key: 'myphone.entry.outfit', text: rule, position: 1, depth: 1, role: 0});
     return out;
   }
   /** A story reply's <outfit> lines: who wears what now (the user by their name, roles by theirs; anyone else is left out). */

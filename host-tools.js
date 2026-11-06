@@ -7,7 +7,7 @@ export function createStoryTools({doc = document, hidden, entry = () => true, me
  function cancel() { if (hold) win.clearTimeout(hold.timer); hold = null; }
  function show(button, rows) {
   close(); anchor = button;
-  menu = doc.createElement('div'); menu.className = 'sttts-context-menu'; menu.setAttribute('role', 'menu');
+  menu = doc.createElement('div'); menu.className = 'myphone-context-menu'; menu.setAttribute('role', 'menu');
   for (const [label, action] of rows) {
    const item = doc.createElement('button'); item.type = 'button'; item.textContent = label; item.setAttribute('role', 'menuitem');
    item.addEventListener('click', event => { event.preventDefault(); event.stopPropagation(); close(); Promise.resolve().then(action).catch(error => notice(error.message)); });
@@ -33,7 +33,7 @@ export function createStoryTools({doc = document, hidden, entry = () => true, me
  }
  function click(event) {
   if (suppress && Date.now() < suppress.until && suppress.button.contains(event.target)) { event.preventDefault(); event.stopImmediatePropagation(); suppress = null; return; }
-  const button = event.target.closest?.('[data-sttts-tools]');
+  const button = event.target.closest?.('[data-myphone-tools]');
   if (!button) { if (menu && !menu.contains(event.target)) close(); return; }
   event.preventDefault(); event.stopImmediatePropagation();
   if (anchor === button) return close();
@@ -42,12 +42,12 @@ export function createStoryTools({doc = document, hidden, entry = () => true, me
  }
  function down(event) {
   cancel(); suppress = null; if (event.button !== 0 || hidden()) return;
-  const button = event.target.closest?.('#chat [data-sttts-action="line"]'); if (!button) return;
+  const button = event.target.closest?.('#chat [data-myphone-action="line"]'); if (!button) return;
   const x = event.clientX, y = event.clientY;
   hold = {x, y, id: event.pointerId, timer: win.setTimeout(() => { hold = null; if (button.isConnected && voiceMenu(button)) suppress = {button, until: Date.now() + 1500}; }, 500)};
  }
  function move(event) { if (hold && (event.pointerId !== hold.id || Math.hypot(event.clientX - hold.x, event.clientY - hold.y) > 10)) cancel(); }
- function context(event) { const button = event.target.closest?.('#chat [data-sttts-action="line"]'); if (button && voiceMenu(button)) { cancel(); suppress = {button, until: Date.now() + 1500}; event.preventDefault(); } }
+ function context(event) { const button = event.target.closest?.('#chat [data-myphone-action="line"]'); if (button && voiceMenu(button)) { cancel(); suppress = {button, until: Date.now() + 1500}; event.preventDefault(); } }
  function key(event) {
   if (!menu) return;
   if (event.key === 'Escape') { const previous = anchor; close(); previous?.focus(); event.preventDefault(); }
@@ -58,13 +58,13 @@ export function createStoryTools({doc = document, hidden, entry = () => true, me
  function buttons() {
   if (hidden() || !entry()) close();
   for (const mes of doc.querySelectorAll('#chat .mes[mesid]')) {
-   const old = mes.querySelector('[data-sttts-tools]');
+   const old = mes.querySelector('[data-myphone-tools]');
    if (hidden() || !entry() || !message(Number(mes.getAttribute('mesid')))) { old?.remove(); continue; }
    if (old) continue;
    const bar = mes.querySelector('.mes_buttons'); if (!bar) continue;
-   const button = doc.createElement('button'); button.type = 'button'; button.className = 'mes_button sttts-tools-entry'; button.dataset.stttsTools = ''; button.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="var(--SmartThemeBlurTintColor,#242424)"/><circle cx="15" cy="12" r="2" fill="var(--SmartThemeBlurTintColor,#242424)"/><circle cx="9" cy="18" r="2" fill="var(--SmartThemeBlurTintColor,#242424)"/></svg>';
+   const button = doc.createElement('button'); button.type = 'button'; button.className = 'mes_button myphone-tools-entry'; button.dataset.myphoneTools = ''; button.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="var(--SmartThemeBlurTintColor,#242424)"/><circle cx="15" cy="12" r="2" fill="var(--SmartThemeBlurTintColor,#242424)"/><circle cx="9" cy="18" r="2" fill="var(--SmartThemeBlurTintColor,#242424)"/></svg>';
    button.title = '小手机工具'; button.setAttribute('aria-label', '小手机工具'); button.setAttribute('aria-haspopup', 'menu'); bar.prepend(button);
   }
  }
- return {buttons, close, dispose() { cancel(); close(); for (const [type, fn] of listeners) doc.removeEventListener(type, fn, true); doc.querySelectorAll('[data-sttts-tools]').forEach(el => el.remove()); }};
+ return {buttons, close, dispose() { cancel(); close(); for (const [type, fn] of listeners) doc.removeEventListener(type, fn, true); doc.querySelectorAll('[data-myphone-tools]').forEach(el => el.remove()); }};
 }

@@ -35,7 +35,7 @@ export function guessVoice(words) {
   return {gender: female === male ? '' : female ? 'female' : 'male', age};
 }
 /**
- * A voice pool file as pool entries: ST-iPhonie's own (st-iphonie-voice-pool), FishDialogue's voice library
+ * A voice pool file as pool entries: ST-iPhonie's own (myphone-app-voice-pool), FishDialogue's voice library
  * (fish_dialogue_voice_library: Fish voices {id, name, category: language, sub: style, desc}), or a plain list.
  * Gender and age that the file does not give are guessed from its words.
  */
@@ -57,7 +57,7 @@ export function readPoolFile(source) {
   return out;
 }
 /** The pool as a file to share. */
-export const poolFile = pool => JSON.stringify({type: 'st-iphonie-voice-pool', version: 1, voices: normalizePool(pool)}, null, 2);
+export const poolFile = pool => JSON.stringify({type: 'myphone-app-voice-pool', version: 1, voices: normalizePool(pool)}, null, 2);
 
 /** A pool entry as one line for the model: name, gender, age, style. */
 export const poolLine = v => [v.name, VOICE_GENDERS[v.gender], VOICE_AGES[v.age], v.style].filter(Boolean).join(' · ');

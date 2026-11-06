@@ -41,7 +41,7 @@ export class MomentStore {
     if (this.#db) return this.#db;
     if (!this.#factory?.open) throw fail('浏览器不支持本地保存朋友圈，请检查存储权限', 'STORAGE_UNAVAILABLE');
     this.#opening ||= new Promise((resolve, reject) => {
-      const req = this.#factory.open('st-iphonie-moments-v1', 1);
+      const req = this.#factory.open('myphone-app-moments-v1', 1);
       req.onupgradeneeded = () => { const store = req.result.createObjectStore('posts', {keyPath: ['scope', 'id']}); store.createIndex('scope', 'scope'); };
       req.onerror = () => reject(fail('无法打开朋友圈，请检查浏览器的存储权限', 'STORAGE_UNAVAILABLE'));
       req.onblocked = () => reject(fail('另一个页面占用了朋友圈，请关闭旧页面后重试', 'STORAGE_BLOCKED'));

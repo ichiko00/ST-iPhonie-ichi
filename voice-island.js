@@ -6,7 +6,7 @@
 // It steps aside while the phone is out or a call is on.
 import {joinStack, stackTop} from './island-stack.js';
 
-const KEY = 'sttts.voiceIsland';
+const KEY = 'myphone.voiceIsland';
 const HEIGHT_KEY = KEY + '.height';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 const WAVE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg>';
@@ -23,7 +23,7 @@ const BUSY = ['playing', 'generating'];
 export function createVoiceIsland({doc = document, enabled, latest, now, play, playAll, playStep = null, toggle = null, phoneOpen, callShown = () => false}) {
   const win = doc.defaultView;
   const el = doc.createElement('div');
-  el.className = 'sttts-voice-island';
+  el.className = 'myphone-voice-island';
   el.hidden = true;
   el.setAttribute('role', 'region');
   el.innerHTML = `<div class="vi-pill"><span class="vi-ico">${WAVE}</span><span class="vi-line"><span class="vi-scroll" data-vi-line></span></span><span class="vi-bars" aria-hidden="true"><i></i><i></i><i></i></span></div>

@@ -1,4 +1,4 @@
-// What other plugins and scripts may call: window.stIphonie and the slash command /iphonie-draw. Other plugins draw with what the
+// What other plugins and scripts may call: window.myPhoneApp and the slash command /myphone-draw. Other plugins draw with what the
 // user set up here (the engine, the 画风, the looks of the people named), through the same queue as the story's pictures. Once
 // published this cannot change: new things are added, old ones stay as they are. How to use it is in 使用说明.md.
 import {activeStyle} from './core/draw.js';
@@ -25,14 +25,14 @@ export function publicApi({pictures, backend}) {
   });
 }
 
-/** /iphonie-draw: the picture's address comes out, for the next command. ctx: the tavern's context; api(): the interface, null while the plugin is off. */
+/** /myphone-draw: the picture's address comes out, for the next command. ctx: the tavern's context; api(): the interface, null while the plugin is off. */
 export function registerDrawCommand(ctx, api, notice) {
   const {SlashCommandParser: parser, SlashCommand: command, SlashCommandArgument: argument, SlashCommandNamedArgument: named} = ctx;
-  if (globalThis.__stIphonieDrawCommand || !parser?.addCommandObject || !command?.fromProps || !argument?.fromProps || !named?.fromProps) return false;
-  globalThis.__stIphonieDrawCommand = true;
+  if (globalThis.__myPhoneAppDrawCommand || !parser?.addCommandObject || !command?.fromProps || !argument?.fromProps || !named?.fromProps) return false;
+  globalThis.__myPhoneAppDrawCommand = true;
   const option = (name, description) => named.fromProps({name, description, typeList: ['string']});
   parser.addCommandObject(command.fromProps({
-    name: 'iphonie-draw',
+    name: 'myphone-draw',
     returns: '图片在酒馆里的地址',
     callback: async (args, value) => {
       const now = api();

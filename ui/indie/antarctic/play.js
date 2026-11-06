@@ -117,8 +117,8 @@ const tavern = {asked: 0, waiting: new Map(), sent: 0, timer: 0};
 addEventListener('message', e => {
   if (e.source !== parent || e.origin !== location.origin) return;
   const d = e.data, done = tavern.waiting.get(d?.id);
-  if (!done || (d.type !== 'st-iphonie-game:loaded' && d.type !== 'st-iphonie-game:saved')) return;
-  tavern.waiting.delete(d.id); done(d.type === 'st-iphonie-game:loaded' ? d.save || null : true);
+  if (!done || (d.type !== 'myphone-app-game:loaded' && d.type !== 'myphone-app-game:saved')) return;
+  tavern.waiting.delete(d.id); done(d.type === 'myphone-app-game:loaded' ? d.save || null : true);
 });
 /** A word to the phone, and its answer (null when there is none in time, or outside the tavern). */
 function tavernAsk(message, wait) {
@@ -137,13 +137,13 @@ function tavernSave(now = false, state = game) {
   const since = Date.now() - tavern.sent;
   if (!now && since < 20000) { tavern.timer = setTimeout(() => tavernSave(true), 20000 - since); return Promise.resolve(null); }
   tavern.sent = Date.now();
-  return tavernAsk({type: 'st-iphonie-game:save', data: state, savedAt: state.savedAt || Date.now()}, 4000);
+  return tavernAsk({type: 'myphone-app-game:save', data: state, savedAt: state.savedAt || Date.now()}, 4000);
 }
 const ago = at => { const m = Math.max(0, Math.round((Date.now() - at) / 60000)); return m < 2 ? '刚刚' : m < 60 ? m + ' 分钟前' : m < 1440 ? Math.round(m / 60) + ' 小时前' : Math.round(m / 1440) + ' 天前'; };
 /** This browser's game, or the tavern's copy (from another device, or from before the browser was cleared): the later
  *  one, unless it is behind the other — then the player picks. */
 async function chooseGame(local) {
-  const got = await tavernAsk({type: 'st-iphonie-game:load'}, 12000), remote = G.upgrade(got?.data && typeof got.data === 'object' ? got.data : null);
+  const got = await tavernAsk({type: 'myphone-app-game:load'}, 12000), remote = G.upgrade(got?.data && typeof got.data === 'object' ? got.data : null);
   const mine = local.fresh ? null : local, pick = G.pickSave(mine, remote);
   let use = pick === 'remote' ? remote : mine;
   if (pick === 'ask') {
@@ -1681,6 +1681,6 @@ $('#reset').onclick = () => confirm('从头开始吗？现在的进度会清掉�
   location.replace(location.pathname);
 });
 // inside the tavern (ST-iPhonie's 大游戏): a way back, saving first
-if (inTavern) { $('#leaveRow').hidden = false; $('#leave').onclick = () => { if (game) { store(); tavernSave(true); } parent.postMessage({type: 'st-iphonie-game:close'}, location.origin); }; }
+if (inTavern) { $('#leaveRow').hidden = false; $('#leave').onclick = () => { if (game) { store(); tavernSave(true); } parent.postMessage({type: 'myphone-app-game:close'}, location.origin); }; }
 if (matchMedia('(pointer: coarse)').matches) document.body.classList.add('touch');
 setTimeout(() => boot().catch(e => { $('#loading').textContent = '准备失败：' + e.message; }), 30);

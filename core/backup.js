@@ -3,6 +3,8 @@
 // password they cannot be read. The file is assembled in pieces and read back in pieces: a string cannot pass about 512 MB,
 // which a large album or a music library does.
 
+import {recoverStoryNotes} from './story-transfer.js';
+import {recoverSocialNote} from './social-transfer.js';
 import {normalizeMemoryBooks, normalizeAssistantThreads} from './data-transfer.js';
 
 export const BACKUP_FORMAT = 2;
@@ -250,7 +252,7 @@ export async function readBackup(file, {wanted = null} = {}) {
     if (!Array.isArray(list)) throw fail('备份内容损坏：' + part);
     rows[part] = list;
   }
-  const settings = parsed.data.settings && typeof parsed.data.settings === 'object' ? parsed.data.settings : null;
+  const settings = recoverSocialNote(parsed.data.settings && typeof parsed.data.settings === 'object' ? parsed.data.settings : null,library);
   const chats = Array.isArray(parsed.data.chats) ? parsed.data.chats : null, moments = Array.isArray(parsed.data.moments) ? parsed.data.moments : null;
   const vibeGroups = library.vibes && Array.isArray(parsed.data.vibeGroups) ? parsed.data.vibeGroups : null;
   const files = Array.isArray(parsed.data.vnFiles) ? parsed.data.vnFiles : null;
@@ -270,5 +272,5 @@ export async function readBackup(file, {wanted = null} = {}) {
     ...Object.fromEntries(ROW_PARTS.map(part => [part, rows[part] ? rows[part].length : null])),
     keys: parsed.data.keys?.data ? (Array.isArray(parsed.data.keys.engines) ? parsed.data.keys.engines.length : 0) : null
   };
-  return {version: String(parsed.version || ''), createdAt: Number(parsed.createdAt) || 0, settings, chats, memories, assistant, moments, library, rows, vibeGroups, vnFiles, keys: parsed.data.keys?.data ? parsed.data.keys : null, summary};
+  return {storyArchives:recoverStoryNotes(library),version: String(parsed.version || ''), createdAt: Number(parsed.createdAt) || 0, settings, chats, memories, assistant, moments, library, rows, vibeGroups, vnFiles, keys: parsed.data.keys?.data ? parsed.data.keys : null, summary};
 }

@@ -583,7 +583,7 @@ export function budgetText(settings, only = null) {
   return promptText(settings.promptRules, 'draw-story', 'budget', {'模型': n.name, '上限': n.limit, '画风占用': n.head, '外貌占用': n.looks.join('、'), '剩余': n.left, '标签数': n.tags});
 }
 
-/** Prompt entries injected with the story request ('inline' mode only). Keys share the sttts.entry. prefix. */
+/** Prompt entries injected with the story request ('inline' mode only). Keys share the myphone.entry. prefix. */
 export function drawPromptPlan(settings, preset, only = null) {
   const draw = settings.draw;
   if (!preset && (!draw?.enabled || draw.mode !== 'inline')) return [];
@@ -593,7 +593,7 @@ export function drawPromptPlan(settings, preset, only = null) {
   return entries.map((e, index) => {
     const i = e.injection || p.injection;
     return {
-      key: 'sttts.entry.draw.' + String(index).padStart(4, '0'),
+      key: 'myphone.entry.draw.' + String(index).padStart(4, '0'),
       text: fill(e.text) + (index === entries.length - 1 ? '\n\n' + tail : ''),
       position: {in_chat: 1, in_prompt: 0, before_prompt: 2}[i.position],
       depth: i.position === 'in_chat' ? Number(i.depth) : 0,
@@ -957,10 +957,10 @@ export function renderPictures(message, marker, {passive = false, pictures = {}}
     if (passive) {
       const record = pictures[tag.hash], versions = record?.versions || (record?.url ? [record] : []);
       const picture = versions[Math.min(versions.length - 1, Math.max(0, record?.index ?? versions.length - 1))];
-      out += message.slice(at, tag.start) + (picture?.url ? `<img data-sttts-plain src="${escapeHTML(picture.url)}" alt="${escapeHTML(tag.prompt)}" loading="lazy">` : '');
+      out += message.slice(at, tag.start) + (picture?.url ? `<img data-myphone-plain src="${escapeHTML(picture.url)}" alt="${escapeHTML(tag.prompt)}" loading="lazy">` : '');
       at = tag.end; continue;
     }
-    out += message.slice(at, tag.start) + `<span class="sttts-pic" data-sttts-pic="${tag.index}" data-sttts-hash="${escapeHTML(tag.hash)}" data-sttts-token="${escapeHTML(marker)}"></span>`;
+    out += message.slice(at, tag.start) + `<span class="myphone-pic" data-myphone-pic="${tag.index}" data-myphone-hash="${escapeHTML(tag.hash)}" data-myphone-token="${escapeHTML(marker)}"></span>`;
     at = tag.end;
   }
   return out + message.slice(at);
