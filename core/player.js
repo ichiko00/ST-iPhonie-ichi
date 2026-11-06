@@ -1,3 +1,4 @@
+import {MediaElementAudio,prefersMediaAudio} from './media-audio.js';
 import { buildRequest } from './providers.js';
 import { TTSParameters } from './parameters.js';
 import { findRoute } from './routes.js';
@@ -221,7 +222,7 @@ export class BrowserAudio {
 
 export class DialoguePlayer {
  /** speech: the browser's voice for a 旁白 read with 系统朗读 (core/narration.js browserSpeech), or null. */
- constructor({ settings, providers, cache, sink = new BrowserAudio(), change = () => {}, unknown = () => {}, prepared = () => {}, speech = null, voiced = () => {} }) {
+ constructor({ settings, providers, cache, sink = (prefersMediaAudio()?new MediaElementAudio():new BrowserAudio()), change = () => {}, unknown = () => {}, prepared = () => {}, speech = null, voiced = () => {} }) {
   this.voiced = voiced;
   Object.assign(this, { settings, providers, cache, sink, change, unknown, prepared, speech });
   this.epoch = 0;
@@ -240,6 +241,7 @@ export class DialoguePlayer {
   this.readyAudio = new Map();
   this.readyBytes = 0;
   this.volume = volumeValue(sink.getVolume?.() ?? 1);
+  sink.controls?.({play:()=>{if(this.phase==='paused')this.toggle();else if(this.queue.length)Promise.resolve(sink.resume()).catch(error=>this.emit('error',error.message));},pause:()=>{if(['playing','generating'].includes(this.phase))this.toggle();},stop:()=>this.stop()});
   this.clearMetadata();
  }
  clearMetadata() {
@@ -278,6 +280,7 @@ export class DialoguePlayer {
  emit(phase, message) {
   this.phase = phase;
   this.message = message;
+  this.sink.state?.(phase,this.queue[this.index]||this.line);
   this.change(this.snapshot());
  }
  stop(message = '已停止') {
