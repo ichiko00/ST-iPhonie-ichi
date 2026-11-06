@@ -1,3 +1,4 @@
+import {sceneStops,phoneSceneStamp} from './core/phone-scene.js';
 // Phone chat, tavern side. Replies are generated separately from the story with the tavern's connected model
 // (generateRaw): the prompt carries the chat preset, each contact's persona or character card, the user's persona,
 // recent story messages and the chat history. Nothing is written into the story unless the user brings a chat
@@ -99,7 +100,7 @@ export function createChatHost({context, settings, backend, notice, memory = nul
     if (busy.has(threadId)) return busy.get(threadId);
     const controller = new AbortController(), signal = controller.signal;
     const job = (async () => {
-      const ctx = context();
+      const ctx = context(),sceneStamp=phoneSceneStamp(ctx);
       const thread = await backend.chats.get(threadId);
       if (!thread) throw Error('这段聊天已不存在');
       if (thread.type === 'dm') backend.socialAssert(thread.members[0],backend.socialScopeFor(thread));
@@ -133,13 +134,16 @@ export function createChatHost({context, settings, backend, notice, memory = nul
         const relations=backend.socialSnapshot().entries.filter(e=>['blocked','pending','rejected'].includes(e.state));
         if(relations.length) messages[0].content += '\n【手机社交状态】'+relations.map(e=>`${e.name}：${e.state==='blocked'?'被用户拉黑，知道私信及电话被拒收，共同群聊仍可见':'尚未通过好友验证，不能直接私聊'}`).join('；')+'。不要擅自解除关系或宣称用户同意申请。';
         return messages; };
+      if(phoneSceneStamp(context())!==sceneStamp){if(!nudge)notice('正文场景已变化，请按最新剧情继续交流');return null;}
       const answer = cleanTagged(await answerFor(ctx, request, await pictures(ctx, thread, preset), signal), preset.cleanTags);
+      if(phoneSceneStamp(context())!==sceneStamp){if(!nudge)notice('正文已推进，未发送基于旧场景生成的手机回复');return null;}
       // 停止 while it was being written: what comes late is let go (the tavern's own generation cannot be stopped).
       if (signal.aborted || (source&&timeline&&!timeline.current(source))) throw stopped();
       // 「[不发]」 (also as 「名字：[不发]」) is a no, not a message.
       const text = nudge ? answer.split('\n').filter(line => !/\[不发\]/.test(line)).join('\n') : answer;
       let items = parseChatReply(text, {members: people, user, voiceFormat, voiceNames: people.filter(p => p.voice).map(p => p.name), stickers: settings().chat.stickers || []});
       if(source)items=items.map(item=>({...item,story:source.story,storyVer:source.ver}));
+      if(!items.length&&sceneStops(text,people.map(p=>p.name)).silent.size){if(!nudge)notice('对方正在与你当面相处，请回正文继续交流');return null;}
       if (!items.length && nudge) return null;
       if (!items.length) throw Error('这次没有收到消息，可以再试一次');
       const before = new Set((await backend.chats.get(threadId))?.messages.map(m => m.id) || []);

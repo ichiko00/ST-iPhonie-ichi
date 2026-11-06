@@ -1,3 +1,4 @@
+import {PHONE_SCENE_RULE,sceneStops} from './phone-scene.js';
 import {HEART_RULE,extractHearts} from './heart.js';
 // Chat app logic without DOM or network: chat presets, manual contacts, the reply prompt, the reply parser,
 // and the text that carries a phone chat into the next story reply ("带进剧情").
@@ -259,7 +260,7 @@ export const phoneBlocks = text => phoneParts(text).map(p => p.text);
  */
 export function phoneFormat({user = '我', names = [], groups = [], images = false, after = false} = {}) {
   const list = names.join('、');
-  return [after ? '【手机上的事】' : '【发到手机上的事】',
+  return [after ? '【手机上的事】' : '【发到手机上的事】',PHONE_SCENE_RULE,
     after ? `读这段正文：里面写到有人用手机联系${user}（发消息、发照片、转账、发红包、送礼物、分享歌曲、打电话），或者有人发了朋友圈，就把这些事在${user}的手机上真的发出来，内容和正文写的对得上；剧情里有人这时自然会给${user}发消息的，也可以发。`
       : `剧情里有人这时会用手机联系${user}（发消息、发照片、转账、打电话……），或者正文里写到了这样的事，就在正文写完的地方另起一行写 <phone></phone>（预设要求写在正文后面的状态栏、选项这些照常写在它后面，不要省略），把这些事在${user}的手机上真的发出来，内容和正文写的对得上。`,
     `${after ? '' : '<phone></phone> 里'}一件事一行：`,
@@ -472,7 +473,7 @@ export function buildChatRequest({prompts = {}, preset, thread, members, story =
     '接着说': now && last && last.from !== 'me' ? (group ? '群里' : partner) : ''});
   const transcript = history.length ? `【${group ? thread.name + '（群聊）' : '和' + partner}的聊天记录】\n${history.map(m => messageLine(m, user)).filter(Boolean).join('\n')}\n\n` : '';
   const text = transcript + filesText(history, user) + turn;
-  return [{role: 'system', content: system+'\n\n'+HEART_RULE+(bilingual?'\n\n手机双语显示：保持角色设定及当前正在使用的语言，不强迫中文角色改说外语。外语文字消息使用原语言，并在末尾括号中附准确的中文译文，例如 Hello.（你好。）或 ありがとう。（谢谢。）。中文消息无需重复翻译。语音消息仍严格按给定语音格式：文本字段放原语言，译文字段放中文，不把译文混进要朗读的原文。':'')}, {role: 'user', content: pictures.length ? [{type: 'text', text}, ...pictures.map(p => ({type: 'image_url', image_url: {url: p.url}}))] : text}];
+  return [{role: 'system', content: system+'\n\n'+PHONE_SCENE_RULE+'\n\n'+HEART_RULE+(bilingual?'\n\n手机双语显示：保持角色设定及当前正在使用的语言，不强迫中文角色改说外语。外语文字消息使用原语言，并在末尾括号中附准确的中文译文，例如 Hello.（你好。）或 ありがとう。（谢谢。）。中文消息无需重复翻译。语音消息仍严格按给定语音格式：文本字段放原语言，译文字段放中文，不把译文混进要朗读的原文。':'')}, {role: 'user', content: pictures.length ? [{type: 'text', text}, ...pictures.map(p => ({type: 'image_url', image_url: {url: p.url}}))] : text}];
 }
 
 const NAME_LINE = /^\s*(?:\*\*)?[[【]?([^\]】:：\n]{1,40}?)[\]】]?(?:\*\*)?\s*[:：]\s*(.*)$/;
@@ -544,7 +545,8 @@ function special(from, content, {names, user, stickers = []}) {
  */
 export function parseChatReply(reply, {members, user = '我', voiceFormat, voiceNames = [], stickers = []}) {
   const names = members.map(m => m.name), out = [];
-  const extracted=extractHearts(String(reply||'').replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi,''),names);
+  const scene=sceneStops(String(reply||'').replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi,''),names);
+  const extracted=extractHearts(scene.text,names);
   const body = extracted.text.replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi, '').replace(/```[a-z]*\n?|```/g, '');
   for (const raw of body.split(/\r?\n/)) {
     if (!raw.trim()) continue;
@@ -571,7 +573,7 @@ export function parseChatReply(reply, {members, user = '我', voiceFormat, voice
     if (plain) out.push({from, kind: 'text', text: plain.slice(0, 4000)});
     if (out.length >= 12) break;
   }
-  return out.map(item=>extracted.hearts.has(item.from)?{...item,heart:extracted.hearts.get(item.from)}:item);
+  return out.filter(item=>!scene.silent.has(item.from)).map(item=>extracted.hearts.has(item.from)?{...item,heart:extracted.hearts.get(item.from)}:item);
 }
 
 /** The text injected into the next story reply when the user brings chat messages into the story. */
