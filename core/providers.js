@@ -41,6 +41,9 @@ export function buildRequest(engine,connection,route,line,references=new Map()){
  // so a request of the first set is what it always was and its saved audio is still found.
  if(engine==='custom'){if(!object(connection)||!object(connection.params))throw Error('引擎设置格式无效，请重新保存引擎设置');const set=customSetOf(connection,route?.model),request=buildCustomRequest({...connection,params:{...P.defaults('custom'),...customParams(connection,set)}},route,line);return set===CUSTOM_DEFAULT?request:{...request,config:set};}
  const c=checkedConnection(engine,connection,route,line,references);
+ const text=P.speechText(engine,c.model,line.text);
+ if(!text)throw Error('朗读文本不能为空');
+ line={...line,text};
  if(engine==='doubao'){P.normalize(engine,c);const error=P.validate(engine,c);if(error)throw Error(error);return buildDoubaoRequest(c,route,line);}
  // MiMo's preset model knows only its own voices. A 音色 that names a clone sample is drawn with the clone model;
  // any other name is explained here instead of MiMo's English "Unknown voice".

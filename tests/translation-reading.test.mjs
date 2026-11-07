@@ -23,3 +23,16 @@ test('visible bilingual plus an extra quoted Chinese copy renders and speaks Chi
 test('sidebar hides duplicate Chinese caused only by voice directions and whitespace',()=>{const view=islandDialogueText({text:'[sigh] 晚安。 [break]',translation:'晚安。'});assert.equal(view.primary,'晚安。');assert.equal(view.secondary,'');assert.ok(!JSON.stringify(view).includes('[break]'));});
 test('sidebar shows one original and one translation for actual bilingual speech',()=>{const view=islandDialogueText({text:'[clear throat] 会議が終わりました。',translation:'会议结束了。'});assert.deepEqual(view,{primary:'会议结束了。',secondary:'会議が終わりました。'});});
 test('parser never concatenates two unrelated Chinese strings into both fields',()=>{const line={text:'晚安。',translation:'你吃了吗？'};assert.deepEqual(mendLine(line),line);});
+
+test('adjacent identical Chinese quotes are rendered and read once by the character', () => {
+ const said = '这里挺好的。城里天天堵车，我不喜欢。';
+ const raw = '她摇了摇头。' + '“' + said + '”' + '“' + said + '”<tts>A|calm|[soft tone] ' + said + '</tts>窗外下雨。';
+ for (const format of [DEFAULT_FORMAT, FREE_FORMAT]) {
+  const lines = parseDialogue(raw, format);
+  const plan = readingPlan(raw, lines, [], []);
+  assert.deepEqual(plan, [{narration:'她摇了摇头。'}, {line:0}, {narration:'窗外下雨。'}]);
+  assert.deepEqual(withReadTranslations(lines).map(line => line.role), ['A']);
+  assert.equal(renderDialogue(raw, format, 'test').split(said).length - 1, 1);
+  assert.equal(waveMarks(markDialogue(raw, format), 'test', ['A']).split(said).length - 1, 1);
+ }
+});

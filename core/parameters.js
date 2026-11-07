@@ -177,6 +177,32 @@ function tagNote(key,model){if(key==='doubao')return '合成 2.0：台词的情�
 }
 /** The MiniMax emotion for a line's 情绪, or '' to let the model choose (unknown words, or not supported by the model). */
 function miniEmotion(model,emotion){const word=String(emotion||'').trim().toLowerCase();if(!word)return '';const found=Object.entries(MINI_EMOTION_WORDS).find(([,words])=>words.some(w=>word===w||word.includes(w)))?.[0]||'';return tags('mini',model).includes(found)?found:'';}
+// Imported dialogue may contain tags written for a different speech model.
+function speechText(key, model, text) {
+ const fish = key === 'fish';
+ const legacy = fish && fishS1(model);
+ const drama = fish && fishDrama(model);
+ const fishSounds = legacy ? FISH_S1_SOUNDS : drama ? FISH_DRAMA_SOUNDS : FISH_S2_SOUNDS;
+ const fishTags = new Set([...FISH_S1_EMOTIONS, ...(legacy ? FISH_S1_TONES : FISH_S2_TONES), ...fishSounds]);
+ const sounds = new Set();
+ return text.replace(/\[([a-z][a-z0-9 _'’:,=.\/-]*|停顿|轻声|笑|叹气)\]|\(([a-z][a-z -]*)\)/gi, (tag, square, round) => {
+  const word = (square || round).trim().toLowerCase();
+  // Round brackets also occur in ordinary dialogue; only treat known controls as tags.
+  if (round && !fishTags.has(word) && !MINI_SOUNDS.includes(word) && !ELEVEN_TAGS.includes(word)) return tag;
+  if (key === 'mimo') return tag;
+  if (key === 'mini') return model.startsWith('speech-2.8') && MINI_SOUNDS.includes(word) ? '(' + word + ')' : '';
+  if (key === 'eleven' && elevenTagged(model)) return square ? tag : '[' + word + ']';
+  if (drama && square && !fishTags.has(word)) return tag;
+  if (!fish || !fishTags.has(word)) return '';
+  if (fishSounds.includes(word)) {
+   const sound = /^(?:long-)?break$|^pause$/.test(word) ? 'pause' : word;
+   if (sounds.has(sound)) return '';
+   sounds.add(sound);
+   if (word === 'long-break') return legacy ? '(break)' : '[break]';
+  }
+  return legacy ? '(' + word + ')' : '[' + word + ']';
+ }).trim();
+}
 /** Puts a line's 情绪 at the start of the text as the model's own tag, when the model reads tags and the text has none there. */
 const ENGLISH={fearful:'scared',whisper:'whispering',fluent:''};
 function emotionTag(key,model,emotion,text){let word=String(emotion||'').trim();if(key==='custom'||key==='doubao'||!word||/^\s*[[(]/.test(text))return text;
@@ -189,4 +215,4 @@ function emotionTag(key,model,emotion,text){let word=String(emotion||'').trim();
  if(key==='fish'&&fishS1(model)){const w=word.toLowerCase();return FISH_S1_EMOTIONS.includes(w)||FISH_S1_TONES.includes(w)?`(${w}) ${text}`:text;}
  if(key==='fish'||key==='eleven'&&elevenTagged(model))return /^[a-z][a-z ,'-]{1,40}$/i.test(word)?`[${word.toLowerCase()}] ${text}`:text;
  return text;}
-export const TTSParameters={fishBase,fishOpenAI,fishNative,openaiSpeech,catalogs,defaults,allowed,unavailable,normalize,activeParameters,requestPreview,validate,tags,tagNote,miniEmotion,emotionTag,vocab:{FISH_DRAMA_PAIRS,FISH_DRAMA_SOUNDS,FISH_S1_EMOTIONS,FISH_S2_TONES,FISH_S2_SOUNDS,FISH_S1_TONES,FISH_S1_SOUNDS,MINI_SOUNDS,ELEVEN_TAGS,MIMO_STYLES,MIMO_SOUNDS,MIMO_VOICES},mimoMode};
+export const TTSParameters={fishBase,fishOpenAI,fishNative,openaiSpeech,catalogs,defaults,allowed,unavailable,normalize,activeParameters,requestPreview,validate,tags,tagNote,miniEmotion,emotionTag,speechText,vocab:{FISH_DRAMA_PAIRS,FISH_DRAMA_SOUNDS,FISH_S1_EMOTIONS,FISH_S2_TONES,FISH_S2_SOUNDS,FISH_S1_TONES,FISH_S1_SOUNDS,MINI_SOUNDS,ELEVEN_TAGS,MIMO_STYLES,MIMO_SOUNDS,MIMO_VOICES},mimoMode};
