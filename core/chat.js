@@ -1,3 +1,4 @@
+import {phoneMatches} from './phone-blocks.js';
 import {PHONE_SCENE_RULE,sceneStops} from './phone-scene.js';
 import {HEART_RULE,extractHearts} from './heart.js';
 // Chat app logic without DOM or network: chat presets, manual contacts, the reply prompt, the reply parser,
@@ -250,7 +251,7 @@ export const PHONE_TAG = /<phone\b([^>]*)>([\s\S]*?)<\/phone\s*>/gi;
  * What a story reply sent to the phone: [{group, text}] for each <phone>…</phone> (group: the group chat's name of
  * <phone group="群名">, '' for private messages).
  */
-export const phoneParts = text => [...String(text ?? '').matchAll(PHONE_TAG)].map(m => ({group: (m[1].match(/group\s*=\s*["'“”「『]?([^"'“”」』>]+)/)?.[1] || '').trim(), text: m[2].trim()})).filter(p => p.text);
+export const phoneParts = text => phoneMatches(text).map(m => ({group: (m[1].match(/group\s*=\s*["'“”「『]?([^"'“”」』>]+)/)?.[1] || '').trim(), text: m[2].trim()})).filter(p => p.text);
 /** The inside of each <phone>…</phone>. */
 export const phoneBlocks = text => phoneParts(text).map(p => p.text);
 /**

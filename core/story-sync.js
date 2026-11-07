@@ -1,7 +1,8 @@
+import {phoneMatches} from './phone-blocks.js';
 // Stable floor identifiers live in tavern message metadata; portable message fields remain story/storyVer.
 export function storyHash(value){let a=2166136261,b=2246822507;for(const c of String(value??'')){a=Math.imul(a^c.charCodeAt(0),16777619);b=Math.imul(b^c.charCodeAt(0),3266489909);}return(a>>>0).toString(36)+'-'+(b>>>0).toString(36);}
 export function legacyPhoneHash(value){let h=0;for(const c of String(value))h=(h*31+c.codePointAt(0))|0;return(h>>>0).toString(36);}
-export function phoneContent(value){return[...String(value??'').matchAll(/<phone\b([^>]*)>([\s\S]*?)<\/phone\s*>/gi)].map(m=>({group:(m[1].match(/group\s*=\s*["'“”「『]?([^"'“”」』>]+)/)?.[1]||'').trim(),text:m[2].trim()})).filter(p=>p.text).map(p=>p.group+'|'+p.text).join('\n');}
+export function phoneContent(value){return phoneMatches(value).map(m=>({group:(m[1].match(/group\s*=\s*["'“”「『]?([^"'“”」』>]+)/)?.[1]||'').trim(),text:m[2].trim()})).filter(p=>p.text).map(p=>p.group+'|'+p.text).join('\n');}
 const uuid=()=>crypto.randomUUID();
 export function storySnapshot(ctx,{makeId=uuid}={}){
  const owner=String(ctx?.getCurrentChatId?.()||ctx?.chatId||'');if(!owner||!Array.isArray(ctx?.chat))return null;
