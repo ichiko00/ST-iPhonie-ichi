@@ -4,6 +4,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/prebuffer.test.mjs tests/phone-blocks.test.mjs tests/social.test.mjs tests/groups.test.mjs tests/story-sync.test.mjs tests/calls.test.mjs tests/bilingual.test.mjs tests/heart.test.mjs tests/media-audio.test.mjs tests/phone-scene.test.mjs tests/voice-pool.test.mjs tests/translation-reading.test.mjs"
+    "test": "node --test tests/reading-mode.test.mjs tests/prebuffer.test.mjs tests/phone-blocks.test.mjs tests/social.test.mjs tests/groups.test.mjs tests/story-sync.test.mjs tests/calls.test.mjs tests/bilingual.test.mjs tests/heart.test.mjs tests/media-audio.test.mjs tests/phone-scene.test.mjs tests/voice-pool.test.mjs tests/translation-reading.test.mjs"
   }
 }
