@@ -169,7 +169,7 @@ export function momentsPanel(ctx, {v, frame, me, visible}) {
       <div class="actions">${btn('edit-prompt', icon('edit') + '编辑聊天预设', 'secondary')}${help('动态怎么写，在预设 App 的聊天预设里：勾了「朋友圈」的规则就用在这里。')}</div>
       <div class="actions">${btn('clear-moments', icon('trash') + '清空动态', 'danger')}</div>`, {
       'edit-prompt': () => { d.close(); ctx.open('presets'); ctx.showPresetKind?.('chat'); },
-      'clear-moments': async () => { if (!await ctx.confirm('清空所有动态？', '所有动态、点赞和评论都会删除，配图还留在相册里。')) return; d.close(); await api.clearMoments(); await render(); ctx.notify('动态已清空'); }
+      'clear-moments': async () => { if (!await ctx.confirm('清空当前聊天的动态？', '这个聊天的动态、点赞和评论都会删除，配图还留在相册里。')) return; d.close(); await api.clearMoments(); await render(); ctx.notify('动态已清空'); }
     });
     d.body.addEventListener('change', e => {
       const el = e.target.closest('[data-field]');

@@ -6,10 +6,10 @@ import {inSpace, activeChatPreset, cleanTagged} from './core/chat.js';
 import {worldInfoFor, loreOptions} from './host-lore.js';
 import {pictureInputs, photoPicture} from './core/draw.js';
 
-export function createMomentsHost({context, settings, backend, notice, memory = null}) {
+export function createMomentsHost({context, settings, backend, notice, memory = null, enabled = () => true}) {
   // 记忆: what each of them talked about with the user in private (written-up layers only).
   const remembered = names => memory ? memory.aboutPeople(names).catch(() => '') : Promise.resolve('');
-  let busy = null, since = 0;
+  let busy = null, controller = null, since = 0, countedSave = '';
 
   const userName = () => context()?.name1 || '我';
   const userPersona = () => String(context()?.powerUserSettings?.persona_description || '').slice(0, 1500);
@@ -28,16 +28,24 @@ export function createMomentsHost({context, settings, backend, notice, memory = 
 
   /** One model request at a time; the phone shows it as busy. */
   function run(kind, task) {
+    if (!enabled()) return Promise.reject(Error('当前聊天处于仅语音模式'));
+    if (!backend.saveKey()) return Promise.reject(Error('请先打开一个酒馆聊天'));
     if (busy) return busy;
+    controller = new AbortController();
+    const {signal} = controller;
     busy = (async () => {
       emit({kind});
       const ctx = context();
-      return task(ctx);
-    })().finally(() => { busy = null; emit({kind}); });
+      return task(ctx, signal);
+    })().finally(() => { busy = null; controller = null; emit({kind}); });
     return busy;
   }
-  async function ask(ctx, request) {
-    const text = await backend.generateText(ctx, {use: 'moments', prompt: request, trimNames: false});
+  async function ask(ctx, request, signal) {
+    signal.throwIfAborted();
+    if (!enabled()) throw Error('当前聊天处于仅语音模式');
+    const text = await backend.generateText(ctx, {use: 'moments', prompt: request, trimNames: false, signal});
+    signal.throwIfAborted();
+    if (!enabled()) throw Error('当前聊天处于仅语音模式');
     return cleanTagged(String(text || ''), activeChatPreset(settings().chat).cleanTags);
   }
   // Who the user blocked (黑名单) neither posts nor comments: they cannot see the user's 朋友圈, nor the user theirs.
@@ -49,12 +57,14 @@ export function createMomentsHost({context, settings, backend, notice, memory = 
 
   /** New posts from the characters. auto: made by the story counter, not by the user. */
   function refresh({auto = false} = {}) {
-    return run('refresh', async ctx => {
-      const space = backend.cardKey(), save = backend.saveKey(), {s, preset, crowd, user, names} = await base();
-      const recent = (await backend.moments.list()).filter(p => inSpace(p, backend.here())).slice(0, 6);
+    return run('refresh', async (ctx, signal) => {
+      const {space, save} = backend.spaceTag(), here = backend.here(), {s, preset, crowd, user, names} = await base();
+      if (backend.saveKey() !== save) return [];
+      const recent = (await backend.moments.list()).filter(p => inSpace(p, here)).slice(0, 6);
+      if (backend.saveKey() !== save) return [];
       const story = storyLines(ctx.chat, preset, user);
       const request = buildMomentsRequest({prompts: settings().promptRules, preset, earlier: memory?.storyMemory() || '', mode: 'posts', people: crowd, story, user, userPersona: userPersona(), recent, images: s.moments.images, memory: await remembered(crowd.map(p => p.name)), lore: await lore(preset, crowd, story, recent.map(p => `${p.author}: ${p.text}`))});
-      const found = parseMoments(await ask(ctx, request), {names, user, mode: 'posts'});
+      const found = parseMoments(await ask(ctx, request, signal), {names, user, mode: 'posts'});
       if (!found.posts.length) throw Error('这次没有收到新动态，可以再刷新一次');
       const posts = await backend.momentsMutate(() => backend.moments.add(found.posts.map(p => ({...p, space, ...(save ? {save} : {}), source: auto ? 'auto' : 'manual', imageState: p.imageTags && s.moments.images ? 'waiting' : undefined}))));
       drawNew(posts);
@@ -67,25 +77,25 @@ export function createMomentsHost({context, settings, backend, notice, memory = 
   }
   /** Friends react to the user's new post. */
   function react(postId) {
-    return run('react', async ctx => {
+    return run('react', async (ctx, signal) => {
       const {preset, crowd, user, names} = await base();
       const post = await backend.moments.get(postId);
       if (!post) throw Error('这条动态已经不在了');
       const story = storyLines(ctx.chat, preset, user);
       const request = buildMomentsRequest({prompts: settings().promptRules, preset, earlier: memory?.storyMemory() || '', mode: 'react', people: crowd, story, user, userPersona: userPersona(), post, memory: await remembered(crowd.map(p => p.name)), lore: await lore(preset, crowd, story, [post.text])});
-      const found = parseMoments(await ask(ctx, request), {names, user, mode: 'react'});
+      const found = parseMoments(await ask(ctx, request, signal), {names, user, mode: 'react'});
       return backend.momentsMutate(() => backend.moments.react(postId, found));
     });
   }
   /** Answers to the user's comment. */
   function reply(postId, commentId) {
-    return run('reply', async ctx => {
+    return run('reply', async (ctx, signal) => {
       const {preset, crowd, user, names} = await base();
       const post = await backend.moments.get(postId), comment = post?.comments.find(c => c.id === commentId);
       if (!post || !comment) throw Error('这条评论已经不在了');
       const story = storyLines(ctx.chat, preset, user);
       const request = buildMomentsRequest({prompts: settings().promptRules, preset, earlier: memory?.storyMemory() || '', mode: 'reply', people: crowd, story, user, userPersona: userPersona(), post, comment, memory: await remembered(crowd.map(p => p.name)), lore: await lore(preset, crowd, story, [post.text, comment.text])});
-      const found = parseMoments(await ask(ctx, request), {names, user, mode: 'reply'});
+      const found = parseMoments(await ask(ctx, request, signal), {names, user, mode: 'reply'});
       return backend.momentsMutate(() => backend.moments.react(postId, {comments: found.comments}));
     });
   }
@@ -117,16 +127,20 @@ export function createMomentsHost({context, settings, backend, notice, memory = 
 
   /** Counts finished story replies; every `every` of them the characters may post, up to `dailyMax` a day. */
   async function storyReplied() {
+    const save = backend.saveKey();
+    if (countedSave !== save) { countedSave = save; since = 0; }
+    if (!save || !enabled()) return;
     const m = settings().moments;
     if (!m.auto) { since = 0; return; }
     if (++since < m.every || busy) return;
     since = 0;
     try {
-      if (await backend.moments.autoToday() >= m.dailyMax) return;
+      const here = backend.here();
+      if (await backend.moments.autoToday(post => inSpace(post, here)) >= m.dailyMax || backend.saveKey() !== save) return;
       const posts = await refresh({auto: true});
       if (posts?.length) notice(`${posts.map(p => p.author).join('、')} 发了朋友圈`);
     } catch { /* A failed automatic post is not worth interrupting the story. */ }
   }
 
-  return {refresh, react, reply, drawImage, drawNew, storyReplied, busy: () => !!busy};
+  return {refresh, react, reply, drawImage, drawNew, storyReplied, cancel: () => { controller?.abort(); since = 0; }, busy: () => !!busy};
 }

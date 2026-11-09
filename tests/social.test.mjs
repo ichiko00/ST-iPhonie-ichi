@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {normalizeSocial,parseSocialPlan} from '../core/social.js';
 import {socialMethods} from '../core/social-backend.js';
-import {normalizeChat} from '../core/chat.js';
+import {defaultChat, normalizeChat} from '../core/chat.js';
 import {createSocialHost} from '../host-social.js';
 import {TTSBackend} from '../core/backend.js';
 import {socialPanel} from '../ui/chat-social.js';
@@ -57,3 +57,64 @@ test('old application cannot demote an established friend and unknown relation s
 test('AI relation fields survive parsing separately from alternate ownership',()=>{const p=parseSocialPlan(JSON.stringify({contacts:[{name:'望盼',owner:'A',relationship:'friend',evidence:'早就加过'},{name:'B',relationship:'pending',evidence:'申请好友'}]}));assert.equal(p.contacts[0].relationship,'friend');assert.equal(p.contacts[0].owner,'A');assert.equal(p.contacts[1].relationship,'pending');assert.equal(p.contacts[0].evidence,'早就加过')});
 test('upstream block action also enforces MyPhone account blacklist',async()=>{const{b}=fixture();b.saveContact({name:'B'});await TTSBackend.prototype.blockContact.call(b,'B');assert.equal(b.socialBlocked('B'),true);assert.throws(()=>b.socialAssert('B'),/黑名单/);const thread=(await b.threads())[0];assert.ok(thread.blocked);await TTSBackend.prototype.unblockContact.call(b,thread.id);assert.equal(b.socialBlocked('B'),false);assert.equal((await b.chats.get(thread.id)).blocked,null)});
 test('upstream accepted request clears MyPhone blacklist as an explicit user action',async()=>{const{b}=fixture();b.saveContact({name:'B'});await TTSBackend.prototype.blockContact.call(b,'B');const thread=(await b.threads())[0];thread.blocked.requests=[{text:'请加回',at:1}];await TTSBackend.prototype.answerFriendRequest.call(b,thread.id,true);assert.equal(b.socialBlocked('B'),false);assert.equal(thread.blocked,null);assert.equal(thread.messages.some(m=>m.from==='B'&&m.text==='请加回'),true)});
+
+test('phone records follow a chat, and home cannot see or clear another chat', async () => {
+ const backend = Object.create(TTSBackend.prototype);
+ const card = 'card:example.png', a = card + '#chat-a', b = card + '#chat-b';
+ const rows = [{id:'a', space:card, save:a}, {id:'b', space:card, save:b}, {id:'old-card', space:card}, {id:'old-shared'}];
+ const store = {list:async () => rows, get:async id => rows.find(row => row.id === id)};
+ backend.settings = {chat: normalizeChat({...defaultChat(), partition:'none', firstSaves:{[card]:'chat-a'}})};
+ backend.space = {key:'', name:'', members:[]};
+ backend.chats = store;
+ backend.moments = store;
+ backend.apps = store;
+ backend.emit = () => {};
+ backend.assertOpen = () => {};
+ const api = backend.api();
+ const ids = async list => (await list()).map(row => row.id);
+ assert.equal(backend.settings.chat.partition, 'chat');
+ assert.deepEqual(await ids(api.listThreads), []);
+ assert.deepEqual(await ids(api.listMoments), []);
+ assert.equal(await api.getThread('a'), null);
+ assert.equal(await api.getMoment('a'), null);
+ assert.throws(() => backend.spaceTag(), /先打开/);
+ assert.equal(await backend.clearHere(store.list, () => assert.fail('home must not delete records')), 0);
+ backend.setSpace({key:card, save:'chat-a'});
+ assert.deepEqual(await ids(api.listThreads), ['a','old-card']);
+ assert.deepEqual(await ids(api.listMoments), ['a','old-card']);
+ assert.equal(await api.getThread('b'), null);
+ backend.setSpace({key:card, save:'chat-b'});
+ assert.deepEqual(await ids(api.listThreads), ['b']);
+ assert.deepEqual(await ids(api.listMoments), ['b']);
+ assert.equal(await api.getMoment('a'), null);
+ assert.deepEqual(backend.spaceTag(), {space:card, save:b});
+ backend.setSpace(null);
+ assert.deepEqual(await ids(api.listThreads), []);
+ assert.deepEqual(await ids(api.listMoments), []);
+ backend.setSpace({key:card, save:'chat-a'});
+ assert.deepEqual(await ids(api.listMoments), ['a','old-card']);
+});
+import { createMomentsHost } from '../host-moments.js';
+
+test('voice-only mode skips automatic Moments requests and blocks manual refresh', async () => {
+ let enabled = false;
+ let requests = 0;
+ let reads = 0;
+ const backend = {
+  saveKey: () => 'card:a#story',
+  here: () => ({key:'card:a#story'}),
+  moments: {autoToday: async () => { reads++; return 0; }},
+  generateText: async () => { requests++; return ''; }
+ };
+ const host = createMomentsHost({
+  context: () => ({chat: []}), settings: () => ({moments:{auto:true, every:1, dailyMax:10}}),
+  backend, enabled: () => enabled
+ });
+ for (let i = 0; i < 5; i++) await host.storyReplied();
+ await assert.rejects(host.refresh(), /仅语音/);
+ assert.equal(reads, 0);
+ assert.equal(requests, 0);
+ enabled = true;
+ await host.storyReplied();
+ assert.equal(reads, 1);
+});

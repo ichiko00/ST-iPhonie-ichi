@@ -61,7 +61,7 @@ export function normalizeVoiceText(v = {}) {
 
 import {normalizeSocial} from './social.js';
 export function defaultChat() {
-  return {bilingual:true,social: normalizeSocial(), presets: [{...structuredClone(DEFAULT_PRESET), memory: normalizeMemory()}], activePreset: 'default', contacts: [], voiceText: {...DEFAULT_VOICE_TEXT}, profile: normalizeProfile(), starred: [], avatars: {}, partition: 'none', pace: true, wallet: defaultWallet(), stickers: [], proactive: normalizeProactive(), remarks: {}, netNames: {}};
+  return {bilingual:true,social: normalizeSocial(), presets: [{...structuredClone(DEFAULT_PRESET), memory: normalizeMemory()}], activePreset: 'default', contacts: [], voiceText: {...DEFAULT_VOICE_TEXT}, profile: normalizeProfile(), starred: [], avatars: {}, partition: 'chat', pace: true, wallet: defaultWallet(), stickers: [], proactive: normalizeProactive(), remarks: {}, netNames: {}};
 }
 
 const text = (value, max) => String(value ?? '').slice(0, max);
@@ -234,7 +234,7 @@ export function normalizeChat(value) {
   const presets = (Array.isArray(value.presets) && value.presets.length ? value.presets : base.presets).map(normalizeChatPreset);
   const contacts = (Array.isArray(value.contacts) ? value.contacts : []).slice(0, CHAT_LIMITS.contacts).map(normalizeContact).filter(c => c.name);
   const starred = [...new Set((Array.isArray(value.starred) ? value.starred : []).map(n => text(n, 40).trim()).filter(Boolean))].slice(0, CHAT_LIMITS.contacts);
-  return {bilingual:value.bilingual!==false,social: normalizeSocial(value.social), presets, activePreset: presets.some(p => p.id === value.activePreset) ? value.activePreset : presets[0].id, contacts, voiceText: normalizeVoiceText(value.voiceText), profile: normalizeProfile(value.profile), wallet: normalizeWallet(value.wallet), starred, avatars: normalizeAvatars(value.avatars), partition: ['card', 'chat'].includes(value.partition) ? value.partition : 'none', ...(value.firstSaves && typeof value.firstSaves === 'object' ? {firstSaves: Object.fromEntries(Object.entries(value.firstSaves).filter(([, v]) => typeof v === 'string').slice(-500))} : {}), pace: value.pace !== false, stickers: normalizeStickers(value.stickers), proactive: normalizeProactive(value.proactive), remarks: normalizeNames(value.remarks, 20), netNames: normalizeNames(value.netNames, 30)};
+  return {bilingual:value.bilingual!==false,social: normalizeSocial(value.social), presets, activePreset: presets.some(p => p.id === value.activePreset) ? value.activePreset : presets[0].id, contacts, voiceText: normalizeVoiceText(value.voiceText), profile: normalizeProfile(value.profile), wallet: normalizeWallet(value.wallet), starred, avatars: normalizeAvatars(value.avatars), partition: 'chat', ...(value.firstSaves && typeof value.firstSaves === 'object' ? {firstSaves: Object.fromEntries(Object.entries(value.firstSaves).filter(([, v]) => typeof v === 'string').slice(-500))} : {}), pace: value.pace !== false, stickers: normalizeStickers(value.stickers), proactive: normalizeProactive(value.proactive), remarks: normalizeNames(value.remarks, 20), netNames: normalizeNames(value.netNames, 30)};
 }
 
 // ---------- 主动发消息: characters text the user on their own ----------
@@ -341,28 +341,15 @@ export function validateContact(c, routes = []) {
 
 export const activeChatPreset = chat => chat.presets.find(p => p.id === chat.activePreset) || chat.presets[0];
 
-/** Everyone the user can message: story roles (角色 App) first, then manual contacts. */
-/**
- * 分区: with partition 'card' the phone keeps one set of chats, 朋友圈, 论坛 and 查手机 per tavern character card (or
- * group). space: {key, name, members} of the card open now. Items carry the key they were made under; items from before
- * (no key) are shared by every card.
- */
+// Older card-level data is visible only in a chat that was already designated as its owner.
 export const inSpace = (item, space) => {
-  if (!space?.key) return true;
-  if (!space.card) return !item?.space || item.space === space.key;
-  // 按聊天: what was made in this tavern chat; what has no chat of its own (from before) stays with the first one of its card.
-  if (item?.save === space.key || item?.space === space.key) return true;
-  return !item?.save && !!space.first && (!item?.space || item.space === space.card);
+  if (!space?.key) return false;
+  if (item?.save) return item.save === space.key;
+  return item?.space === space.key || (!!space.first && item?.space === space.card);
 };
-/**
- * The space to filter by: the open card's with partition 'card'; with 'chat' (one phone per tavern chat, so a new chat
- * of the same card starts from nothing) that chat's, key `card#chat`, card its card, first whether it holds the card's
- * older things. null: everything (partition off, or no card open).
- */
+
 export function activeSpace(settings, space) {
-  const how = settings.chat?.partition;
-  if (!space?.key || (how !== 'card' && how !== 'chat')) return null;
-  if (how === 'card' || !space.save) return space;
+  if (!space?.key || !space.save) return null;
   return {...space, key: `${space.key}#${space.save}`, card: space.key, first: settings.chat.firstSaves?.[space.key] === space.save};
 }
 /** Whether a role belongs to the space: by being tagged there (see tagRoles). */
@@ -375,9 +362,9 @@ export function chatContacts(settings, space = null) {
   const here = r => !space?.key || (space.members || []).includes(r.name) || roleInSpace(r, space);
   const roles = settings.routes.filter(r => !isPlaceholderRole(r.name) && here(r)).map(r => ({name: r.name, source: 'role', voice: !!r.voice, engine: r.voice ? r.engine : 'none', language: r.language || settings.general.defaultLanguage,
     // 角色资料: written in the 角色 App, else a contact of the same name's (a contact given a voice keeps who they are).
-    persona: String(r.persona || settings.chat.contacts.find(c => c.name === r.name)?.persona || '').slice(0, CHAT_LIMITS.persona)}));
+    persona: String(r.persona || settings.chat.contacts.find(c => c.name === r.name && (!space || inSpace(c, space)))?.persona || '').slice(0, CHAT_LIMITS.persona)}));
   // (Contacts of one name in different cards: with 分区 off everything is in one list, and a name is one person there.)
-  const manual = settings.chat.contacts.filter(c => !roles.some(r => r.name === c.name) && inSpace(c, space)).filter((c, i, all) => all.findIndex(x => x.name === c.name) === i).map(c => ({name: c.name, source: 'manual', id: c.id, voice: false, engine: 'none', language: '', persona: c.persona}));
+  const manual = settings.chat.contacts.filter(c => !roles.some(r => r.name === c.name) && (!space || inSpace(c, space))).filter((c, i, all) => all.findIndex(x => x.name === c.name) === i).map(c => ({name: c.name, source: 'manual', id: c.id, voice: false, engine: 'none', language: '', persona: c.persona}));
   return [...roles, ...manual];
 }
 

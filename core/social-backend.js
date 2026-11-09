@@ -4,7 +4,12 @@ export const socialMethods = {
   socialScope() { return this.here()?.key || ''; },
   socialData() { return normalizeSocial(this.settings.chat.social); },
   socialEntry(name) { return this.socialData().entries.find(e => e.scope === this.socialScope() && e.name === name); },
-  socialScopeFor(thread) { const how=this.settings.chat.partition; return how==='chat' && thread?.save ? `${thread.space}#${thread.save}` : how==='card' || how==='chat' ? thread?.space || this.socialScope() : ''; },
+  socialScopeFor(thread) {
+    if (thread?.save) return thread.save;
+    const card = thread?.space;
+    const owner = card && this.settings.chat.firstSaves?.[card];
+    return owner ? card + '#' + owner : card || '';
+  },
   socialBlocked(name, scope = this.socialScope()) { return !!blockedEntry(this.socialData(), scope, name); },
   socialWaiting(name, scope = this.socialScope()) { return !!waitingEntry(this.socialData(), scope, name); },
   socialAssert(name, scope = this.socialScope()) { if (this.socialBlocked(name, scope)) throw Error(`「${name}」在黑名单中，消息和电话已拦截；请先移出黑名单`); if (this.socialWaiting(name, scope)) throw Error(`请先通过「${name}」的好友申请`); },
@@ -12,15 +17,16 @@ export const socialMethods = {
     this.assertOpen(); const next = this.getState(), data = normalizeSocial(next.chat.social);
     change(data); next.chat.social = normalizeSocial(data); this.save(next); this.emit('chat', {friend: true, social: true}); return this.socialSnapshot();
   },
-  socialSnapshot() { const data = this.socialData(); return {...data, scope: this.socialScope(), entries: data.entries.filter(e => e.scope === this.socialScope())}; },
+  socialSnapshot() { const data = this.socialData(); return {...data, scope: this.socialScope(), entries: this.socialScope() ? data.entries.filter(e => e.scope === this.socialScope()) : []}; },
   socialSet(name, patch) {
-    const scope = this.socialScope(); name = String(name || '').trim().slice(0, 40); if (!name || name === 'me') throw Error('联系人名字无效');
+    const scope = this.socialScope(); if (!scope) throw Error('请先打开一个酒馆聊天'); name = String(name || '').trim().slice(0, 40); if (!name || name === 'me') throw Error('联系人名字无效');
     return this.socialWrite(data => { let e = data.entries.find(e => e.scope === scope && e.name === name); if (!e) { e = {name, scope, state: 'friend', at: 0, attempts: 0}; data.entries.push(e); } Object.assign(e, patch, {name, scope, at: Date.now()}); });
   },
   socialOptions(patch) { return this.socialWrite(data => { for (const key of ['autoRequests', 'allowAlts', 'autoGroups']) if (typeof patch?.[key] === 'boolean') data[key] = patch[key]; }); },
   socialBlock(name) { return this.socialSet(name, {state: 'blocked', allowAlt: true}); },
   socialUnblock(name) { if (!this.socialBlocked(name)) throw Error('这个人不在黑名单'); return this.socialSet(name, {state: 'friend'}); },
   async socialRequest(value) {
+    if (!this.socialScope()) return false;
     const c = parseSocialPlan(JSON.stringify({contacts: [value]})).contacts[0]; if (!c) return false;
     const old = this.socialEntry(c.name), data = this.socialData();
     if (old || this.socialBlocked(c.name)) return false; // no repeated requests after rejection

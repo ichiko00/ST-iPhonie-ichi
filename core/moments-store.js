@@ -146,9 +146,9 @@ export class MomentStore {
   async remove(id) { return this.#tx('readwrite', (store, done) => { store.delete([this.#scope, String(id)]); done(true); }); }
   async clear() { return this.#tx('readwrite', (store, done) => this.#all(store, rows => { for (const row of rows) store.delete([this.#scope, row.id]); done(rows.length); })); }
   /** Posts made today by the characters on their own (for the daily limit). */
-  async autoToday() {
+  async autoToday(inChat = () => true) {
     const start = new Date(this.#now()); start.setHours(0, 0, 0, 0);
-    return (await this.list()).filter(p => p.source === 'auto' && p.at >= start.getTime()).length;
+    return (await this.list()).filter(p => p.source === 'auto' && p.at >= start.getTime() && inChat(p)).length;
   }
 
   /** Every post, for a backup. */

@@ -1898,7 +1898,17 @@ export function chatApp(ctx) {
     if (tab !== 'msgs') { tab = 'msgs'; render(); return true; }
     return false;
   };
-  v.refresh = () => render();
+  let shownSave = api.socialSaveKey?.();
+  v.refresh = () => {
+    const save = api.socialSaveKey?.();
+    if (save !== shownSave) {
+      shownSave = save;
+      mode = 'list'; threadId = null; thread = null; panel = null;
+      selecting = null; quote = null; contactDraft = null; older = null;
+      moments.only();
+    }
+    return render();
+  };
   v.onAvatars = () => render();
   v.openThread = open;
   /** The chat on screen (null on the lists). */

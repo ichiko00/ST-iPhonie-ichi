@@ -350,7 +350,10 @@ export function createPhoneApp({window: win, api, mount = win.document.getElemen
   let carrying = [], openedFrom = null, launching = null;
   function stopCarry() { const o = launching ? {at: launching.openness(), speed: launching.speed()} : null; for (const a of carrying) a?.cancel(); carrying = []; launching = null; delete screen.dataset.carrying; return o; }
   const iconOf = name => home.querySelector(`.app-icon[data-app="${name}"] .icon-tile`);
+  const socialApps = new Set(['chat', 'forum', 'peek']);
+  const voiceOnly = () => api.voiceOnly?.() === true;
   function open(name, roleId, from = null) {
+    if (voiceOnly() && socialApps.has(name)) return;
     if (!LOADERS[name]) return;
     if (!FACTORIES[name]) {
       // Its module has not come yet (a tap in the first moment after the phone opened): it comes, then the app opens,
@@ -556,7 +559,8 @@ export function createPhoneApp({window: win, api, mount = win.document.getElemen
     return `<button class="app-icon" data-app="${id}" aria-label="${esc(meta.name)}${count ? `，${count} 条未读` : dot ? '，有新动态' : ''}"><span class="icon-tile${image ? ' photo-tile' : ''}" style="--t1:${t1};--t2:${t2};--tac:${tac}">${art}</span>${badge}<span class="app-label">${esc(meta.name)}</span></button>`;
   }
   function renderHome() {
-    const shown = HOME.pages.map(ids => ids.filter(id => id !== SLOT)).filter((ids, index) => index === 0 || ids.length);
+    const voice = voiceOnly();
+    const shown = HOME.pages.map(ids => ids.filter(id => id !== SLOT && (!voice || !socialApps.has(id)))).filter((ids, index) => index === 0 || ids.length);
     const pages = shown.map((ids, index) => `<div class="home-page">${index === 0
       ? `<div class="clock-block"><p class="home-date" data-clock="date"></p><p class="home-clock" data-clock="large"></p></div><div class="widgets"><button class="widget live-wave" data-system="island" data-widget="playing"></button><div class="widget" data-widget="cast"></div></div>`
       : ''}<div class="apps-grid">${ids.map(appIcon).join('')}</div></div>`).join('');
@@ -568,7 +572,7 @@ export function createPhoneApp({window: win, api, mount = win.document.getElemen
     placeHome();
     $('.dots').innerHTML = shown.length > 1 ? shown.map((_, i) => `<i${i === pageNow() ? ' data-on' : ''}></i>`).join('') : '';
     today?.paint();
-    $('.phone-dock').innerHTML = HOME.dock.map(appIcon).join('');
+    $('.phone-dock').innerHTML = HOME.dock.filter(id => !voice || !socialApps.has(id)).map(appIcon).join('');
     clock();
     renderWidgets();
   }
@@ -1035,6 +1039,10 @@ export function createPhoneApp({window: win, api, mount = win.document.getElemen
       lastPhase = event.phase;
       paintPlayback(event);
     }
+    if (event.type === 'voice-only') {
+      if (event.on && active && socialApps.has(active)) showHome(true);
+      renderHome();
+    }
     if (event.type === 'settings') { theme(); renderWidgets(); today?.paint(['cast', 'wallet']); animate(); wallMotion(); quietly(refreshAvatars); }
     if (event.type === 'phone') run(() => appearance(event.preferences));
     if (['chat', 'library', 'space'].includes(event.type)) todayLater();
@@ -1053,8 +1061,8 @@ export function createPhoneApp({window: win, api, mount = win.document.getElemen
     if (event.type === 'generator') run(() => views.get('generator')?.onGenerator?.(event));
     if (event.type === 'theater') run(() => views.get('generator')?.onTheater?.(event));
     if (event.type === 'balance') run(() => views.get('engines')?.onBalance?.(event));
-    if (event.type === 'chat') { run(() => views.get('chat')?.onChat?.(event)); countUnread(); if (event.incoming && !(active === 'chat' && views.get('chat')?.showing?.() === event.threadId)) notify(`${event.incoming.from}：${event.incoming.kind === 'text' ? event.incoming.text : '发来' + (event.incoming.count > 1 ? ` ${event.incoming.count} 条` : '一条') + '消息'}`.slice(0, 80), {tap: () => { open('chat'); withView('chat', v => v.openThread?.(event.threadId)); }}); }
-    if (event.type === 'moments') { views.get('chat')?.onMoments?.(event); countMoments(); }
+    if (event.type === 'chat' && !voiceOnly()) { run(() => views.get('chat')?.onChat?.(event)); countUnread(); if (event.incoming && !(active === 'chat' && views.get('chat')?.showing?.() === event.threadId)) notify(`${event.incoming.from}：${event.incoming.kind === 'text' ? event.incoming.text : '发来' + (event.incoming.count > 1 ? ` ${event.incoming.count} 条` : '一条') + '消息'}`.slice(0, 80), {tap: () => { open('chat'); withView('chat', v => v.openThread?.(event.threadId)); }}); }
+    if (event.type === 'moments' && !voiceOnly()) { views.get('chat')?.onMoments?.(event); countMoments(); }
     if (event.type === 'call') calls.update(event.call);
     if (event.type === 'forum' || event.type === 'peek') { const app = event.type; if (active === app) run(() => views.get(app)?.refresh()); }
     // 分区: another card was opened in the tavern; the open app and the badges follow it.
@@ -1073,6 +1081,7 @@ export function createPhoneApp({window: win, api, mount = win.document.getElemen
   // New 朋友圈 posts and comments by others since the user last opened it.
   function countMoments() {
     win.clearTimeout(freshTimer);
+    if (voiceOnly()) return;
     freshTimer = win.setTimeout(() => run(async () => {
       const n = momentsNew(await api.listMoments(), momentsSeen(win));
       if (disposed || n === fresh) return;
@@ -1082,6 +1091,7 @@ export function createPhoneApp({window: win, api, mount = win.document.getElemen
   }
   function countUnread() {
     win.clearTimeout(unreadTimer);
+    if (voiceOnly()) return;
     unreadTimer = win.setTimeout(() => run(async () => {
       const n = await api.chatUnread();
       if (disposed || n === unread) return;
@@ -1098,7 +1108,7 @@ export function createPhoneApp({window: win, api, mount = win.document.getElemen
   // 'chat:moments': the chat app on 动态 (the 动态小窗's tap).
   function openPart(value) {
     const [name, part] = String(value || '').split(':');
-    if (!LOADERS[name]) return false;
+    if (!LOADERS[name] || (voiceOnly() && socialApps.has(name))) return false;
     open(name);
     if (part === 'moments') withView('chat', v => v.showMoments?.());
     return true;
@@ -1116,7 +1126,7 @@ export function createPhoneApp({window: win, api, mount = win.document.getElemen
   /** The chat a message card on the tavern page was double-tapped for (msg-island.js). */
   function takeThread() {
     const id = api.takeThread?.();
-    if (!id) return false;
+    if (!id || voiceOnly()) return false;
     open('chat');
     withView('chat', v => v.openThread?.(id));
     return true;

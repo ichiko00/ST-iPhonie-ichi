@@ -27,7 +27,7 @@ const BRING_KEY = 'myphone.bring';
 /** The note older versions wrote into the chat for a choice; the chat shows the pending choice by itself now. */
 export const BRING_NOTE = /^\d+ 条消息会带进下一次正文$/;
 
-export function createChatHost({context, settings, backend, notice, memory = null, onCall = () => {}, onPosts = () => {},storage = globalThis.localStorage, timeline = null, loadCompletion = loadCompletionModule, picture = pictureUrl, ask = requestAssistantText}) {
+export function createChatHost({context, settings, backend, enabled = () => true, notice, memory = null, onCall = () => {}, onPosts = () => {},storage = globalThis.localStorage, timeline = null, loadCompletion = loadCompletionModule, picture = pictureUrl, ask = requestAssistantText}) {
   // busy: the reply being written for a chat (one at a time); stops: what lets it go (停止回复).
   const busy = new Map(), stops = new Map();
   const stopped = () => Object.assign(new Error('已停止回复'), {name: 'AbortError'});
@@ -113,7 +113,7 @@ export function createChatHost({context, settings, backend, notice, memory = nul
       // Voice switched off: nobody sends voice messages.
       if (s.general.voiceEnabled === false) for (const p of people) p.voice = false;
       if (!nudge) backend.emit('chat', {threadId, typing: true});
-      const recent = story(preset), forumSpace = s.chat.partition === 'card' ? {key: thread.space || backend.cardKey()} : s.chat.partition === 'chat' ? backend.here() : null;
+      const recent = story(preset), forumSpace = backend.here();
       let forum = '';
       if (promptOn(s.promptRules, 'chat-forum')) {
         try { forum = forumContext((await backend.apps.list('forum')).filter(p => inSpace(p, forumSpace)), user, s.chat.netNames); }
@@ -460,7 +460,9 @@ export function createChatHost({context, settings, backend, notice, memory = nul
   /** A story reply finished: what it sent to the phone (<phone>) arrives, once per version of the reply; when it is
    * the phone's turn and nothing came, someone is asked whether they would text first (one phone request). */
   async function storyReplied(id) {
+    if (!enabled()) return;
     const synced=timeline?await timeline.sync():null;
+    if (!enabled()) return;
     const o = settings().chat.proactive || {};
     if (!o.on) { quiet = 0; return; }
     const sent = synced?synced.delivered:await deliver(id);
@@ -474,6 +476,7 @@ export function createChatHost({context, settings, backend, notice, memory = nul
    * photos, money, calls, 朋友圈…) to each sender's chat, <phone group="…"> to that group. Returns how many arrived.
    */
   async function deliver(id,{source=null}={}) {
+    if (!enabled()) return 0;
     if(timeline&&!source)return(await timeline.sync()).delivered;
     const ctx = context(), s = settings();
     if (!s.chat.proactive?.on) return 0;
@@ -588,6 +591,7 @@ export function createChatHost({context, settings, backend, notice, memory = nul
     reply, bring, bringPlan, tidyNotes, drawPhoto, storyPlan, storyReplied, deliver, phoneAfter, phoneAfterPlan, askFriend,
     reroll: threadId => reply(threadId, {reroll: true}),
     /** 停止回复: the reply being written for this chat is let go. */
+    cancelAll: () => { for (const controller of stops.values()) controller.abort(); },
     cancel: threadId => { stops.get(threadId)?.abort(); },
     seesPictures: () => sees(),
     typing: threadId => busy.has(threadId),

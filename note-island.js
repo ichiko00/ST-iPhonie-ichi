@@ -106,6 +106,7 @@ export function createNoteIsland({doc = document, phoneOpen, open, avatar = () =
   win.addEventListener('resize', onResize);
   return {
     show,
+    dismiss: hide,
     /** The phone was taken out: the card goes (动态 shows it there). */
     refresh() { if (phoneOpen() && !el.hidden) hide(); },
     get shown() { return !el.hidden; },

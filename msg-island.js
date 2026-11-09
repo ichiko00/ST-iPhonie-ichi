@@ -159,6 +159,7 @@ export function createMessageIsland({doc = document, load, phoneOpen, openChat, 
 
   return {
     show,
+    dismiss: hide,
     /** The phone was taken out: the card goes (the chat is there). */
     refresh() { if (phoneOpen() && !el.hidden) hide(); },
     /** The contact started or stopped typing in a chat. */
