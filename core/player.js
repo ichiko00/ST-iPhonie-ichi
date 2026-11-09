@@ -662,6 +662,12 @@ export class DialoguePlayer {
    this.complete();
   } catch (error) { this.fail(epoch, signal, error); }
  }
+ setStepwise(enabled) {
+  this.stepwise=!!enabled;
+  // Release only the automatic end-of-sentence wait, never a manual pause.
+  if(!this.stepwise&&this.boundary&&this.phase==='paused')return this.toggle();
+  this.change(this.snapshot());
+ }
  toggle() {
   if (['playing', 'generating'].includes(this.phase)) {
    this.resumePhase = this.phase;

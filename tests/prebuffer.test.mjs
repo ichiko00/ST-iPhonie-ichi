@@ -102,3 +102,14 @@ test('full timeline seeking maps measured seconds to the correct segment',()=>{
  let target;f.player.jump=(...args)=>target=args;
  assert.equal(f.player.transport().totalSeconds,30);f.player.seekTo(24);assert.deepEqual(target,[2,4]);
 });
+
+test('switching stepwise to full releases sentence boundary and continues including narration',async()=>{
+ const f=fixture();const job=f.player.start([lines[0],{role:'narrator',narration:true,text:'scene'},lines[1]],()=>true,null,{stepwise:true});
+ await tick();assert.equal(f.player.phase,'paused');assert.equal(f.player.boundary,true);assert.deepEqual(output(f),['play:one']);
+ await f.player.setStepwise(false);await job;
+ assert.deepEqual(output(f),['play:one','speech:scene','play:two']);assert.equal(f.player.phase,'idle');
+});
+test('changing reading mode preserves an explicit manual pause',async()=>{
+ const f=fixture();f.player.phase='paused';f.player.boundary=false;f.player.stepwise=true;
+ await f.player.setStepwise(false);assert.equal(f.player.phase,'paused');assert.equal(f.player.stepwise,false);assert.deepEqual(output(f),[]);
+});
