@@ -5,7 +5,7 @@ import {freshState} from '../core/state.js';
 function fixture(){
  const settings=freshState();settings.routes=[{name:'A',voice:'v',engine:'fish'}];
  const events=[];
- const player=new DialoguePlayer({settings:()=>settings,providers:{},cache:{},sink:{unlock:async()=>{},stop(){},pause:async()=>{},resume:async()=>{},play:async b=>events.push('play:'+await b.text())},speech:{prime(){},stop(){},speak:async t=>events.push('speech:'+t)}});
+ const player=new DialoguePlayer({settings:()=>settings,providers:{},cache:{},sink:{unlock:async()=>{},stop(){},pause:async()=>{},resume:async()=>{},play:async b=>events.push('play:'+await b.text())},speech:{prime(){},stop(){},pause(){},resume(){},speak:async t=>events.push('speech:'+t)}});
  player.make=async(line,route)=>{events.push('make:'+line.text);return {key:line.text,blob:new Blob([line.text]),effective:route,request:{},fromCache:false};};
  return {player,events,settings};
 }
@@ -62,4 +62,43 @@ test('system narration can start immediately while character audio is pending',a
  f.player.make=async(...args)=>{await new Promise(r=>release=r);return make(...args);};
  const job=f.player.start([{role:'narrator',narration:true,text:'intro'},lines[0]],()=>true,null,{prebuffer:true});await tick();
  assert.deepEqual(output(f),['speech:intro']);release();await job;assert.deepEqual(output(f),['speech:intro','play:one']);
+});
+
+test('15 second seek crosses measured segments and stops at unknown boundaries',()=>{
+ const f=fixture();f.player.history=lines;f.player.queue=lines;f.player.index=1;f.player.phase='playing';f.player.sink.position=()=>4;
+ for(const l of lines)f.player.durations.set(f.player.lineId(l),10);
+ let target;f.player.jump=(...args)=>target=args;
+ assert.equal(f.player.seekBy(-15),true);assert.deepEqual(target,[0,0]);
+ f.player.seekBy(15);assert.deepEqual(target,[2,9]);
+ f.player.durations.delete(f.player.lineId(lines[2]));f.player.seekBy(15);assert.deepEqual(target,[1,9.95]);
+});
+test('system narration does not pretend to support exact second seeking',()=>{
+ const f=fixture();f.player.history=[{narration:true,text:'intro'}];f.player.queue=f.player.history;assert.equal(f.player.seekBy(15),false);
+});
+test('jump reuses session audio without calling synthesis again',async()=>{
+ const f=fixture();await f.player.start(lines,()=>true,null,{prebuffer:true});
+ const before=f.events.filter(x=>x.startsWith('make:')).length;
+ await f.player.jump(0,3);
+ assert.equal(f.events.filter(x=>x.startsWith('make:')).length,before);
+});
+test('startup buffer can be bypassed when the first audio is ready',async()=>{
+ const f=fixture(),make=f.player.make;let release;
+ f.player.sink.duration=async()=>5;
+ f.player.make=async(line,...args)=>{if(line.text!=='one')await new Promise(r=>release=r);return make(line,...args);};
+ const job=f.player.start(lines.slice(0,2),()=>true,null,{prebuffer:true});await tick();await tick();
+ assert.equal(f.player.buffering,true);assert.deepEqual(output(f),[]);
+ f.player.playNow=true;await new Promise(r=>setTimeout(r,100));assert.deepEqual(output(f),['play:one']);release();await job;
+});
+
+test('seeking while paused stays paused and does not play until resumed',async()=>{
+ const f=fixture();await f.player.start(lines);f.player.phase='paused';
+ const before=output(f).length,job=f.player.jump(1,2);await tick();
+ assert.equal(f.player.phase,'paused');assert.equal(output(f).length,before);
+ await f.player.toggle();await job;assert.deepEqual(output(f).slice(before),['play:two','play:three']);
+});
+test('full timeline seeking maps measured seconds to the correct segment',()=>{
+ const f=fixture();f.player.history=lines;f.player.queue=lines;f.player.index=0;
+ for(const l of lines)f.player.durations.set(f.player.lineId(l),10);
+ let target;f.player.jump=(...args)=>target=args;
+ assert.equal(f.player.transport().totalSeconds,30);f.player.seekTo(24);assert.deepEqual(target,[2,4]);
 });

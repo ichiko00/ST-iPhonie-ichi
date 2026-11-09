@@ -16,6 +16,9 @@ const WAVE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stro
 const PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>';
 const PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
 const CLOSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M7 7l10 10M17 7 7 17"/></svg>';
+const SKIP = forward => `<svg viewBox="0 0 32 32" aria-hidden="true"><g ${forward?'transform="translate(32 0) scale(-1 1)"':''}><path d="M9 7a11 11 0 1 1-4 9M9 2v6H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><text x="16" y="21" text-anchor="middle" fill="currentColor" font-size="12" font-family="system-ui" font-weight="600">15</text></svg>`;
+const clock = n => `${Math.floor((n||0)/60)}:${String(Math.floor((n||0)%60)).padStart(2,'0')}`;
+const lineLabel = l => l.translationRead ? '译文 · '+(l.sourceRole||'旁白') : l.narration ? '旁白' : l.role||'台词';
 const BUSY = ['playing', 'generating'];
 
 /**
@@ -23,23 +26,27 @@ const BUSY = ['playing', 'generating'];
  * or null. now(): {id, index, phase} of what is being said. play(id, index): that line (again: pause/resume).
  * playAll(id): every line. phoneOpen(), callShown(): whether to step aside.
  */
-export function createVoiceIsland({doc = document, enabled, latest, now, play, playAll, playStep = null, toggle = null, phoneOpen, callShown = () => false}) {
+export function createVoiceIsland({doc = document, enabled, latest, now, play, playAll, playStep = null, toggle = null, seek = null, seekTo = null, rate = null, startNow = null, phoneOpen, callShown = () => false}) {
   const win = doc.defaultView;
   const el = doc.createElement('div');
   el.className = 'myphone-voice-island';
   el.hidden = true;
   el.setAttribute('role', 'region');
   el.innerHTML = `<div class="vi-pill"><span class="vi-ico">${WAVE}</span><span class="vi-line"><span class="vi-scroll" data-vi-line></span></span><span class="vi-bars" aria-hidden="true"><i></i><i></i><i></i></span></div>
-    <div class="vi-card"><div class="vi-head"><span class="vi-ico">${WAVE}</span><b data-vi-title></b><button type="button" class="vi-btn vi-all" data-vi="all"></button><button type="button" class="vi-btn vi-step" data-vi="step" aria-label="逐句播放">${PLAY}<span>逐句</span></button><button type="button" class="vi-btn vi-close" data-vi="close" aria-label="收起">${CLOSE}</button></div>
+    <div class="vi-card"><div class="vi-head"><span class="vi-ico">${WAVE}</span><b data-vi-title></b><button type="button" class="vi-btn vi-step" data-vi="step" aria-label="逐句播放">${PLAY}<span>逐句</span></button><button type="button" class="vi-btn vi-close" data-vi="close" aria-label="收起">${CLOSE}</button></div>
+      <div class="vi-current"><b data-vi-speaker></b><div data-vi-current></div></div>
+      <div class="vi-progress"><input data-vi-progress type="range" min="0" max="1" step="0.1" value="0" aria-label="当前段落播放进度"><div class="vi-times"><span data-vi-time></span><span data-vi-buffer></span></div></div>
+      <button type="button" class="vi-btn vi-start-now" data-vi="now" hidden>现在播放</button><div class="vi-controls"><button class="vi-btn vi-skip" type="button" data-vi="back" aria-label="后退15秒">${SKIP(false)}</button><button type="button" class="vi-btn vi-all" data-vi="all"></button><button class="vi-btn vi-skip" type="button" data-vi="forward" aria-label="快进15秒">${SKIP(true)}</button><button type="button" class="vi-btn vi-rate" data-vi="rate" aria-label="播放速度">1×</button></div>
       <div class="vi-list" data-vi-list></div><div class="vi-resize" data-vi-resize role="separator" tabindex="0" aria-label="调整台词小窗高度" aria-orientation="horizontal"></div></div>`;
   doc.body.append(el);
   let place = null, dismissed = '', reply = null, built = '', expanded = false, width = 0, openedAt = 0, dragged = false;
   try { place = JSON.parse(win.localStorage.getItem(KEY) || 'null'); } catch { /* the top middle */ }
   const list = el.querySelector('.vi-list'), grip = el.querySelector('[data-vi-resize]');
-  let preferredHeight = null, sizing = null, following = '';
+  let preferredHeight = null, sizing = null, following = '', manualUntil = 0;
+  list.addEventListener('wheel',()=>manualUntil=Date.now()+5000,{passive:true});list.addEventListener('touchmove',()=>manualUntil=Date.now()+5000,{passive:true});
   const lineViewport=el.querySelector('.vi-line'),lineText=el.querySelector('[data-vi-line]');
   function marquee(){const distance=lineText.scrollWidth-lineViewport.clientWidth;const moving=!expanded&&lineViewport.clientWidth>0&&distance>1;lineText.classList.toggle('vi-scrolling',moving);if(moving){lineText.style.setProperty('--vi-travel',-distance+'px');lineText.style.setProperty('--vi-duration',Math.max(6,distance/24+4)+'s');}}
-  function follow(force=false){if(!expanded)return;const row=list.querySelector('[data-state]');if(!row)return;const id=built+'|'+row.dataset.viI;if(!force&&following===id)return;following=id;const r=row.getBoundingClientRect(),box=list.getBoundingClientRect();if(r.top<box.top||r.bottom>box.bottom)list.scrollTop+=r.top-box.top;}
+  function follow(force=false){if(!expanded||(!force&&Date.now()<manualUntil))return;const row=list.querySelector('[data-state]');if(!row)return;const id=built+'|'+row.dataset.viI;if(!force&&following===id)return;following=id;const r=row.getBoundingClientRect(),box=list.getBoundingClientRect();if(r.top<box.top||r.bottom>box.bottom)list.scrollTop+=r.top-box.top;}
   try { const saved = Number(win.localStorage.getItem(HEIGHT_KEY)); if (Number.isFinite(saved) && saved > 0) preferredHeight = saved; } catch { /* this visit */ }
   function heightBounds() {
     // Reserve the grip inside the former maximum card height. Even the smallest list keeps one dialogue row.
@@ -79,8 +86,8 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
     el.dataset.playing = mine >= 0 ? '1' : '';
     if (built !== key(r)) {
       built = key(r);
-      text('[data-vi-title]', `${r.name || '台词'} · ${r.lines.length} 句`);
-      el.querySelector('[data-vi-list]').innerHTML = r.lines.map((l,i)=>{const text=islandDialogueText(l);return `<button type="button" class="vi-row" data-vi-i="${i}"><b>${esc(l.role||'')}</b><span>${esc(text.primary)}</span>${text.secondary?`<small>${esc(text.secondary)}</small>`:''}</button>`;}).join('');
+      text('[data-vi-title]', `${r.name || '朗读'} · ${r.lines.length} 段`);
+      el.querySelector('[data-vi-list]').innerHTML = r.lines.map((l,i)=>{const text=l.translationPaired?{primary:voiceDisplay(l.text),secondary:''}:islandDialogueText(l);return `<button type="button" class="vi-row" data-vi-i="${i}"><b>${esc(lineLabel(l))}</b><span>${esc(text.primary)}</span>${text.secondary?`<small>${esc(text.secondary)}</small>`:''}</button>`;}).join('');
       sizeList();
     }
     for (const row of el.querySelectorAll('.vi-row')) {
@@ -90,8 +97,16 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
     follow();
     // 整篇朗读: while the 旁白 reads, no line is the one playing, but the reply is.
     const mineAll = s && s.id === r.id && BUSY.includes(s.phase), pausedAll = s && s.id === r.id && s.phase === 'paused';
-    const said = mine >= 0 ? r.lines[mine] : paused >= 0 ? r.lines[paused] : null;
-    text('[data-vi-line]', said ? `${said.role ? said.role + '：' : ''}${islandDialogueText(said).primary}` : mineAll && s.narration ? `旁白：${s.narration}` : `${r.lines.length} 句台词`);
+    const said = s?.id===r.id&&[...BUSY,'paused'].includes(s.phase)?s.line||r.lines[s.index]:null;
+    text('[data-vi-speaker]',said?lineLabel(said):'整条朗读');
+    text('[data-vi-current]',said?voiceDisplay(said.text):'点播放开始，或选择下方段落');
+    const t=s?.id===r.id?s.transport:null,slider=el.querySelector('[data-vi-progress]');
+    slider.disabled=!t?.duration||t.system||!['playing','paused'].includes(s?.phase);slider.max=String(t?.totalSeconds||t?.duration||1);if(doc.activeElement!==slider)slider.value=String(Math.min(t?.totalSeconds?t.elapsed:t?.position||0,Number(slider.max)));slider.setAttribute('aria-label',t?.totalSeconds?'整条播放进度':'当前段落播放进度');
+    text('[data-vi-time]',t?.system?'系统朗读 · 可点选段落':`${clock(t?.totalSeconds?t.elapsed:t?.position)} / ${t?.totalSeconds?clock(t.totalSeconds):t?.duration?clock(t.duration):'--:--'} · ${t?.totalSeconds?'整条':'本段'}`);
+    text('[data-vi-buffer]',t?.buffering?`开播缓冲 · 已备 ${Math.floor(t.bufferSeconds)} 秒`:t?`已备 ${t.ready}/${t.total} 段`:'');el.querySelector('[data-vi=now]').hidden=!t?.buffering;
+    for(const button of el.querySelectorAll('.vi-skip')){button.disabled=!t?.duration||t.system||!['playing','paused'].includes(s?.phase);button.title=t?.system?'系统朗读不支持精确跳秒':'在已准备的音频范围内跳转';}
+    text('[data-vi=rate]',`${t?.rate||1}×`);
+    text('[data-vi-line]', said ? `${lineLabel(said)}：${voiceDisplay(said.text)}` : mineAll && s.narration ? `旁白：${s.narration}` : `${r.lines.length} 句台词`);
     marquee();
     const stepping=s?.id===r.id&&s.stepwise;
     const step=el.querySelector('[data-vi=step]'),stepOn=stepping&&mineAll;
@@ -124,7 +139,7 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
 
   let drag = null;
   el.addEventListener('pointerdown', e => {
-    if (e.button > 0 || e.target.closest('button, .vi-list, [data-vi-resize]')) return;
+    if (e.button > 0 || e.target.closest('button, input, .vi-list, [data-vi-resize]')) return;
     const r = el.getBoundingClientRect();
     drag = {id: e.pointerId, dx: e.clientX - (r.left + r.width / 2), dy: e.clientY - r.top, x0: e.clientX, y0: e.clientY, live: false};
     try { el.setPointerCapture(e.pointerId); } catch { /* gone */ }
@@ -176,22 +191,27 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
   // under the finger, and that click used to land on 整条 or a line and play it. A tap in the first moment after
   // opening is that same tap, so it does nothing.
   el.addEventListener('click', e => {
-    if (e.target.closest('[data-vi-resize]')) return;
+    if (e.target.closest('[data-vi-resize], input')) return;
     if (dragged) { dragged = false; return; }
     const b = e.target.closest('[data-vi], [data-vi-i]');
     if (!b) { if (!e.target.closest('.vi-list')) setExpanded(!expanded); return; }
     if (!reply || Date.now() - openedAt < 350) return;
     const id = reply.id;
+    if(b.dataset.vi==='now'){startNow?.();return;}
+    if (b.dataset.vi==='back'||b.dataset.vi==='forward') {seek?.(b.dataset.vi==='back'?-15:15);return;}
+    if(b.dataset.vi==='rate'){const speeds=[.75,1,1.25,1.5,2],current=now()?.transport?.rate||1;rate?.(speeds[(speeds.indexOf(current)+1)%speeds.length]);refresh();return;}
     if (b.dataset.viI !== undefined) Promise.resolve().then(() => play(id, Number(b.dataset.viI))).catch(() => {});
     else if (b.dataset.vi === 'step') { Promise.resolve().then(()=>playStep?.(id)).catch(()=>{}); }
-    else if (b.dataset.vi === 'all') { const s = now(); Promise.resolve().then(() => s && s.id === id && !s.stepwise && [...BUSY, 'paused'].includes(s.phase) ? (toggle && !(s.index >= 0) ? toggle() : play(id, s.index)) : playAll(id)).catch(() => {}); }
-    else if (b.dataset.vi === 'close') { dismissed = key(reply); el.hidden = true; setExpanded(false); }
+    else if (b.dataset.vi === 'all') { const s = now(); Promise.resolve().then(() => s && s.id === id && !s.stepwise && [...BUSY, 'paused'].includes(s.phase) ? toggle?.() : playAll(id)).catch(() => {}); }
+    else if (b.dataset.vi === 'close') { setExpanded(false); }
   });
+  el.querySelector('[data-vi-progress]').addEventListener('change',e=>seekTo?.(Number(e.target.value)));
+  const timer=win.setInterval(()=>{if(!el.hidden)refresh();},350);
   // A tap anywhere else takes the list back in.
   const away = e => { if (expanded && !el.contains(e.target)) setExpanded(false); };
   doc.addEventListener('pointerdown', away, true);
   const onResize = () => { if (sizing) { preferredHeight = sizing.before; sizing = null; } sizeList(); if (!el.hidden) {where();marquee();follow(true);} };
   win.addEventListener('resize', onResize);
   return {refresh, open() { dismissed = ''; refresh(); if (!el.hidden) setExpanded(true); }, get shown() { return !el.hidden; }, get expanded() { return expanded; },
-    dispose() { leave(); doc.removeEventListener('pointerdown', away, true); win.removeEventListener('resize', onResize); el.remove(); }};
+    dispose() { win.clearInterval(timer);leave(); doc.removeEventListener('pointerdown', away, true); win.removeEventListener('resize', onResize); el.remove(); }};
 }

@@ -280,3 +280,23 @@
 #chat .mes_buttons button.myphone-tools-entry>svg{display:block!important;width:20px!important;height:20px!important;min-width:20px;pointer-events:none}
 
 .myphone-call-island .ci-accept{flex:none;min-width:46px;height:34px;padding:0 10px;border:0;border-radius:17px;background:#07b75a;color:white;font-size:12px;font-weight:600;cursor:pointer;}
+
+/* Compact reading transport: large touch targets, simple 15-second circular arrows. */
+.myphone-voice-island .vi-current{padding:10px 8px 4px;min-height:64px}
+.myphone-voice-island .vi-current b{font-size:11px;color:#9ddcff}
+.myphone-voice-island .vi-current div{font-size:14px;line-height:1.6;margin-top:5px;max-height:100px;overflow:auto;white-space:pre-wrap}
+.myphone-voice-island .vi-progress{padding:8px}
+.myphone-voice-island .vi-progress input{width:100%;accent-color:#fff;cursor:pointer;touch-action:pan-x}
+.myphone-voice-island .vi-times{display:flex;justify-content:space-between;font-size:10px;color:#aaa;font-variant-numeric:tabular-nums}
+.myphone-voice-island .vi-controls{display:flex;align-items:center;justify-content:center;gap:14px;padding:2px 0 12px}
+.myphone-voice-island .vi-controls .vi-btn{height:46px;min-width:46px;background:transparent;padding:0}
+.myphone-voice-island .vi-controls .vi-btn svg{width:30px;height:30px}
+.myphone-voice-island .vi-controls .vi-all{background:#fff;color:#141416;width:54px;height:54px;border-radius:50%}
+.myphone-voice-island .vi-all span{display:none}
+.myphone-voice-island .vi-controls .vi-rate{font-size:12px;min-width:38px}
+.myphone-voice-island button:disabled{opacity:.3;cursor:default}
+.myphone-voice-island .vi-head .vi-btn{min-width:44px;height:44px}
+.myphone-voice-island .vi-list{border-top:1px solid #ffffff14;padding-top:8px}
+
+.myphone-voice-island .vi-start-now[hidden]{display:none}
+.myphone-voice-island .vi-start-now{margin:0 auto 8px;display:flex;font-size:12px}

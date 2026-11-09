@@ -108,8 +108,12 @@ export class BrowserAudio {
   return this.volume;
  }
  getVolume() { return this.volume; }
+ async duration(blob) { return (await this.warm(blob)).duration; }
+ position() { const c=this.clock;return c?Math.min(c.duration,c.offset+Math.max(0,this.context.currentTime-c.at)*c.rate):0; }
+ setRate(rate) { if(this.clock){this.clock.offset=this.position();this.clock.at=this.context.currentTime;this.clock.rate=rate;}if(this.source)this.source.playbackRate.value=rate; }
+
  /** effect: 'phone' | 'inner' | '' (core/voice-fx.js), put between the line and the volume. */
- async play(blob, signal = new AbortController().signal, { effect = '' } = {}) {
+ async play(blob, signal = new AbortController().signal, { effect = '', offset = 0, rate = 1 } = {}) {
   signal.throwIfAborted();
   const ctx = this.context;
   if (!ctx || ctx.state !== 'running') throw Error('请再点一次播放，允许浏览器开启声音');
@@ -155,7 +159,7 @@ export class BrowserAudio {
     this.finish = finish;
     source.onended = () => finish();
     signal.addEventListener('abort', abort, { once: true });
-    if (signal.aborted) abort(); else source.start();
+    if (signal.aborted) abort(); else { source.playbackRate.value=rate; this.clock={at:ctx.currentTime,offset,rate,duration:buffer.duration}; source.start(0,Math.min(offset,Math.max(0,buffer.duration-.01))); }
    } catch (error) { finish(error); }
   });
  }
@@ -228,6 +232,9 @@ export class DialoguePlayer {
   this.voiced = voiced;
   Object.assign(this, { settings, providers, cache, sink, change, unknown, prepared, speech });
   this.epoch = 0;
+  this.rate = 1;
+  this.sessionAudio = new Map();
+  this.durations = new Map();
   this.phase = 'idle';
   this.message = '';
   this.queue = [];
@@ -307,20 +314,67 @@ export class DialoguePlayer {
   this.emit('idle', message);
  }
  /** ahead: while a line plays, the next one is already being made (a call: no pause between its sentences). */
- start(lines, valid = () => true, settingsOverride = null, {ahead = false, stepwise = false, prebuffer = false} = {}) {
+ start(lines, valid = () => true, settingsOverride = null, {ahead = false, stepwise = false, prebuffer = false, startIndex = 0, offset = 0, session = null} = {}) {
   this.stop();
   this.settingsOverride = settingsOverride;
   this.lookahead = ahead;
   this.prebuffer = prebuffer;
+  this.startupBuffer = prebuffer && !session;
+  this.buffering = false;this.playNow = false;
   this.stepwise = stepwise;
   if (!lines.length) return;
   this.valid = valid;
   this.queue = lines.map(copyLine);
+  this.history = this.queue;
+  this.sessionAudio = session?.audio || new Map();
+  this.durations = session?.durations || new Map();
+  this.index = startIndex; this.seekOffset = offset;
   this.controller = new AbortController();
-  this.line = this.queue[0];
+  this.line = this.queue[this.index];
   this.speaker = this.line.role || '';
   this.emit('generating', '准备播放');
   return this.unlockAndRun();
+ }
+ lineId(line) { return JSON.stringify(line); }
+ transport() {
+  const lines=this.history||[], durations=lines.map(l=>this.durations.get(this.lineId(l))||0);
+  const index=this.queue.length?this.index:Math.max(0,lines.length-1);
+  const system=systemNarration(lines[index],this.settingsOverride||this.settings());
+  const position=this.phase==='generating'?this.seekOffset||0:system?0:this.sink.position?.()||0;
+  const totalSeconds=durations.length&&durations.every(n=>n>0)?durations.reduce((a,b)=>a+b,0):0;
+  return {index,position,duration:durations[index]||0,durations,totalSeconds,elapsed:totalSeconds?durations.slice(0,index).reduce((a,b)=>a+b,0)+position:position,rate:this.rate,system,phase:this.phase,
+   buffering:!!this.buffering,bufferSeconds:this.bufferSeconds||0,ready:lines.filter(l=>this.sessionAudio.has(this.lineId(l))).length,total:lines.length};
+ }
+ setRate(rate) { this.rate=Math.max(.75,Math.min(2,Number(rate)||1));this.sink.setRate?.(this.rate);this.change(this.snapshot()); }
+ jump(index,offset=0) {
+  if(!this.history?.[index] || !this.valid()) return;
+  const lines=this.history,valid=this.valid,settings=this.settingsOverride,session={audio:this.sessionAudio,durations:this.durations};
+  const paused=this.phase==='paused';
+  const job=this.start(lines,valid,settings,{ahead:true,prebuffer:this.prebuffer,startIndex:index,offset,session});
+  if(paused)this.toggle();return job;
+ }
+ seekTo(seconds) {
+  const t=this.transport();let index=t.index,offset=Math.max(0,Number(seconds)||0);
+  if(t.totalSeconds){index=0;while(index<t.durations.length-1&&offset>=t.durations[index])offset-=t.durations[index++];}
+  return this.jump(index,Math.min(offset,Math.max(0,t.durations[index]-.05)));
+ }
+ seekBy(seconds) {
+  const t=this.transport();if(t.system||!t.duration)return false;
+  let index=t.index,offset=t.position+seconds;
+  while(offset<0&&index>0&&t.durations[index-1]){index--;offset+=t.durations[index];}
+  while(offset>=t.durations[index]&&t.durations[index]>0&&index<t.durations.length-1&&t.durations[index+1]){offset-=t.durations[index];index++;}
+  this.jump(index,Math.max(0,Math.min(offset,Math.max(0,t.durations[index]-.05))));return true;
+ }
+ async bufferedMake(line,route,s,signal,found=()=>{},still=()=>!signal.aborted) {
+  const id=this.lineId(line),saved=this.sessionAudio.get(id);
+  if(saved){found(true,saved.key);return saved;}
+  const audio=this.sessionAudio,durations=this.durations;
+  const made=await this.make(line,route,s,signal,found,still);
+  if(made&&still()){
+   audio.set(id,made);
+   try{const duration=await this.sink.duration?.(made.blob);if(Number.isFinite(duration)&&duration>0)durations.set(id,duration);}catch{}
+  }
+  return still()?made:null;
  }
  current(epoch) { return epoch === this.epoch && !this.controller?.signal.aborted; }
  canContinue(epoch) {
@@ -457,17 +511,38 @@ export class DialoguePlayer {
    state.entries.set(line, entry);
    entry.job = Promise.resolve().then(() => {
     if (!this.canContinue(epoch)) return null;
-    return this.make(line, route, s, signal, () => {}, () => this.canContinue(epoch));
+    return this.bufferedMake(line, route, s, signal, () => {}, () => this.canContinue(epoch));
    }).then(value => ({value}), error => ({error})).finally(() => {
     state.active--;
     if (this.current(epoch)) this.fillBuffer(epoch, signal);
    });
   }
  }
+ async bufferStartup(epoch,signal) {
+  this.fillBuffer(epoch,signal);
+  const first=this.queue[this.index],entry=this.buffered.get(first);
+  if(!entry)return;
+  await entry.job;
+  if(!this.canContinue(epoch)||!this.durations.get(this.lineId(first)))return;
+  const deadline=Date.now()+8000;
+  this.buffering=true;
+  while(this.canContinue(epoch)&&!this.playNow&&Date.now()<deadline){
+   let seconds=0,all=true;
+   for(const line of this.queue.slice(this.index,this.index+4)){
+    if(systemNarration(line,this.settingsOverride||this.settings()))continue;
+    const duration=this.durations.get(this.lineId(line));if(!duration){all=false;break;}seconds+=duration;
+   }
+   this.bufferSeconds=seconds;
+   if(seconds>=20||all)break;
+   this.emit(this.phase==='paused'?'paused':'generating',`开播缓冲 · 已备 ${Math.floor(seconds)} 秒`);
+   await new Promise(resolve=>setTimeout(resolve,80));
+  }
+  if(this.current(epoch))this.buffering=false;
+ }
  async run(epoch) {
   const signal = this.controller.signal;
   try {
-
+   if(this.startupBuffer)await this.bufferStartup(epoch,signal);
    while (this.index < this.queue.length) {
     if (!this.canContinue(epoch)) return;
     if (this.prebuffer) this.fillBuffer(epoch, signal);
@@ -479,7 +554,7 @@ export class DialoguePlayer {
      if (!await this.waitForResume(epoch)) return;
      for (let said = false; !said;) {
       this.emit('playing', '正在朗读 · ' + line.role);
-      try { await this.speech.speak(line.text, { voice:line.translationRead&&s.narration.systemVoice&&!this.speech.voices?.().some(v=>v.id===s.narration.systemVoice&&/^(zh|cmn)/i.test(v.lang))?'':s.narration.systemVoice, rate:s.narration.rate,volume:this.volume,lang:line.translationRead?'zh-CN':'' }, signal); said = true; }
+      try { await this.speech.speak(line.text, { voice:line.translationRead&&s.narration.systemVoice&&!this.speech.voices?.().some(v=>v.id===s.narration.systemVoice&&/^(zh|cmn)/i.test(v.lang))?'':s.narration.systemVoice, rate:s.narration.rate*this.rate,volume:this.volume,lang:line.translationRead?'zh-CN':'' }, signal); said = true; }
       catch (error) {
        if (error?.name !== 'AbortError' || !this.current(epoch)) throw error;
        // Paused (see toggle): this piece again on resuming. 整篇朗读 turned off under it (dropNarration): on with the lines.
@@ -522,7 +597,7 @@ export class DialoguePlayer {
     } else early = this.ahead?.index === this.index ? await this.ahead.made.catch(() => null) : null;
     this.ahead = null;
     if (!this.canContinue(epoch)) return;
-    const made = early || await this.make(line, route, s, signal, (fromCache, key) => {
+    const made = early || await this.bufferedMake(line, route, s, signal, (fromCache, key) => {
      if (!this.canContinue(epoch)) return;
      this.requestKey = key;
      this.emit(this.phase === 'paused' ? 'paused' : 'generating', (fromCache ? '读取缓存 · ' : '正在生成 · ') + line.role);
@@ -534,7 +609,8 @@ export class DialoguePlayer {
     if (this.lookahead && !this.prebuffer) this.ahead = this.makeAhead(this.index + 1, signal);
     if (!await this.waitForResume(epoch)) return;
     this.emit('playing', '正在播放 · ' + line.role + (fromCache ? ' · 缓存' : ''));
-    await this.sink.play(blob, signal, { effect: lineEffect(line) });
+    const offset=this.seekOffset||0;this.seekOffset=0;
+    await this.sink.play(blob, signal, { effect: lineEffect(line), offset, rate:this.rate });
     if (!this.canContinue(epoch)) return;
     this.played.add(key);
     try{globalThis.localStorage?.setItem('myphone-heard-audio-v1',JSON.stringify([...this.played].slice(-5000)));}catch{}
@@ -579,7 +655,8 @@ export class DialoguePlayer {
    await this.sink.unlock();
    if (!this.canContinue(epoch) || !await this.waitForResume(epoch)) return;
    this.emit('playing', '正在播放 · ' + (this.speaker || '收藏音频'));
-   await this.sink.play(blob, signal, { effect: lineEffect(line) });
+   const offset=this.seekOffset||0;this.seekOffset=0;
+    await this.sink.play(blob, signal, { effect: lineEffect(line), offset, rate:this.rate });
    if (!this.canContinue(epoch)) return;
    if (this.requestKey) this.played.add(this.requestKey);
    this.complete();
