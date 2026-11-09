@@ -16,7 +16,8 @@ const WAVE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stro
 const PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>';
 const PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
 const CLOSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M7 7l10 10M17 7 7 17"/></svg>';
-const SKIP = forward => `<svg viewBox="0 0 32 32" aria-hidden="true"><g ${forward?'transform="translate(32 0) scale(-1 1)"':''}><path d="M9 7a11 11 0 1 1-4 9M9 2v6H3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g><text x="16" y="21" text-anchor="middle" fill="currentColor" font-size="12" font-family="system-ui" font-weight="600">15</text></svg>`;
+const SKIP = forward => `<svg viewBox="0 0 32 32" aria-hidden="true"><g ${forward?'transform="translate(32 0) scale(-1 1)"':''}><path d="M15 5a11 11 0 1 1-10 11" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M16 1.2 10.8 5 16 8.8Z" fill="currentColor"/></g><text x="16" y="21" text-anchor="middle" fill="currentColor" font-size="12" font-family="system-ui" font-weight="600">15</text></svg>`;
+const LIST = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><g fill="currentColor"><circle cx="4" cy="6" r="1.2"/><circle cx="4" cy="12" r="1.2"/><circle cx="4" cy="18" r="1.2"/></g></svg>';
 const clock = n => `${Math.floor((n||0)/60)}:${String(Math.floor((n||0)%60)).padStart(2,'0')}`;
 const lineLabel = l => l.translationRead ? '译文 · '+(l.sourceRole||'旁白') : l.narration ? '旁白' : l.role||'台词';
 const BUSY = ['playing', 'generating'];
@@ -33,10 +34,10 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
   el.hidden = true;
   el.setAttribute('role', 'region');
   el.innerHTML = `<div class="vi-pill"><span class="vi-ico">${WAVE}</span><span class="vi-line"><span class="vi-scroll" data-vi-line></span></span><span class="vi-bars" aria-hidden="true"><i></i><i></i><i></i></span></div>
-    <div class="vi-card"><div class="vi-head"><span class="vi-ico">${WAVE}</span><b data-vi-title></b><button type="button" class="vi-btn vi-step" data-vi="step" aria-label="逐句播放">${PLAY}<span>逐句</span></button><button type="button" class="vi-btn vi-close" data-vi="close" aria-label="收起">${CLOSE}</button></div>
+    <div class="vi-card"><div class="vi-head"><span class="vi-ico">${WAVE}</span><b data-vi-title></b><button type="button" class="vi-btn vi-step" data-vi="step" aria-label="逐句播放">${PLAY}<span>逐句</span></button></div>
       <div class="vi-current"><b data-vi-speaker></b><div data-vi-current></div></div>
       <div class="vi-progress"><input data-vi-progress type="range" min="0" max="1" step="0.1" value="0" aria-label="当前段落播放进度"><div class="vi-times"><span data-vi-time></span><span data-vi-buffer></span></div></div>
-      <button type="button" class="vi-btn vi-start-now" data-vi="now" hidden>现在播放</button><div class="vi-controls"><button class="vi-btn vi-skip" type="button" data-vi="back" aria-label="后退15秒">${SKIP(false)}</button><button type="button" class="vi-btn vi-all" data-vi="all"></button><button class="vi-btn vi-skip" type="button" data-vi="forward" aria-label="快进15秒">${SKIP(true)}</button><button type="button" class="vi-btn vi-rate" data-vi="rate" aria-label="播放速度">1×</button></div>
+      <button type="button" class="vi-btn vi-start-now" data-vi="now" hidden>现在播放</button><div class="vi-controls"><button class="vi-btn vi-skip" type="button" data-vi="back" aria-label="后退15秒">${SKIP(false)}</button><button type="button" class="vi-btn vi-all" data-vi="all"></button><button class="vi-btn vi-skip" type="button" data-vi="forward" aria-label="快进15秒">${SKIP(true)}</button><button type="button" class="vi-btn vi-rate" data-vi="rate" aria-label="播放速度">1×</button><button type="button" class="vi-btn vi-list-toggle" data-vi="close" aria-label="展开朗读列表" aria-expanded="false">${LIST}</button></div>
       <div class="vi-list" data-vi-list></div><div class="vi-resize" data-vi-resize role="separator" tabindex="0" aria-label="调整台词小窗高度" aria-orientation="horizontal"></div></div>`;
   doc.body.append(el);
   let place = null, dismissed = '', reply = null, built = '', expanded = false, width = 0, openedAt = 0, dragged = false;
@@ -86,7 +87,7 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
     el.dataset.playing = mine >= 0 ? '1' : '';
     if (built !== key(r)) {
       built = key(r);
-      text('[data-vi-title]', `${r.name || '朗读'} · ${r.lines.length} 段`);
+      text('[data-vi-title]', r.name || '朗读播放器');
       el.querySelector('[data-vi-list]').innerHTML = r.lines.map((l,i)=>{const text=l.translationPaired?{primary:voiceDisplay(l.text),secondary:''}:islandDialogueText(l);return `<button type="button" class="vi-row" data-vi-i="${i}"><b>${esc(lineLabel(l))}</b><span>${esc(text.primary)}</span>${text.secondary?`<small>${esc(text.secondary)}</small>`:''}</button>`;}).join('');
       sizeList();
     }
@@ -99,26 +100,27 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
     const mineAll = s && s.id === r.id && BUSY.includes(s.phase), pausedAll = s && s.id === r.id && s.phase === 'paused';
     const said = s?.id===r.id&&[...BUSY,'paused'].includes(s.phase)?s.line||r.lines[s.index]:null;
     text('[data-vi-speaker]',said?lineLabel(said):'整条朗读');
-    text('[data-vi-current]',said?voiceDisplay(said.text):'点播放开始，或选择下方段落');
+    text('[data-vi-current]',said?voiceDisplay(said.text):voiceDisplay(r.lines[0]?.text)||'点播放开始朗读');
     const t=s?.id===r.id?s.transport:null,slider=el.querySelector('[data-vi-progress]');
     slider.disabled=!t?.duration||t.system||!['playing','paused'].includes(s?.phase);slider.max=String(t?.totalSeconds||t?.duration||1);if(doc.activeElement!==slider)slider.value=String(Math.min(t?.totalSeconds?t.elapsed:t?.position||0,Number(slider.max)));slider.setAttribute('aria-label',t?.totalSeconds?'整条播放进度':'当前段落播放进度');
     text('[data-vi-time]',t?.system?'系统朗读 · 可点选段落':`${clock(t?.totalSeconds?t.elapsed:t?.position)} / ${t?.totalSeconds?clock(t.totalSeconds):t?.duration?clock(t.duration):'--:--'} · ${t?.totalSeconds?'整条':'本段'}`);
-    text('[data-vi-buffer]',t?.buffering?`开播缓冲 · 已备 ${Math.floor(t.bufferSeconds)} 秒`:t?`已备 ${t.ready}/${t.total} 段`:'');el.querySelector('[data-vi=now]').hidden=!t?.buffering;
+    text('[data-vi-buffer]',t?.buffering?`开播缓冲 · 已备 ${Math.floor(t.bufferSeconds)} 秒`:t?(t.ready>=t.total?'音频已就绪':s.phase==='generating'?'正在准备音频':'边听边缓存'):'');el.querySelector('[data-vi=now]').hidden=!t?.buffering;
     for(const button of el.querySelectorAll('.vi-skip')){button.disabled=!t?.duration||t.system||!['playing','paused'].includes(s?.phase);button.title=t?.system?'系统朗读不支持精确跳秒':'在已准备的音频范围内跳转';}
     text('[data-vi=rate]',`${t?.rate||1}×`);
-    text('[data-vi-line]', said ? `${lineLabel(said)}：${voiceDisplay(said.text)}` : mineAll && s.narration ? `旁白：${s.narration}` : `${r.lines.length} 句台词`);
+    text('[data-vi-line]', said ? `${lineLabel(said)}：${voiceDisplay(said.text)}` : mineAll && s.narration ? `旁白：${s.narration}` : '准备好，随时开始');
     marquee();
     const stepping=s?.id===r.id&&s.stepwise;
     const step=el.querySelector('[data-vi=step]'),stepOn=stepping&&mineAll;
     if(step.dataset.on!==String(!!stepOn)){step.dataset.on=String(!!stepOn);step.innerHTML=(stepOn?PAUSE:PLAY)+'<span>逐句</span>';}step.setAttribute('aria-pressed',String(!!stepping));step.title=stepOn?'暂停':stepping&&pausedAll?'继续下一句':'逐句播放';
     const all = el.querySelector('[data-vi=all]'), on = stepping ? 'all' : mine >= 0 || mineAll ? 'pause' : paused >= 0 || pausedAll ? 'resume' : 'all';
     if (all.dataset.on !== on) { all.dataset.on = on; all.innerHTML = on === 'pause' ? `${PAUSE}<span>暂停</span>` : on === 'resume' ? `${PLAY}<span>继续</span>` : `${PLAY}<span>整条</span>`; }
-    el.setAttribute('aria-label', `台词小窗：${r.name || ''} ${r.lines.length} 句。点一下展开`);
+    el.setAttribute('aria-label', `朗读播放器：${r.name || ''}`);
   }
   function setExpanded(on) {
     if (expanded === on) return;
     expanded = on; openedAt = on ? Date.now() : 0;
     el.dataset.expanded = on ? '1' : '';
+    const listToggle=el.querySelector('[data-vi=close]');listToggle.setAttribute('aria-expanded',String(on));listToggle.setAttribute('aria-label',on?'收起朗读列表':'展开朗读列表');
     if (!on && sizing) { preferredHeight = sizing.before; sizing = null; }
     if (on) sizeList();
     if (on) follow(true);else following='';
@@ -194,7 +196,7 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
     if (e.target.closest('[data-vi-resize], input')) return;
     if (dragged) { dragged = false; return; }
     const b = e.target.closest('[data-vi], [data-vi-i]');
-    if (!b) { if (!e.target.closest('.vi-list')) setExpanded(!expanded); return; }
+    if (!b) return;
     if (!reply || Date.now() - openedAt < 350) return;
     const id = reply.id;
     if(b.dataset.vi==='now'){startNow?.();return;}
@@ -203,7 +205,7 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
     if (b.dataset.viI !== undefined) Promise.resolve().then(() => play(id, Number(b.dataset.viI))).catch(() => {});
     else if (b.dataset.vi === 'step') { Promise.resolve().then(()=>playStep?.(id)).catch(()=>{}); }
     else if (b.dataset.vi === 'all') { const s = now(); Promise.resolve().then(() => s && s.id === id && !s.stepwise && [...BUSY, 'paused'].includes(s.phase) ? toggle?.() : playAll(id)).catch(() => {}); }
-    else if (b.dataset.vi === 'close') { setExpanded(false); }
+    else if (b.dataset.vi === 'close') { setExpanded(!expanded); }
   });
   el.querySelector('[data-vi-progress]').addEventListener('change',e=>seekTo?.(Number(e.target.value)));
   const timer=win.setInterval(()=>{if(!el.hidden)refresh();},350);
@@ -212,6 +214,6 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
   doc.addEventListener('pointerdown', away, true);
   const onResize = () => { if (sizing) { preferredHeight = sizing.before; sizing = null; } sizeList(); if (!el.hidden) {where();marquee();follow(true);} };
   win.addEventListener('resize', onResize);
-  return {refresh, open() { dismissed = ''; refresh(); if (!el.hidden) setExpanded(true); }, get shown() { return !el.hidden; }, get expanded() { return expanded; },
+  return {refresh, open() { dismissed = ''; refresh(); if (!el.hidden) setExpanded(false); }, get shown() { return !el.hidden; }, get expanded() { return expanded; },
     dispose() { win.clearInterval(timer);leave(); doc.removeEventListener('pointerdown', away, true); win.removeEventListener('resize', onResize); el.remove(); }};
 }

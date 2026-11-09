@@ -300,3 +300,38 @@
 
 .myphone-voice-island .vi-start-now[hidden]{display:none}
 .myphone-voice-island .vi-start-now{margin:0 auto 8px;display:flex;font-size:12px}
+
+/* The floating surface is the player; only the transcript expands. */
+.myphone-voice-island,.myphone-voice-island[data-expanded="1"]{box-sizing:border-box;width:min(310px,calc(100vw - 24px));max-width:calc(100vw - 24px);padding:14px 16px 10px;border-radius:24px;background:linear-gradient(145deg,rgba(37,39,45,.97),rgba(18,19,24,.98));border:1px solid rgba(255,255,255,.12);box-shadow:0 16px 42px #0005,0 2px 6px #0003;backdrop-filter:blur(24px);color:#f5f5f7}
+.myphone-voice-island .vi-pill{display:none!important}
+.myphone-voice-island .vi-card{display:block}
+.myphone-voice-island[data-expanded="1"] .vi-card{animation:none}
+.myphone-voice-island .vi-head{padding:0;gap:8px;min-height:24px}
+.myphone-voice-island .vi-head .vi-ico{width:22px;height:22px;background:#ffffff10;color:#cbc5ed;border-radius:7px}
+.myphone-voice-island .vi-head b{font-weight:500;font-size:11px;letter-spacing:.04em;color:#aaaab7}
+.myphone-voice-island .vi-head .vi-step{display:none;height:30px;min-width:44px;font-size:11px}
+.myphone-voice-island[data-expanded="1"] .vi-head .vi-step{display:inline-flex}
+.myphone-voice-island .vi-current{padding:12px 0 5px;min-height:0}
+.myphone-voice-island .vi-current b{color:#c7bfea;font-size:10px;letter-spacing:.04em;font-weight:500}
+.myphone-voice-island .vi-current div{margin-top:4px;font-size:13px;line-height:1.6;max-height:42px;overflow:auto;scrollbar-width:none}
+.myphone-voice-island .vi-progress{padding:9px 0 0}
+.myphone-voice-island .vi-progress input{display:block;appearance:none;-webkit-appearance:none;height:3px;margin:6px 0 10px;background:#ffffff26;border-radius:99px;outline-offset:5px}
+.myphone-voice-island .vi-progress input::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:9px;height:9px;background:#e8e5f5;border-radius:50%;box-shadow:0 0 0 4px #ffffff08}
+.myphone-voice-island .vi-times{font-size:9px;color:#9a99a7;gap:8px}
+.myphone-voice-island .vi-controls{display:grid;grid-template-columns:1fr 1fr 1.25fr 1fr 1fr;gap:0;padding:9px 0 0;align-items:center;justify-items:center}
+.myphone-voice-island .vi-controls .vi-rate{grid-column:1;grid-row:1;color:#c5c1d2;font-size:11px;font-weight:500}
+.myphone-voice-island .vi-controls [data-vi=back]{grid-column:2;grid-row:1}
+.myphone-voice-island .vi-controls .vi-all{grid-column:3;grid-row:1;width:46px;height:46px;min-width:46px;background:#eeecf6;color:#24212e;box-shadow:0 3px 12px #0003}
+.myphone-voice-island .vi-controls [data-vi=forward]{grid-column:4;grid-row:1}
+.myphone-voice-island .vi-controls .vi-list-toggle{grid-column:5;grid-row:1;color:#c5c1d2}
+.myphone-voice-island .vi-controls .vi-list-toggle svg{width:20px;height:20px}
+.myphone-voice-island .vi-controls .vi-btn svg{display:block}
+.myphone-voice-island .vi-controls .vi-all svg{width:23px;height:23px}
+.myphone-voice-island .vi-controls .vi-skip svg{width:29px;height:29px}
+.myphone-voice-island .vi-list,.myphone-voice-island .vi-resize{display:none}
+.myphone-voice-island[data-expanded="1"] .vi-list{display:grid;margin-top:12px;border-color:#ffffff12}
+.myphone-voice-island[data-expanded="1"] .vi-resize{display:flex}
+.myphone-voice-island .vi-row b{color:#c7bfea}
+.myphone-voice-island .vi-row[data-state=playing]{background:#c4b5fd18;box-shadow:inset 2px 0 #c4b5fd}
+.myphone-voice-island .vi-list-toggle[aria-expanded=true]{color:#e4d9ff;background:#c4b5fd14}
+.myphone-voice-island .vi-btn:focus-visible{outline:2px solid #c4b5fd;outline-offset:2px}
