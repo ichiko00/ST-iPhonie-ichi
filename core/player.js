@@ -664,9 +664,17 @@ export class DialoguePlayer {
  }
  setStepwise(enabled) {
   this.stepwise=!!enabled;
-  // Release only the automatic end-of-sentence wait, never a manual pause.
-  if(!this.stepwise&&this.boundary&&this.phase==='paused')return this.toggle();
+  const revision=this.modeRevision=(this.modeRevision||0)+1;
   this.change(this.snapshot());
+  // An asynchronous device resume must not override a later switch back to stepwise.
+  if(!this.stepwise&&this.boundary&&this.phase==='paused'){
+   const epoch=this.epoch;
+   return Promise.resolve(this.sink.resume()).then(()=>{
+    if(!this.current(epoch)||this.modeRevision!==revision||this.stepwise||!this.boundary||this.phase!=='paused')return;
+    this.speech?.resume();this.emit('generating','继续全文朗读');
+    this.wake?.();this.wake=null;
+   }).catch(error=>{if(this.current(epoch)&&this.modeRevision===revision)this.emit('error',error.message||'请再次点击播放');});
+  }
  }
  toggle() {
   if (['playing', 'generating'].includes(this.phase)) {

@@ -113,3 +113,23 @@ test('changing reading mode preserves an explicit manual pause',async()=>{
  const f=fixture();f.player.phase='paused';f.player.boundary=false;f.player.stepwise=true;
  await f.player.setStepwise(false);assert.equal(f.player.phase,'paused');assert.equal(f.player.stepwise,false);assert.deepEqual(output(f),[]);
 });
+
+test('full to stepwise while audio plays stops at the next sentence boundary',async()=>{
+ const f=fixture();let finish;f.player.sink.play=async b=>{f.events.push('play:'+await b.text());await new Promise(r=>finish=r);};
+ const job=f.player.start(lines);await tick();assert.equal(f.player.phase,'playing');
+ f.player.setStepwise(true);finish();await tick();assert.equal(f.player.phase,'paused');assert.equal(f.player.boundary,true);assert.deepEqual(output(f),['play:one']);
+ f.player.stop();await job;
+});
+test('rapid full then stepwise cancels a pending automatic resume',async()=>{
+ const f=fixture();const job=f.player.start(lines,()=>true,null,{stepwise:true});await tick();
+ let resume;f.player.sink.resume=()=>new Promise(r=>resume=r);
+ const change=f.player.setStepwise(false);f.player.setStepwise(true);resume();await change;await tick();
+ assert.equal(f.player.phase,'paused');assert.equal(f.player.stepwise,true);assert.deepEqual(output(f),['play:one']);f.player.stop();await job;
+});
+test('both directions can be switched repeatedly without restarting the queue',async()=>{
+ const f=fixture();let finish;f.player.sink.play=async b=>{f.events.push('play:'+await b.text());await new Promise(r=>finish=r);};
+ const job=f.player.start(lines);await tick();f.player.setStepwise(true);finish();await tick();
+ assert.equal(f.player.boundary,true);await f.player.setStepwise(false);await tick();assert.deepEqual(output(f),['play:one','play:two']);
+ f.player.setStepwise(true);finish();await tick();assert.equal(f.player.phase,'paused');assert.equal(f.player.index,1);
+ await f.player.setStepwise(false);await tick();finish();await job;assert.deepEqual(output(f),['play:one','play:two','play:three']);
+});

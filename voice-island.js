@@ -197,11 +197,13 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
     if (dragged) { dragged = false; return; }
     const b = e.target.closest('[data-vi], [data-vi-i]');
     if (!b) return;
-    if (!reply || Date.now() - openedAt < 350) return;
+    if (!reply) return;
+    // Mode and list controls never start audio; do not swallow a quick tap after opening.
+    if (Date.now()-openedAt<350 && !['mode-all','mode-step','close'].includes(b.dataset.vi)) return;
     const id = reply.id;
     if(b.dataset.vi==='now'){startNow?.();return;}
     if (b.dataset.vi==='back'||b.dataset.vi==='forward') {seek?.(b.dataset.vi==='back'?-15:15);return;}
-    if (b.dataset.viI !== undefined) Promise.resolve().then(() => play(id, Number(b.dataset.viI))).catch(() => {});
+    if (b.dataset.viI !== undefined) Promise.resolve().then(() => play(id, Number(b.dataset.viI), {stepwise:selectedStep})).catch(() => {});
     else if (b.dataset.vi === 'mode-all' || b.dataset.vi === 'mode-step') { selectedStep=b.dataset.vi==='mode-step';setMode?.(id,selectedStep);refresh(); }
     else if (b.dataset.vi === 'all') { const s = now(); Promise.resolve().then(() => s && s.id === id && [...BUSY, 'paused'].includes(s.phase) ? toggle?.() : selectedStep ? playStep?.(id) : playAll(id)).catch(() => {}); }
     else if (b.dataset.vi === 'close') { setExpanded(!expanded); }
