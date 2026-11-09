@@ -335,3 +335,22 @@
 .myphone-voice-island .vi-row[data-state=playing]{background:#c4b5fd18;box-shadow:inset 2px 0 #c4b5fd}
 .myphone-voice-island .vi-list-toggle[aria-expanded=true]{color:#e4d9ff;background:#c4b5fd14}
 .myphone-voice-island .vi-btn:focus-visible{outline:2px solid #c4b5fd;outline-offset:2px}
+
+/* Pocket transport: four controls, transcript and details only on demand. */
+.myphone-voice-island .vi-controls{grid-template-columns:1fr 1.15fr 1fr 1fr}
+.myphone-voice-island .vi-controls [data-vi=back]{grid-column:1}
+.myphone-voice-island .vi-controls .vi-all{grid-column:2}
+.myphone-voice-island .vi-controls [data-vi=forward]{grid-column:3}
+.myphone-voice-island .vi-controls .vi-list-toggle{grid-column:4}
+.myphone-voice-island:not([data-expanded="1"]){width:176px;height:46px;min-width:0;max-width:calc(100vw - 16px);padding:3px 5px;border-radius:25px;background:linear-gradient(145deg,#303036,#222227);box-shadow:0 4px 13px #0006}
+.myphone-voice-island:not([data-expanded="1"]) .vi-head,
+.myphone-voice-island:not([data-expanded="1"]) .vi-current,
+.myphone-voice-island:not([data-expanded="1"]) .vi-progress,
+.myphone-voice-island:not([data-expanded="1"]) .vi-start-now{display:none}
+.myphone-voice-island:not([data-expanded="1"]) .vi-controls{height:38px;display:flex;gap:3px;padding:0;justify-content:center;align-items:center}
+.myphone-voice-island:not([data-expanded="1"]) .vi-controls .vi-btn{width:39px;height:38px;min-width:0;flex:none}
+.myphone-voice-island:not([data-expanded="1"]) .vi-controls .vi-skip svg{width:23px;height:23px}
+.myphone-voice-island:not([data-expanded="1"]) .vi-controls .vi-all{width:34px;height:34px;margin:0 2px;box-shadow:none}
+.myphone-voice-island:not([data-expanded="1"]) .vi-controls .vi-all svg{width:17px;height:17px}
+.myphone-voice-island:not([data-expanded="1"]) .vi-controls .vi-list-toggle{width:30px;margin-left:1px;border-left:1px solid #ffffff14;border-radius:0}
+.myphone-voice-island:not([data-expanded="1"]) .vi-controls .vi-list-toggle svg{width:18px;height:18px}

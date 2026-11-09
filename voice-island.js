@@ -17,7 +17,7 @@ const PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentCol
 const PAUSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
 const CLOSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M7 7l10 10M17 7 7 17"/></svg>';
 const SKIP = forward => `<svg viewBox="0 0 32 32" aria-hidden="true"><g ${forward?'transform="translate(32 0) scale(-1 1)"':''}><path d="M15 5a11 11 0 1 1-10 11" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M16 1.2 10.8 5 16 8.8Z" fill="currentColor"/></g><text x="16" y="21" text-anchor="middle" fill="currentColor" font-size="12" font-family="system-ui" font-weight="600">15</text></svg>`;
-const LIST = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><g fill="currentColor"><circle cx="4" cy="6" r="1.2"/><circle cx="4" cy="12" r="1.2"/><circle cx="4" cy="18" r="1.2"/></g></svg>';
+const LIST = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>';
 const clock = n => `${Math.floor((n||0)/60)}:${String(Math.floor((n||0)%60)).padStart(2,'0')}`;
 const lineLabel = l => l.translationRead ? '译文 · '+(l.sourceRole||'旁白') : l.narration ? '旁白' : l.role||'台词';
 const BUSY = ['playing', 'generating'];
@@ -37,7 +37,7 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
     <div class="vi-card"><div class="vi-head"><span class="vi-ico">${WAVE}</span><b data-vi-title></b><button type="button" class="vi-btn vi-step" data-vi="step" aria-label="逐句播放">${PLAY}<span>逐句</span></button></div>
       <div class="vi-current"><b data-vi-speaker></b><div data-vi-current></div></div>
       <div class="vi-progress"><input data-vi-progress type="range" min="0" max="1" step="0.1" value="0" aria-label="当前段落播放进度"><div class="vi-times"><span data-vi-time></span><span data-vi-buffer></span></div></div>
-      <button type="button" class="vi-btn vi-start-now" data-vi="now" hidden>现在播放</button><div class="vi-controls"><button class="vi-btn vi-skip" type="button" data-vi="back" aria-label="后退15秒">${SKIP(false)}</button><button type="button" class="vi-btn vi-all" data-vi="all"></button><button class="vi-btn vi-skip" type="button" data-vi="forward" aria-label="快进15秒">${SKIP(true)}</button><button type="button" class="vi-btn vi-rate" data-vi="rate" aria-label="播放速度">1×</button><button type="button" class="vi-btn vi-list-toggle" data-vi="close" aria-label="展开朗读列表" aria-expanded="false">${LIST}</button></div>
+      <button type="button" class="vi-btn vi-start-now" data-vi="now" hidden>现在播放</button><div class="vi-controls"><button class="vi-btn vi-skip" type="button" data-vi="back" aria-label="后退15秒">${SKIP(false)}</button><button type="button" class="vi-btn vi-all" data-vi="all"></button><button class="vi-btn vi-skip" type="button" data-vi="forward" aria-label="快进15秒">${SKIP(true)}</button><button type="button" class="vi-btn vi-list-toggle" data-vi="close" aria-label="展开朗读列表" aria-expanded="false">${LIST}</button></div>
       <div class="vi-list" data-vi-list></div><div class="vi-resize" data-vi-resize role="separator" tabindex="0" aria-label="调整台词小窗高度" aria-orientation="horizontal"></div></div>`;
   doc.body.append(el);
   let place = null, dismissed = '', reply = null, built = '', expanded = false, width = 0, openedAt = 0, dragged = false;
@@ -106,7 +106,6 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
     text('[data-vi-time]',t?.system?'系统朗读 · 可点选段落':`${clock(t?.totalSeconds?t.elapsed:t?.position)} / ${t?.totalSeconds?clock(t.totalSeconds):t?.duration?clock(t.duration):'--:--'} · ${t?.totalSeconds?'整条':'本段'}`);
     text('[data-vi-buffer]',t?.buffering?`开播缓冲 · 已备 ${Math.floor(t.bufferSeconds)} 秒`:t?(t.ready>=t.total?'音频已就绪':s.phase==='generating'?'正在准备音频':'边听边缓存'):'');el.querySelector('[data-vi=now]').hidden=!t?.buffering;
     for(const button of el.querySelectorAll('.vi-skip')){button.disabled=!t?.duration||t.system||!['playing','paused'].includes(s?.phase);button.title=t?.system?'系统朗读不支持精确跳秒':'在已准备的音频范围内跳转';}
-    text('[data-vi=rate]',`${t?.rate||1}×`);
     text('[data-vi-line]', said ? `${lineLabel(said)}：${voiceDisplay(said.text)}` : mineAll && s.narration ? `旁白：${s.narration}` : '准备好，随时开始');
     marquee();
     const stepping=s?.id===r.id&&s.stepwise;
@@ -201,7 +200,6 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
     const id = reply.id;
     if(b.dataset.vi==='now'){startNow?.();return;}
     if (b.dataset.vi==='back'||b.dataset.vi==='forward') {seek?.(b.dataset.vi==='back'?-15:15);return;}
-    if(b.dataset.vi==='rate'){const speeds=[.75,1,1.25,1.5,2],current=now()?.transport?.rate||1;rate?.(speeds[(speeds.indexOf(current)+1)%speeds.length]);refresh();return;}
     if (b.dataset.viI !== undefined) Promise.resolve().then(() => play(id, Number(b.dataset.viI))).catch(() => {});
     else if (b.dataset.vi === 'step') { Promise.resolve().then(()=>playStep?.(id)).catch(()=>{}); }
     else if (b.dataset.vi === 'all') { const s = now(); Promise.resolve().then(() => s && s.id === id && !s.stepwise && [...BUSY, 'paused'].includes(s.phase) ? toggle?.() : playAll(id)).catch(() => {}); }
