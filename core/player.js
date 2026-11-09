@@ -289,6 +289,7 @@ export class DialoguePlayer {
   this.epoch++;
   this.ahead = null;
   this.buffered = new Map();
+  this.bufferState = {entries: this.buffered, active: 0};
   this.controller?.abort();
   this.controller = null;
   this.sink.stop();
@@ -436,28 +437,40 @@ export class DialoguePlayer {
   }
   this.index++; return true;
  }
- async bufferQueue(epoch, signal) {
-  const buffered = this.buffered;
-  const lines = [...this.queue];
-  for (let i = 0; i < lines.length; i++) {
-   if (!await this.waitForResume(epoch)) return false;
-   const line = lines[i], s = this.settingsOverride || this.settings();
-   if (!this.queue.includes(line) || systemNarration(line, s)) continue;
+ // Keep a small rolling window; the first ready segment can play immediately.
+ fillBuffer(epoch, signal) {
+  if (!this.canContinue(epoch) || this.phase === 'paused') return;
+  const state = this.bufferState;
+  const remaining = new Set(this.queue.slice(this.index));
+  for (const line of state.entries.keys()) if (!remaining.has(line)) state.entries.delete(line);
+  const s = this.settingsOverride || this.settings();
+  let window = 0;
+  for (const line of this.queue.slice(this.index)) {
+   if (systemNarration(line, s)) continue;
    const route = findRoute(s.routes, line.role);
    if (!route?.voice?.trim() && !(route?.engine === 'fish' && s.connections.fish.params.references.length) && !(route?.engine === 'mini' && s.connections.mini.params.timbre_weights.length)) continue;
-   this.emit('generating', `整条预缓存 · ${i + 1}/${lines.length}`);
-   const made = await this.make(line, route, s, signal, () => {}, () => this.canContinue(epoch));
-   if (!made || !this.canContinue(epoch)) return false;
-   buffered.set(line, made);
+   if (++window > 4) break;
+   if (state.entries.has(line)) continue;
+   if (state.active >= 2) break;
+   state.active++;
+   const entry = {};
+   state.entries.set(line, entry);
+   entry.job = Promise.resolve().then(() => {
+    if (!this.canContinue(epoch)) return null;
+    return this.make(line, route, s, signal, () => {}, () => this.canContinue(epoch));
+   }).then(value => ({value}), error => ({error})).finally(() => {
+    state.active--;
+    if (this.current(epoch)) this.fillBuffer(epoch, signal);
+   });
   }
-  return this.canContinue(epoch);
  }
  async run(epoch) {
   const signal = this.controller.signal;
   try {
-   if (this.prebuffer && !await this.bufferQueue(epoch, signal)) return;
+
    while (this.index < this.queue.length) {
     if (!this.canContinue(epoch)) return;
+    if (this.prebuffer) this.fillBuffer(epoch, signal);
     const s = this.settingsOverride || this.settings(), line = this.queue[this.index];
     // 旁白 with 系统朗读: the browser says it, nothing is made or kept. Without one, the story goes on to the next line.
     if (systemNarration(line,s)) {
@@ -498,8 +511,15 @@ export class DialoguePlayer {
     }
     this.pending = null;
     // Made while the line before played (ahead): ready now. A failed one is tried again here, where its error shows.
-    const early = this.buffered?.get(line) || (this.ahead?.index === this.index ? await this.ahead.made.catch(() => null) : null);
-    this.buffered?.delete(line);
+    let early;
+    const buffered = this.buffered?.get(line);
+    if (buffered) {
+     this.emit(this.phase === 'paused' ? 'paused' : 'generating', '准备播放 · ' + line.role);
+     const result = await buffered.job;
+     if (!this.canContinue(epoch)) return;
+     if (result.error) throw result.error;
+     early = result.value;
+    } else early = this.ahead?.index === this.index ? await this.ahead.made.catch(() => null) : null;
     this.ahead = null;
     if (!this.canContinue(epoch)) return;
     const made = early || await this.make(line, route, s, signal, (fromCache, key) => {
@@ -534,6 +554,7 @@ export class DialoguePlayer {
  }
  fail(epoch, signal, error) {
   if (!this.current(epoch) || signal.aborted) return;
+  this.controller?.abort();
   this.buffered?.clear();
   this.queue = [];
   this.index = 0;
