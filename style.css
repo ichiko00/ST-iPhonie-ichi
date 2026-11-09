@@ -354,3 +354,9 @@
 .myphone-voice-island:not([data-expanded="1"]) .vi-controls .vi-all svg{width:17px;height:17px}
 .myphone-voice-island:not([data-expanded="1"]) .vi-controls .vi-list-toggle{width:30px;margin-left:1px;border-left:1px solid #ffffff14;border-radius:0}
 .myphone-voice-island:not([data-expanded="1"]) .vi-controls .vi-list-toggle svg{width:18px;height:18px}
+
+.myphone-voice-island .vi-mode{display:none;flex:none;border-radius:9px;padding:2px;background:#ffffff0c;gap:2px}
+.myphone-voice-island[data-expanded="1"] .vi-mode{display:flex}
+.myphone-voice-island .vi-mode button{border:0;background:transparent;color:#a6a2b1;font:inherit;font-size:11px;min-width:42px;height:30px;border-radius:7px;cursor:pointer}
+.myphone-voice-island .vi-mode button[aria-pressed=true]{background:#ffffff20;color:#f1edf9}
+.myphone-voice-island .vi-mode button:focus-visible{outline:2px solid #c4b5fd;outline-offset:1px}

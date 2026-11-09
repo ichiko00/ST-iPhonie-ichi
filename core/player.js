@@ -350,7 +350,7 @@ export class DialoguePlayer {
   if(!this.history?.[index] || !this.valid()) return;
   const lines=this.history,valid=this.valid,settings=this.settingsOverride,session={audio:this.sessionAudio,durations:this.durations};
   const paused=this.phase==='paused';
-  const job=this.start(lines,valid,settings,{ahead:true,prebuffer:this.prebuffer,startIndex:index,offset,session});
+  const job=this.start(lines,valid,settings,{ahead:true,prebuffer:this.prebuffer,stepwise:this.stepwise,startIndex:index,offset,session});
   if(paused)this.toggle();return job;
  }
  seekTo(seconds) {
