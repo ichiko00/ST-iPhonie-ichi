@@ -1,13 +1,14 @@
 // 整篇朗读: a reply read through, the story between the voice lines in the 旁白's voice and the lines in their roles'.
 // The narration is the reply's own text around the lines (no model request): what is left after the parts not to be
-// read — the user's 小剧场 and status bars (tags they list), code, comments, thinking and the phone's own tags (pictures,
+// read — status bars (tags they list), code, comments, thinking and the phone's own tags (pictures,
 // sounds, music, phone messages) — with the markup taken out.
 // The 旁白 speaks with the system's voice (系统朗读: the browser's speech, free, played straight, not kept), or as a role
 // named 旁白 in the 角色 App (an engine's voice: costs its characters, kept in the cache like any line).
 
 export const NARRATOR = '旁白';
-/** Tags read past by default: the usual places for 小剧场, status bars and folded extras. */
-export const NARRATION_SKIP = Object.freeze(['小剧场', '状态栏', 'theater', 'status', 'statusbar', 'details']);
+const THEATER_TAG = /^(?:小剧场|theater)$/i;
+/** Tags read past by default: status bars and folded extras. */
+export const NARRATION_SKIP = Object.freeze(['状态栏', 'status', 'statusbar', 'details']);
 /** Tags a preset wraps the story in: when a reply has one, only what is inside it is read. */
 export const NARRATION_BODY = Object.freeze(['content', '正文']);
 const RATES = [0.8, 0.9, 1, 1.1, 1.2, 1.35, 1.5];
@@ -43,7 +44,7 @@ export function normalizeNarration(value) {
     voice: v.voice === 'role' ? 'role' : 'system',
     systemVoice: String(v.systemVoice ?? '').slice(0, 300),
     rate: RATES.includes(rate) ? rate : base.rate,
-    skip: v.skip === undefined ? base.skip : cleanSkip(v.skip),
+    skip: v.skip === undefined ? base.skip : cleanSkip(v.skip).filter(tag => !THEATER_TAG.test(tag)),
     body: v.body === undefined ? base.body : cleanBody(v.body),
   };
 }
@@ -69,7 +70,7 @@ function followingPanelEnd(text, start) {
  * part already skipped (a thinking block that lists 「`<details>` -> `<!-- SDC-end -->`」) opens nothing.
  * body: the 正文标签; when the reply wraps its story in one, what is outside it is not read either.
  */
-export function skippedRanges(raw, skip = NARRATION_SKIP, body = NARRATION_BODY) {
+export function skippedRanges(raw, skip = NARRATION_SKIP, body = NARRATION_BODY, {readTheater = false} = {}) {
   const text = String(raw ?? ''), finds = [];
   // A finder gives the first part starting at or after `from`: [start, end], or null.
   const add = re => finds.push(from => { re.lastIndex = from;const m = re.exec(text);return m ? [m.index, m.index + Math.max(1, m[0].length)] : null; });
@@ -82,7 +83,7 @@ export function skippedRanges(raw, skip = NARRATION_SKIP, body = NARRATION_BODY)
   add(/\[([A-Za-z][\w-]*)_START\][\s\S]*?(?:\[\1_END\]|$)/g);
   // Thinking and the listed tags: to their end, or to the end of the reply when it was never closed; 「开头…结尾」
   // from its opening words to its closing ones.
-  for (const tag of ['think', 'thinking', 'style', 'script', ...cleanSkip(skip)]) {
+  for (const tag of ['think', 'thinking', 'style', 'script', ...cleanSkip(skip).filter(tag => !readTheater || !THEATER_TAG.test(tag))]) {
     const marker = /^<!--(.*?)-->$/.exec(tag);
     if (marker) {
       const name = escapeRe(marker[1]), open = new RegExp(`<!--\\s*${name}\\s*-->`, 'gi'), close = new RegExp(`<!--\\s*(?:/\\s*${name}|${name}\\s*(?:结束|END)|(?:结束|END)\\s*${name})\\s*-->`, 'gi'), nextOpen=new RegExp(open.source,'gi');
@@ -122,8 +123,14 @@ export function skippedRanges(raw, skip = NARRATION_SKIP, body = NARRATION_BODY)
     story.push([m.index, end ? end.index + end[0].length : text.length]);
   }
   if (!story.length) return out;
+  if (readTheater) {
+    for (const match of text.matchAll(/<(小剧场|theater)(?:\s[^<>]*)?>[\s\S]*?<\/\1\s*>/gi)) {
+      if (!out.some(([a, b]) => match.index >= a && match.index < b)) story.push([match.index, match.index + match[0].length]);
+    }
+    story.sort((a, b) => a[0] - b[0]);
+  }
   let from = 0;
-  for (const [a, b] of story) { if (a > from) out.push([from, a]);from = b; }
+  for (const [a, b] of story) { if (a > from) out.push([from, a]);from = Math.max(from, b); }
   if (from < text.length) out.push([from, text.length]);
   return out.sort((a, b) => a[0] - b[0]);
 }
@@ -154,7 +161,7 @@ export function narrationPieces(text) {
  * lines: the reply's voice lines with their places (start, end). Lines inside a skipped part are not read either.
  */
 export function readingPlan(raw, lines, skip = NARRATION_SKIP, body = NARRATION_BODY) {
-  const text = String(raw ?? ''), cut = skippedRanges(text, skip, body);
+  const text = String(raw ?? ''), cut = skippedRanges(text, skip, body, {readTheater: true});
   // Skipped text becomes blank (new lines kept, so paragraphs stay apart); places do not move.
   let masked = text;
   for (const [a, b] of cut) masked = masked.slice(0, a) + masked.slice(a, b).replace(/[^\n]/g, ' ') + masked.slice(b);

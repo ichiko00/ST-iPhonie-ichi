@@ -36,3 +36,11 @@ test('adjacent identical Chinese quotes are rendered and read once by the charac
   assert.equal(waveMarks(markDialogue(raw, format), 'test', ['A']).split(said).length - 1, 1);
  }
 });
+test('whole reading includes tagged theater outside the body while still skipping status and hidden content', () => {
+ const raw = '<content>正文。<状态栏>数值。</状态栏></content>\n<theater>雨停了。 “走吧。”<tts>A|calm|走吧。</tts><think>隐藏。</think></theater>\n<状态栏>结束。</状态栏>';
+ const lines = parseDialogue(raw);
+ const old = normalizeNarration({skip:['theater','小剧场','状态栏','details']});
+ assert.deepEqual(old.skip, ['状态栏','details']);
+ assert.deepEqual(readingPlan(raw, lines, ['theater','状态栏']), [{narration:'正文。'}, {narration:'雨停了。'}, {line:0}]);
+ assert.deepEqual(readingPlan('<正文>开场。</正文>\n<小剧场>尾声。</小剧场>', []), [{narration:'开场。'}, {narration:'尾声。'}]);
+});
