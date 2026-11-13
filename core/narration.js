@@ -135,10 +135,21 @@ export function skippedRanges(raw, skip = NARRATION_SKIP, body = NARRATION_BODY,
   return out.sort((a, b) => a[0] - b[0]);
 }
 
+// Read the message in a standalone record from an inline phone plugin.
+const PHONE_RECORD = /^[ \t]*\[(typing|text|sticker)\s*[|｜][^|\r\n｜]+[|｜][^|\r\n｜]+[|｜](?:([^\r\n]*)[|｜])?\s*\d{1,2}[:：]\d{2}\s*\][ \t]*(?=\r?$)/gim;
+function spokenPhoneRecord(record, type, payload = '') {
+  const kind = type.toLowerCase();
+  const content = payload.replace(/[|｜]\s*(?:已读|未读)\s*$/, '').trim();
+  if (kind === 'typing') return '';
+  if (kind === 'sticker') return content ? '表情包，' + content : '发了一个表情包';
+  return content;
+}
+
 const MAX = 220;
 /** Prose as it is heard: no markup, Markdown marks or entities; one piece per paragraph, long ones cut at a sentence end. */
 export function narrationPieces(text) {
   const plain = String(text ?? '')
+    .replace(PHONE_RECORD, spokenPhoneRecord)
     .replace(/<\/?[a-z][\w:-]*(?:\s[^<>]*)?\/?>/gi, ' ').replace(/<[^<>\n]{1,300}>/g, ' ')
     .replace(/&nbsp;/g, ' ').replace(/&[a-z]+;|&#\d+;/gi, '')
     .replace(/^\s{0,3}(?:#{1,6}|>+|[-*+]\s)\s*/gm, '').replace(/^\s*(?:[-*_]\s*){3,}$/gm, '')
