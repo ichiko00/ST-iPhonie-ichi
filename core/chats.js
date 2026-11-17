@@ -273,13 +273,14 @@ export class ChatStore {
   async get(id) {
     return this.#tx('readonly', (store, done) => this.#get(store, id, row => done(this.#public(row))));
   }
-  async create({type = 'dm', name = '', members = [], space = '', save = '', windowOf = ''} = {}) {
+  async create({type = 'dm', name = '', members = [], space = '', save = '', windowOf = '', groupInfo} = {}) {
     const list = [...new Set((Array.isArray(members) ? members : []).map(m => clip(m, 40).trim()).filter(Boolean))];
     if (!list.length) throw fail('请选择聊天对象');
     if (list.length > CHAT_STORE_LIMITS.members) throw fail('群聊最多 20 人');
     if (type === 'group' && list.length < 2) throw fail('群聊至少要选两个人');
     // Later than the one before, even in the same millisecond: the window started last is the one in use (openedLast).
     const now = this.#madeAt = Math.max(this.#now(), this.#madeAt + 1), row = {scope: this.#scope, id: this.#id(), type: type === 'group' ? 'group' : 'dm', name: clip(name, 40).trim() || (type === 'group' ? list.join('、').slice(0, 40) : list[0]), members: type === 'group' ? list : [list[0]], unread: 0, createdAt: now, updatedAt: now, messages: [], ...(space ? {space: clip(space, 300)} : {}), ...(save ? {save: clip(save, 400)} : {}), ...(type === 'group' && windowOf ? {windowOf: clip(windowOf, 512)} : {})};
+    if (row.type === 'group' && groupInfo) row.groupInfo = cleanGroupInfo(groupInfo, row.members);
     await this.#tx('readwrite', (store, done, abort, after) => { store.put(row); after(list => list.set(row.id, this.#summary(row))); done(); });
     return this.#public(row);
   }
@@ -314,6 +315,42 @@ export class ChatStore {
         row.members = list.slice(0, CHAT_STORE_LIMITS.members);
       }
       if (name !== undefined || members !== undefined) row.updatedAt = this.#now();
+    });
+  }
+  async updateGroupInfo(id, patch = {}) {
+    return this.#tx('readwrite', (store, done, abort, after) => {
+      this.#get(store, id, base => {
+        if (base?.type !== 'group') { abort(fail('这个群聊已不存在')); return; }
+        const info = cleanGroupInfo(base.groupInfo, base.members), now = this.#now();
+        const notices = [];
+        if (typeof patch.announcement === 'string') {
+          const text = clip(patch.announcement, 500).trim();
+          if (text !== info.announcement) notices.push(text ? '你更新了群公告' : '你清空了群公告');
+          info.announcement = text;
+        }
+        if (patch.nickname) {
+          const {name, text} = patch.nickname;
+          if (name !== 'me' && !base.members.includes(name)) { abort(fail('该成员已不在群里')); return; }
+          info.nicknames = Object.fromEntries([...Object.entries(info.nicknames), [name, clip(text, 20).trim()]]);
+        }
+        if (patch.mute) {
+          const {name, minutes} = patch.mute;
+          if (!base.members.includes(name) || ![0,10,60,1440].includes(minutes)) { abort(fail('群成员或禁言时长无效')); return; }
+          info.mutes = Object.fromEntries([...Object.entries(info.mutes), [name, minutes ? now + minutes * 60000 : 0]]);
+          notices.push(minutes ? '「' + name + '」被禁言 ' + minutes + ' 分钟' : '「' + name + '」已解除禁言');
+        }
+        const req = store.index('scope').getAll(this.#scope);
+        req.onsuccess = () => {
+          const group = req.result.filter(row => row.type === 'group' && groupKey(row) === groupKey(base) && row.space === base.space && row.save === base.save);
+          for (const row of group) {
+            row.groupInfo = cleanGroupInfo(info, row.members);
+            row.messages = [...row.messages, ...notices.map(text => cleanMessage({from:'me',kind:'system',text},this.#id(),now))].slice(-CHAT_STORE_LIMITS.messages);
+            store.put(row);
+          }
+          after(list => { for (const row of group) list.set(row.id, this.#summary(row)); });
+          done(this.#public(group.find(row => row.id === id)));
+        };
+      });
     });
   }
   async changeGroupMembers(id, options = {}) {
@@ -498,6 +535,7 @@ export class ChatStore {
       const messages = (Array.isArray(t.messages) ? t.messages : []).slice(-CHAT_STORE_LIMITS.messages).map(m => cleanMessage(m, clip(m?.id || this.#id(), 512), Number.isFinite(m?.at) ? m.at : now));
       const row = {scope: this.#scope, id: clip(t.id, 512), type: t.type === 'group' ? 'group' : 'dm', name: clip(t.name, 40).trim() || members.join('、').slice(0, 40), members: t.type === 'group' ? members : [members[0]], pinned: t.pinned === true, muted: t.muted === true, ...(t.story === true ? {story: true} : {}), ...(Number.isFinite(t.openedAt) ? {openedAt: t.openedAt} : {}), ...(typeof t.label === 'string' && t.label.trim() ? {label: clip(t.label, 40).trim()} : {}), ...(t.type === 'group' && t.windowOf ? {windowOf: clip(t.windowOf, 512)} : {}),
         unread: Math.max(0, Math.min(CHAT_STORE_LIMITS.messages, Math.round(Number(t.unread)) || 0)), createdAt: Number.isFinite(t.createdAt) ? t.createdAt : now, updatedAt: Number.isFinite(t.updatedAt) ? t.updatedAt : now, messages, ...(t.space ? {space: clip(t.space, 300)} : {}), ...(t.save ? {save: clip(t.save, 400)} : {}), ...(t.type !== 'group' && cleanFriend(t.friend) ? {friend: cleanFriend(t.friend)} : {}), ...(t.type !== 'group' && cleanBlocked(t.blocked) ? {blocked: cleanBlocked(t.blocked)} : {}), ...(t.type !== 'group' && Number.isFinite(t.befriended) && t.befriended > 0 ? {befriended: t.befriended} : {})};
+      if (row.type === 'group' && t.groupInfo) row.groupInfo = cleanGroupInfo(t.groupInfo, row.members);
       // 重新回复的版本 come along with a backup or a sync, while they still belong to the chat's last round.
       const alts = cleanAlts(t.alts, () => this.#id());
       if (alts && lastRound(messages).after === alts.after) row.alts = alts;
@@ -529,6 +567,17 @@ export function dmWindows(threads, name) {
 /** The private chat with a contact that is in use, or undefined. */
 export const currentDm = (threads, name) => dmWindows(threads, name)[0];
 /** Which group a group chat is a window of: the first one's id (windowOf), kept when that one is deleted. */
+export function groupCanSpeak(thread, name, now = Date.now()) {
+  return thread?.type !== 'group' || (thread.members.includes(name) && !(thread.groupInfo?.mutes?.[name] > now));
+}
+function cleanGroupInfo(value, members) {
+  const names = [...members, 'me'];
+  return {
+    announcement: clip(value?.announcement, 500).trim(),
+    nicknames: Object.fromEntries(names.map(name => [name, clip(value?.nicknames?.[name], 20).trim()]).filter(([, text]) => text)),
+    mutes: Object.fromEntries(members.map(name => [name, value?.mutes?.[name]]).filter(([, until]) => Number.isFinite(until) && until > 0))
+  };
+}
 export const groupKey = t => t.windowOf || t.id;
 /** The 聊天窗口 a chat belongs with, the one in use first: a contact's private chats, or one group's windows. */
 export function chatWindows(threads, thread) {

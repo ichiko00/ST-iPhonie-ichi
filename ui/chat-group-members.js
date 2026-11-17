@@ -3,7 +3,7 @@ export async function groupMembersPanel(ctx,id,refresh){
  const api=ctx.api;let thread=await api.getThread(id);if(!thread||thread.type!=='group')throw Error('这个群聊不存在');
  const away=new Set(api.socialSnapshot().entries.filter(e=>['blocked','pending','rejected'].includes(e.state)).map(e=>e.name));
  const contacts=api.chatContacts().filter(c=>!away.has(c.name)),user=api.userName?.()||'你';
- const shown=n=>api.readState?.().chat?.remarks?.[ctx.routeFor?.(n)?.ownKey||n]||n;
+ const shown=n=>thread.groupInfo?.nicknames?.[n]||api.readState?.().chat?.remarks?.[ctx.routeFor?.(n)?.ownKey||n]||n;
  let mode='main',picked=new Set(),query='',working=false,detail='';
  const d=ctx.dialog('聊天信息','');
  d.body.classList?.add('mp-group-body');d.body.closest?.('.sheet')?.classList.add('mp-group-sheet');
@@ -16,11 +16,18 @@ export async function groupMembersPanel(ctx,id,refresh){
  function paint(){
   let html;
   if(mode==='main') html=`<section class="mp-members-section"><div class="mp-member-grid">${person(user,{self:true})}${thread.members.map(n=>person(n)).join('')}${tool('add','添加','＋')}${tool('remove','移除','−')}</div><p class="mp-count">共 ${thread.members.length+1} 位群成员</p></section>
-   <section class="mp-info-section"><div class="mp-info-row"><span>群聊名称</span><span class="mp-row-value" title="${esc(thread.name)}">${esc(thread.name)}</span></div><button type="button" class="mp-info-row" data-gm="add"><span>添加群成员</span><span class="mp-chevron" aria-hidden="true">›</span></button><button type="button" class="mp-info-row" data-gm="remove"><span>移除群成员</span><span class="mp-chevron" aria-hidden="true">›</span></button></section>
+   <section class="mp-info-section"><div class="mp-info-row"><span>群聊名称</span><span class="mp-row-value" title="${esc(thread.name)}">${esc(thread.name)}</span></div><button type="button" class="mp-info-row" data-gm="announcement"><span>群公告</span><span class="mp-row-value">${esc(thread.groupInfo?.announcement||"未设置")} ›</span></button><button type="button" class="mp-info-row" data-gm="add"><span>添加群成员</span><span class="mp-chevron" aria-hidden="true">›</span></button><button type="button" class="mp-info-row" data-gm="remove"><span>移除群成员</span><span class="mp-chevron" aria-hidden="true">›</span></button></section>
    <section class="mp-info-section"><label class="mp-info-row"><span>同步正文进退群</span><span class="mp-switch"><input type="checkbox" data-gm-auto ${api.socialSnapshot().autoGroups!==false?'checked':''}><i></i></span></label>${api.socialGroupScan?'<button type="button" class="mp-info-row" data-gm="scan"><span>根据最新正文同步</span><span class="mp-chevron" aria-hidden="true">›</span></button>':''}</section><p class="mp-footnote">成员变更会在群里显示提示，并同步本群的其他窗口。正文同步使用文字模型，仅确认已发生的进退群。</p>`;
   else if(mode==='add'||mode==='remove') html=`${back()}<section class="mp-picker-section"><h3>${mode==='add'?'添加群成员':'移除群成员'}</h3><p class="mp-picker-note">${mode==='add'?'选择要邀请的联系人':'勾选要移出的成员，历史消息会保留'}</p><label class="mp-search"><span aria-hidden="true">⌕</span><input type="search" data-gm-search value="${esc(query)}" placeholder="搜索成员" aria-label="搜索成员"></label><div class="mp-member-grid mp-picker-list">${picker()}</div></section><footer class="mp-picker-footer"><span data-gm-count>已选 ${picked.size} 人</span><button type="button" class="mp-done${mode==='remove'?' danger':''}" data-gm="save" ${!picked.size||working?'disabled':''}>${mode==='add'?'添加':'移除'}</button></footer>`;
   else if(mode==='confirm')html=`${back()}<section class="mp-confirm"><h3>移出 ${picked.size} 位成员？</h3><p>${esc([...picked].map(shown).join('、'))}</p><p class="mp-picker-note">聊天记录保留，群里会出现移出提示。</p><button type="button" class="mp-done danger" data-gm="confirm" ${working?'disabled':''}>确认移出</button><button type="button" class="mp-cancel" data-gm="remove">重新选择</button></section>`;
-  else {const self=detail==='me',name=self?user:detail,c=contacts.find(c=>c.name===detail);html=`${back()}<section class="mp-member-card">${avatar(self?user:shown(name),'none',64,self?'me':name)}<h3>${esc(self?user+'（你）':shown(name))}</h3><p class="mp-profile-copy">${esc(self?'你在这个群聊中':c?.persona||'群成员')}</p>${self?'':`<button type="button" class="mp-done danger" data-gm="remove-one">移出群聊</button>`}</section>`;}
+  else if(['announcement','nickname','mute'].includes(mode)){
+   const title={announcement:'群公告',nickname:'群昵称',mute:'定时禁言'}[mode];
+   const value=mode==='announcement'?thread.groupInfo?.announcement:thread.groupInfo?.nicknames?.[detail];
+   const control=mode==='mute'?`<select data-gm-value aria-label="禁言时长"><option value="10">10 分钟</option><option value="60">1 小时</option><option value="1440">1 天</option><option value="0">解除禁言</option></select>`:
+     `<textarea data-gm-value aria-label="${title}" maxlength="${mode==='announcement'?500:20}" rows="${mode==='announcement'?4:2}">${esc(value||'')}</textarea>`;
+   html=`${back()}<section class="mp-picker-section"><h3>${title}</h3><label class="field"><span>${mode==='announcement'?'群公告':esc(shown(detail))}</span>${control}</label><button type="button" class="mp-done" data-gm="save-info">保存</button></section>`;
+  }
+  else {const self=detail==='me',name=self?user:detail,c=contacts.find(c=>c.name===detail);html=`${back()}<section class="mp-member-card">${avatar(self?user:shown(name),'none',64,self?'me':name)}<h3>${esc(self?user+'（你）':shown(name))}</h3><p class="mp-profile-copy">${esc(self?'你在这个群聊中':c?.persona||'群成员')}</p>${self?'':`<div class="mp-member-tools"><button type="button" class="mp-done" data-gm="nickname">群昵称</button><button type="button" class="mp-done" data-gm="mute">定时禁言</button><button type="button" class="mp-done danger" data-gm="remove-one">移出群聊</button></div>`}</section>`;}
   d.body.innerHTML=`<div class="mp-group-info">${html}</div>`;
  }
  paint();
@@ -32,13 +39,18 @@ export async function groupMembersPanel(ctx,id,refresh){
   if(el.dataset.person){detail=el.dataset.person;mode='detail';paint();return;}
   const action=el.dataset.gm;
   if(action==='back'){mode='main';picked.clear();query='';paint();return;}
+  if(['announcement','nickname','mute'].includes(action)){mode=action;paint();return;}
   if(action==='add'||action==='remove'){mode=action;picked.clear();query='';paint();return;}
   if(action==='remove-one'){picked=new Set([detail]);mode='confirm';paint();return;}
   if(action==='save'&&mode==='remove'){mode='confirm';paint();return;}
-  if(!['save','confirm','scan'].includes(action))return;
+  if(!['save','confirm','scan','save-info'].includes(action))return;
   working=true;el.disabled=true;const oldText=el.textContent;el.textContent=action==='scan'?'正在核对正文…':'正在保存…';
   try{
    if(action==='scan'){const r=await api.socialGroupScan();ctx.notify(r.changed?`已同步 ${r.changed} 项成员变化`:'最新正文没有可确认的进退群变化');}
+   else if(action==='save-info'){
+    const value=d.body.querySelector('[data-gm-value]').value;
+    await api.updateGroupInfo(id,mode==='announcement'?{announcement:value}:mode==='nickname'?{nickname:{name:detail,text:value}}:{mute:{name:detail,minutes:Number(value)}});
+   }
    else await api.socialGroupMembers(id,action==='confirm'?{remove:[...picked]}:{add:[...picked]});
    thread=await api.getThread(id);refresh();working=false;mode='main';picked.clear();query='';paint();
   }catch(error){working=false;el.disabled=false;el.textContent=oldText;ctx.notify(error.message,{error:true});}

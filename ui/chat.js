@@ -460,7 +460,7 @@ export function chatApp(ctx) {
     if (LINE_KINDS.includes(m.kind)) return day + lineHTML(m);
     const me = m.from === 'me', group = thread.type === 'group', picked = selecting?.has(m.id);
     const quoted = m.quote ? `<span class="m-quote">${esc(you(m.quote.from))}：${esc(m.quote.text)}</span>` : '';
-    return day + (picked && m.id === edges.first ? rangeBar('start') : '') + `<div class="msg${me ? ' me' : ''}${m.id === pace.fresh ? ' fresh' : ''}" data-engine="${me ? 'none' : engine(m.from)}" data-kind="${m.kind}" data-mid="${esc(m.id)}"${picked ? ' data-picked' : ''}>${selecting ? '<span class="pick" aria-hidden="true"></span>' : ''}${me ? `<span class="me-side">${myAvatar(34)}</span>` : `<span class="pat-target" data-pat="${esc(m.from)}" title="单击看心声，双击拍一拍" role="button" tabindex="0" aria-label="${esc(shown(m.from))}：单击看心声，双击拍一拍">${avatar(m.from, engine(m.from), 34)}</span>`}<div class="m-body">${group && !me ? `<span class="m-name">${esc(shown(m.from))}</span>` : ''}${bodyHTML(m)}${quoted}</div></div>` + (picked && m.id === edges.last ? rangeBar('end') : '');
+    return day + (picked && m.id === edges.first ? rangeBar('start') : '') + `<div class="msg${me ? ' me' : ''}${m.id === pace.fresh ? ' fresh' : ''}" data-engine="${me ? 'none' : engine(m.from)}" data-kind="${m.kind}" data-mid="${esc(m.id)}"${picked ? ' data-picked' : ''}>${selecting ? '<span class="pick" aria-hidden="true"></span>' : ''}${me ? `<span class="me-side">${myAvatar(34)}</span>` : `<span class="pat-target" data-pat="${esc(m.from)}" title="单击看心声，双击拍一拍" role="button" tabindex="0" aria-label="${esc(shown(m.from))}：单击看心声，双击拍一拍">${avatar(m.from, engine(m.from), 34)}</span>`}<div class="m-body">${group && !me ? `<span class="m-name">${esc(thread?.groupInfo?.nicknames?.[m.from] || shown(m.from))}</span>` : ''}${bodyHTML(m)}${quoted}</div></div>` + (picked && m.id === edges.last ? rangeBar('end') : '');
   }
   function toolsHTML() {
     const group = thread.type === 'group';
@@ -490,7 +490,7 @@ export function chatApp(ctx) {
     const group = thread.type === 'group';
     return `<div class="composer-wrap">
       ${quote ? `<div class="quote-bar"><span>回复 ${esc(you(quote.from))}：${esc(quote.text)}</span>${btn('quote-off', icon('close'), 'round-button', 'aria-label="取消引用"')}</div>` : ''}
-      <div class="composer">${btn('panel', icon('add'), 'round-button plus', `aria-label="更多功能" aria-expanded="${!!panel}"`)}<input class="field-in" data-field="draft" value="${esc(draftOf(threadId))}" placeholder="${group ? '发到群聊…' : '发消息…'}" enterkeyhint="send" autocomplete="off" aria-label="消息">${sendButton()}</div>
+      <div class="composer">${btn('panel', icon('add'), 'round-button plus', `aria-label="更多功能" aria-expanded="${!!panel}"`)}<input class="field-in" data-field="draft" value="${esc(draftOf(threadId))}" placeholder="${group ? '发到群聊…' : '发消息…'}" enterkeyhint="send" autocomplete="off" aria-label="消息">${group?btn('mention','@','round-button','aria-label="提及群成员"'):''}${sendButton()}</div>
       ${panel ? toolsHTML() : ''}</div>`;
   }
   // Only the latest messages are drawn: a chat is drawn again for every message that comes and every time the typing
@@ -1327,7 +1327,7 @@ export function chatApp(ctx) {
       run(async () => {
         d.close();
         const now = chatWindows(await api.listThreads(), base)[0] || base;
-        const t = await api.createThread(group ? {type: 'group', members: now.members, name: now.name, windowOf: groupKey(base)} : {type: 'dm', members: [name]});
+        const t = await api.createThread(group ? {type: 'group', members: now.members, name: now.name, windowOf: groupKey(base), groupInfo: now.groupInfo} : {type: 'dm', members: [name]});
         open(t.id); ctx.notify('新开了一个聊天窗口');
       });
     });
@@ -1471,7 +1471,7 @@ export function chatApp(ctx) {
     const group = thread.type === 'group';
     const d = ctx.dialog(thread.name, `<div class="pick-list">
       ${live ? `<button class="list-row" data-menu="reroll">${icon('refresh')}<span><strong>重新回复最后一轮</strong></span></button>` : ''}
-      ${group ? `<button class="list-row" data-menu="members">${icon('group')}<span><strong>群成员</strong><small>查看、添加、移除及同步正文进退群</small></span></button><button class="list-row" data-menu="rename">${icon('edit')}<span><strong>改群名</strong></span></button><button class="list-row" data-menu="group-avatar">${icon('image')}<span><strong>换群头像</strong><small>从相册选一张或上传，也可以换回成员拼的头像</small></span></button>` : ''}
+      ${group ? `<button class="list-row" data-menu="members">${icon('group')}<span><strong>群管理</strong><small>成员、公告、群昵称、禁言和正文同步</small></span></button><button class="list-row" data-menu="rename">${icon('edit')}<span><strong>改群名</strong></span></button><button class="list-row" data-menu="group-avatar">${icon('image')}<span><strong>换群头像</strong><small>从相册选一张或上传，也可以换回成员拼的头像</small></span></button>` : ''}
       <button class="list-row" data-menu="windows">${icon('layers')}<span><strong>聊天窗口</strong><small>${group ? '这个群' : '和' + esc(shown(thread.members[0]))}开好几个聊天，切换、新开、删除</small></span></button>
       <button class="list-row" data-menu="memory">${icon('book')}<span><strong>记忆</strong><small>更早的聊天整理成的摘要和总结，可以改</small></span></button>
       <button class="list-row" data-menu="voice-text">${icon('book')}<span><strong>语音消息</strong><small>转文字显示什么、要不要自动转</small></span></button>
@@ -1499,6 +1499,15 @@ export function chatApp(ctx) {
     });
   }
 
+  v.on('click', '[data-action=mention]', async () => {
+    if (thread?.type !== 'group') return;
+    const id = thread.id;
+    const name = await menu(ctx, '提及群成员', thread.members.map(name => ({key:name,label:thread.groupInfo?.nicknames?.[name] || shown(name)})));
+    if (name && thread?.id === id && thread.members.includes(name)) {
+      insertText('@' + name + ' ');
+      v.root.querySelector('[data-field=draft]')?.focus();
+    }
+  });
   v.on('input', '[data-field=draft]', el => { keepDraft(threadId, el.value); syncSend(); });
   // The + panel's page dots follow the swipe (scroll does not bubble: heard on the way down); a chat scrolled up near
   // its top draws its earlier messages.

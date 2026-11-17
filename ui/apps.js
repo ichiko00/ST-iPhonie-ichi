@@ -35,9 +35,8 @@ export const SLOT = null;
 // shown, and a page with only reserved places is left out.
 export const HOME = {
   pages: [
-    ['roles', 'engines', 'presets', 'library', 'gallery', 'notes', 'forum', 'peek'],
-    ['sounds', 'assistant', 'music', 'games', 'paint', 'vn', 'logs', 'indie', 'picbook', 'ledger', 'wardrobe', 'generator'],
-    ['bookshelf']
+    ['roles', 'engines', 'presets', 'library', 'gallery', 'notes', 'forum', 'bookshelf'],
+    ['sounds', 'assistant', 'music', 'games', 'paint', 'vn', 'logs', 'indie', 'picbook', 'ledger', 'wardrobe', 'generator', 'peek']
   ],
   dock: ['chat', 'draw', 'listen', 'settings']
 };

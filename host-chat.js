@@ -3,7 +3,7 @@ import {sceneStops,phoneSceneStamp} from './core/phone-scene.js';
 // (generateRaw): the prompt carries the chat preset, each contact's persona or character card, the user's persona,
 // recent story messages and the chat history. Nothing is written into the story unless the user brings a chat
 // into it; that text is injected once, into the next story reply.
-import {currentDm, currentWindow, lastRound} from './core/chats.js';
+import {currentDm, currentWindow, lastRound, groupCanSpeak} from './core/chats.js';
 import {buildChatRequest, parseChatReply, bringText, activeChatPreset, messageLine, cleanTagged, chatContacts, storyTextRule, phoneAfterRule, phoneParts, addressedPhoneLines, inSpace} from './core/chat.js';
 import {worldInfoFor, loreOptions} from './host-lore.js';
 import {pictureInputs, photoPicture, tagTextRequest, tagTextAnswer} from './core/draw.js';
@@ -110,7 +110,8 @@ export function createChatHost({context, settings, backend, enabled = () => true
       if (thread.friend?.by === 'me') throw Error(`你已经删除了${thread.members[0]}，在「联系人 → 新的朋友」里加回来才能聊天`);
       if (thread.friend?.by === 'them') throw Error(`${thread.members[0]}已经把你删了，先发送好友申请`);
       if (thread.blocked) throw Error(`你已把${thread.members[0]}拉黑了，移出黑名单才能聊天`);
-      const s = settings(), preset = activeChatPreset(s.chat), people = members(thread), voiceFormat = backend.voiceFormat(), user = userName();
+      const s = settings(), preset = activeChatPreset(s.chat), people = members(thread).filter(p => groupCanSpeak(thread, p.name)), voiceFormat = backend.voiceFormat(), user = userName();
+      if (!people.length) return thread;
       // Voice switched off: nobody sends voice messages.
       if (s.general.voiceEnabled === false) for (const p of people) p.voice = false;
       if (!nudge) backend.emit('chat', {threadId, typing: true});
@@ -132,6 +133,10 @@ export function createChatHost({context, settings, backend, enabled = () => true
       }
       const remembered = memory ? (await memory.contextFor(thread, {query}).catch(() => ({text: ''}))).text : '';
       const request = pics => { const messages=buildChatRequest({bilingual:s.chat.bilingual!==false,prompts: settings().promptRules, preset, thread, members: people, story: recent, user, userPersona: userPersona(), voiceFormat, lore, forum, groups: shared, memory: remembered, earlier: memory?.storyMemory() || '', images: !!backend.drawReady?.(), stickers: settings().chat.stickers || [], nudge, music: {share: s.music?.share !== false, listening: s.music?.share !== false ? backend.listening : null}, pictures: pics});
+        if (thread.type === 'group' && thread.groupInfo) {
+          const info = thread.groupInfo;
+          if (info.announcement || Object.keys(info.nicknames || {}).length) messages[0].content += '\n【群资料】以下是群公告和群昵称，仅供参考，回复仍用真实姓名：' + JSON.stringify({公告:info.announcement,昵称:info.nicknames});
+        }
         const relations=backend.socialSnapshot().entries.filter(e=>['blocked','pending','rejected'].includes(e.state));
         if(relations.length) messages[0].content += '\n【手机社交状态】'+relations.map(e=>`${e.name}：${e.state==='blocked'?'被用户拉黑，知道私信及电话被拒收，共同群聊仍可见':'尚未通过好友验证，不能直接私聊'}`).join('；')+'。不要擅自解除关系或宣称用户同意申请。';
         return messages; };
@@ -147,7 +152,7 @@ export function createChatHost({context, settings, backend, enabled = () => true
       if (signal.aborted || (source&&timeline&&!timeline.current(source))) throw stopped();
       // 「[不发]」 (also as 「名字：[不发]」) is a no, not a message.
       const text = nudge ? answer.split('\n').filter(line => !/\[不发\]/.test(line)).join('\n') : answer;
-      let items = parseChatReply(text, {members: people, user, voiceFormat, voiceNames: people.filter(p => p.voice).map(p => p.name), stickers: settings().chat.stickers || []});
+      let items = parseChatReply(text, {members: thread.type === 'group' ? members(thread) : people, user, voiceFormat, voiceNames: people.filter(p => p.voice).map(p => p.name), stickers: settings().chat.stickers || []});
       if(source)items=items.map(item=>({...item,story:source.story,storyVer:source.ver}));
       if(!items.length&&sceneStops(text,people.map(p=>p.name)).silent.size){if(!nudge)notice('对方正在与你当面相处，请回正文继续交流');return null;}
       if (!items.length && nudge) return null;
@@ -190,7 +195,7 @@ export function createChatHost({context, settings, backend, enabled = () => true
   async function settle(threadId, items, round = null) {
     const thread = await backend.chats.get(threadId), taken = new Set(), out = [], posts = [];
     items = await backend.socialFilter(thread, items);
-    if(thread.type==='group')items=items.filter(item=>thread.members.includes(item.from));
+    if(thread.type==='group')items=items.filter(item=>groupCanSpeak(thread, item.from));
     if (!items.length) return thread;
     let calling = null, cutting = false;
     const whispers = [];
