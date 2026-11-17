@@ -252,6 +252,16 @@ export const PHONE_TAG = /<phone\b([^>]*)>([\s\S]*?)<\/phone\s*>/gi;
  * <phone group="群名">, '' for private messages).
  */
 export const phoneParts = text => phoneMatches(text).map(m => ({group: (m[1].match(/group\s*=\s*["'“”「『]?([^"'“”」』>]+)/)?.[1] || '').trim(), text: m[2].trim()})).filter(p => p.text);
+// The model must address each private message explicitly. Never infer a recipient from a sender.
+export function addressedPhoneLines(text, user, known) {
+  return String(text).split(/\r?\n/).flatMap(raw => {
+    const match = /^\s*([^→:：\n]{1,80})→([^→:：\n]{1,80})[:：]\s*(\S.*)$/.exec(raw);
+    if (!match) return [];
+    const [, sender, recipient, content] = match;
+    const name = sender.trim();
+    return recipient.trim() === user && name !== user && known.has(name) ? [name + '：' + content] : [];
+  });
+}
 /** The inside of each <phone>…</phone>. */
 export const phoneBlocks = text => phoneParts(text).map(p => p.text);
 /**
@@ -262,10 +272,12 @@ export const phoneBlocks = text => phoneParts(text).map(p => p.text);
 export function phoneFormat({user = '我', names = [], groups = [], images = false, after = false} = {}) {
   const list = names.join('、');
   return [after ? '【手机上的事】' : '【发到手机上的事】',PHONE_SCENE_RULE,
-    after ? `读这段正文：里面写到有人用手机联系${user}（发消息、发照片、转账、发红包、送礼物、分享歌曲、打电话），或者有人发了朋友圈，就把这些事在${user}的手机上真的发出来，内容和正文写的对得上；剧情里有人这时自然会给${user}发消息的，也可以发。`
-      : `剧情里有人这时会用手机联系${user}（发消息、发照片、转账、打电话……），或者正文里写到了这样的事，就在正文写完的地方另起一行写 <phone></phone>（预设要求写在正文后面的状态栏、选项这些照常写在它后面，不要省略），把这些事在${user}的手机上真的发出来，内容和正文写的对得上。`,
+    after ? `读这段正文：里面写到有人用手机联系${user}（发消息、发照片、转账、发红包、送礼物、分享歌曲、打电话），或者有人发了朋友圈，就把这些事在${user}的手机上真的发出来，内容和正文写的对得上。只转录正文已明确发生的事件。`
+      : `正文明确写到有人此刻用手机联系${user}（发消息、发照片、转账、打电话……），就在正文写完的地方另起一行写 <phone></phone>（预设要求写在正文后面的状态栏、选项这些照常写在它后面，不要省略），把这些事在${user}的手机上真的发出来，内容和正文写的对得上。`,
     `${after ? '' : '<phone></phone> 里'}一件事一行：`,
-    '- 消息：「名字：消息」，可以连着发几条',
+    '私聊每一行必须写「发送者 → 收件人：内容」，收件人必须填写实际用户名：' + user + '。下面示例中的「名字：」在私聊里一律改成「名字 → ' + user + '：」。群聊内仍用「名字：内容」。',
+    '只同步本轮明确发送给用户的新消息。角色之间的私信、发给其他角色的消息、转述、回忆、草稿、已读或正在输入，不输出到手机块。无法确认收件人或具体消息内容就省略，不猜测、不补写。',
+    '- 消息可以连着发几条，每条都写自己的收件人',
     HEART_RULE,
     `- 照片：「名字：[图片] 一句话描述照片里拍到的画面${images ? '｜画这张照片用的英文 danbooru tag（只写照片里真有的：拍的是猫就写 cat，画面里没有人就写 no humans、不写 1girl 1boy；只有拍到自己时才写 1girl 或 1boy 和 selfie；再写构图、光线）' : ''}」`,
     '- 位置：「名字：[位置] 地点」',
@@ -279,7 +291,7 @@ export function phoneFormat({user = '我', names = [], groups = [], images = fal
     `- 几个人都发消息时，各发各的：彼此看不到对方发了什么，不回应、不引用、不接着别人私聊里的话，也不知道别人给${user}发过消息（正文里当面说过、${user}告诉过他的除外）。`,
     `- 消息内容只能是他这时会知道的事：没在场的人不知道刚才当面发生了什么。`,
     groups.length ? (after ? `几个人在一起聊、互相能看到的，只能发在群里：另起一段，第一行写「群：群名」，下面一样一行一件事；群名只能是：${groups.join('、')}。` : `几个人在一起聊、互相能看到的，只能发在群里：另写一段 <phone group="群名"></phone>；群名只能是：${groups.join('、')}。`) : '',
-    `名字只能是：${list}。不要替${user}发，不写语音标签。这些只出现在${user}的手机上，不写进正文的叙述里。${after ? '正文里没有这样的事、也没人要发消息，就只写「无」。' : '没有这样的事就不写。'}`].filter(Boolean).join('\n');
+    `名字只能是：${list}。不要替${user}发，不写语音标签。这些只出现在${user}的手机上，不写进正文的叙述里。${after ? '正文里没有这样的事，就只写「无」。' : '没有这样的事就不写。'}`].filter(Boolean).join('\n');
 }
 const storyRules = (preset, user, list) => (preset?.entries || []).filter(e => e.enabled && e.text?.trim() && (e.use || []).includes('story')).map(e => fill(e.text, {'用户': user, '联系人': list, '对象': list}));
 /**

@@ -4,7 +4,7 @@ import {sceneStops,phoneSceneStamp} from './core/phone-scene.js';
 // recent story messages and the chat history. Nothing is written into the story unless the user brings a chat
 // into it; that text is injected once, into the next story reply.
 import {currentDm, currentWindow, lastRound} from './core/chats.js';
-import {buildChatRequest, parseChatReply, bringText, activeChatPreset, messageLine, cleanTagged, chatContacts, storyTextRule, phoneAfterRule, phoneParts, inSpace} from './core/chat.js';
+import {buildChatRequest, parseChatReply, bringText, activeChatPreset, messageLine, cleanTagged, chatContacts, storyTextRule, phoneAfterRule, phoneParts, addressedPhoneLines, inSpace} from './core/chat.js';
 import {worldInfoFor, loreOptions} from './host-lore.js';
 import {pictureInputs, photoPicture, tagTextRequest, tagTextAnswer} from './core/draw.js';
 import {storyLines} from './core/moments.js';
@@ -438,8 +438,7 @@ export function createChatHost({context, settings, backend, enabled = () => true
     if (last) backend.emit('chat', {threadId, incoming: {from: last.from, text: last.text || '', kind: last.kind, count: fresh.length}});
     return fresh.length;
   }
-  // How often the phone reaches out, whoever does it (the story writing <phone>, or someone asked by nudge): with
-  // `every` set, the phone has one turn in that many story replies — the story may send then, else someone is asked;
+  // With `every` set, the story has one phone synchronization turn in that many replies;
   // at most dailyMax times a day (0: no limit). Out of turn the story is not told it can use the phone at all.
   let quiet = 0;
   function today() {
@@ -457,8 +456,7 @@ export function createChatHost({context, settings, backend, enabled = () => true
     if (!o.on || (o.dailyMax > 0 && today().n >= o.dailyMax)) return false;
     return !(o.every > 0) || quiet >= o.every - 1;
   }
-  /** A story reply finished: what it sent to the phone (<phone>) arrives, once per version of the reply; when it is
-   * the phone's turn and nothing came, someone is asked whether they would text first (one phone request). */
+  /** Synchronize the phone events in a completed story reply, once per version. */
   async function storyReplied(id) {
     if (!enabled()) return;
     const synced=timeline?await timeline.sync():null;
@@ -469,7 +467,6 @@ export function createChatHost({context, settings, backend, enabled = () => true
     if (sent) { quiet = 0; counted(); return; }
     if (!(o.every > 0) || ++quiet < o.every) return;
     quiet = 0;
-    if (!(o.dailyMax > 0 && today().n >= o.dailyMax)) await nudge(id);
   }
   /**
    * What a story reply sent to the phone (<phone>) arrives, once per version of the reply: private messages (and
@@ -494,7 +491,7 @@ export function createChatHost({context, settings, backend, enabled = () => true
         const contacts = backend.contacts(), people = contacts.map(c => ({name: c.name, voice: false}));
         // A line from someone who is not in the phone (a passer-by, the user) is left out, not given to the one before.
         const known = new Set(contacts.map(c => c.name)), named = line => line.match(/^\s*(?:\*\*)?[[【]?([^\]】:：\n]{1,40}?)[\]】]?(?:\*\*)?\s*[:：]/)?.[1]?.trim();
-        const kept = (b, only = known) => b.split(/\r?\n/).filter(line => { const who = named(line); return !who || only.has(who); }).join('\n');
+        const kept = (b, only = known) => b.split(/\r?\n/).filter(line => { const who = named(line); return !!who && only.has(who); }).join('\n');
         // A group's part goes to the group (the window in use), from its members.
         if (grouped.length) {
           const threads = await backend.threads();
@@ -503,10 +500,10 @@ export function createChatHost({context, settings, backend, enabled = () => true
             if (!thread) continue;
             const members = new Set(thread.members.filter(n => known.has(n)));
             const items = parseChatReply(kept(part.text, members), {members: [...members].map(name => ({name, voice: false})), user: userName(), voiceFormat: '', voiceNames: [], stickers: s.chat.stickers || []});
-            try { const n = items.length ? await arrive(thread.id, items, from) : 0; if (n) { sent += n; notice(`群「${thread.name}」有 ${n} 条新消息`); } } catch { /* not worth interrupting the story */ }
+            try { const n = items.length ? await arrive(thread.id, items.filter(item => item.kind !== 'dm'), from) : 0; if (n) { sent += n; notice(`群「${thread.name}」有 ${n} 条新消息`); } } catch { /* not worth interrupting the story */ }
           }
         }
-        const items = blocks.flatMap(b => parseChatReply(kept(b), {members: people, user: userName(), voiceFormat: '', voiceNames: [], stickers: s.chat.stickers || []}));
+        const items = blocks.flatMap(b => addressedPhoneLines(b, userName(), known).flatMap(line => parseChatReply(line, {members: people, user: userName(), voiceFormat: '', voiceNames: [], stickers: s.chat.stickers || []})));
         const byName = new Map();
         for (const item of items) if (contacts.some(c => c.name === item.from)) byName.set(item.from, [...(byName.get(item.from) || []), item]);
         for (const [name, list] of byName) {
@@ -553,28 +550,6 @@ export function createChatHost({context, settings, backend, enabled = () => true
     }
     return gone;
   }
-  /** On the phone's turn with nothing sent: someone is asked whether they would text first now (they may say no). */
-  async function nudge(id) {
-    const source=timeline?.source(id);
-    const ctx = context();
-    // The card's own character first, else someone from the 角色 App.
-    // Not someone who is not friends with the user right now (either way).
-    const apart = new Set((await backend.threads()).filter(t => t.type === 'dm' && (t.friend || t.blocked)).map(t => t.members[0]));
-    const roles = backend.contacts().filter(c => c.source === 'role' && !apart.has(c.name) && !backend.socialBlocked(c.name) && !backend.socialWaiting(c.name)), now = ctx?.name2;
-    const name = roles.find(c => c.name === now)?.name || roles[Math.floor(Math.random() * roles.length)]?.name;
-    if (!name) return;
-    try {
-      const thread = await dmWith(name), before = new Set((await backend.chats.get(thread.id))?.messages.map(x => x.id) || []);
-      const saved = await reply(thread.id, {nudge: true,source});
-      if(source&&timeline)await timeline.sync({deliverNew:false});
-      const fresh = (saved?.messages || []).filter(x => !before.has(x.id) && x.from !== 'me');
-      // Only messages sent count toward the day; 「[不发]」 does not.
-      if (!fresh.length) return;
-      notice(`${name} 给你发来 ${fresh.length} 条消息`); backend.emit('chat', {threadId: thread.id, incoming: {from: name, text: fresh.at(-1).text || '', kind: fresh.at(-1).kind, count: fresh.length}});
-      counted();
-    } catch { /* not worth interrupting the story */ }
-  }
-
   /**
    * Older versions wrote「N 条消息会带进下一次正文」into the chat and could lose the choice itself (a reload), leaving
    * notes that promised forever what would never happen. They are taken out of this card's chats.

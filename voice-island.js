@@ -1,12 +1,6 @@
 import {voiceDisplay} from './core/voice-display.js';
 import {splitBilingual} from './core/bilingual.js';
-// 台词小窗 on the tavern page (设置 → 台词小窗, off at first): the latest story reply's voiced lines in a small pill over
-// the story — and over a visual-novel sprite that may cover the waves in the text — so they can be heard one by one at
-// the reader's pace. The pill says how many lines there are (or shows the one being said); a tap opens the list: tap a
-// line to hear it (again to pause), 整条 plays them all, ✕ puts it away until the next reply; a tap elsewhere takes it
-// back in. Drag it anywhere (kept by its middle); at the default place it lines up with the other islands at the top.
-// It steps aside while the phone is out or a call is on.
-import {joinStack, stackTop} from './island-stack.js';
+// The story player docks independently of the phone launcher.
 
 export function islandDialogueText(line){const original=voiceDisplay(line.text),translation=voiceDisplay(line.translation),pair=splitBilingual(original,translation);return{primary:pair.translation||translation||original,secondary:pair.translation?pair.original:''};}
 const KEY = 'myphone.voiceIsland';
@@ -33,21 +27,24 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
   el.className = 'myphone-voice-island';
   el.hidden = true;
   el.setAttribute('role', 'region');
-  el.innerHTML = `<div class="vi-pill"><span class="vi-ico">${WAVE}</span><span class="vi-line"><span class="vi-scroll" data-vi-line></span></span><span class="vi-bars" aria-hidden="true"><i></i><i></i><i></i></span></div>
-    <div class="vi-card"><div class="vi-head"><span class="vi-ico">${WAVE}</span><b data-vi-title></b><div class="vi-mode" role="group" aria-label="朗读模式"><button type="button" data-vi="mode-all" aria-pressed="true">全文</button><button type="button" data-vi="mode-step" aria-pressed="false">逐句</button></div></div>
+  el.innerHTML = `<button type="button" class="vi-edge" data-vi="open" aria-label="展开正文朗读播放器" aria-expanded="false">${WAVE}</button>
+    <div class="vi-card"><div class="vi-head"><span class="vi-ico">${WAVE}</span><b data-vi-title></b><div class="vi-mode" role="group" aria-label="朗读模式"><button type="button" data-vi="mode-all" aria-pressed="true">全文</button><button type="button" data-vi="mode-step" aria-pressed="false">逐句</button></div><button type="button" class="vi-btn vi-fold" data-vi="fold" aria-label="收回屏幕边缘">−</button></div>
       <div class="vi-current"><b data-vi-speaker></b><div data-vi-current></div></div>
       <div class="vi-progress"><input data-vi-progress type="range" min="0" max="1" step="0.1" value="0" aria-label="当前段落播放进度"><div class="vi-times"><span data-vi-time></span><span data-vi-buffer></span></div></div>
       <button type="button" class="vi-btn vi-start-now" data-vi="now" hidden>现在播放</button><div class="vi-controls"><button class="vi-btn vi-skip" type="button" data-vi="back" aria-label="后退15秒">${SKIP(false)}</button><button type="button" class="vi-btn vi-all" data-vi="all"></button><button class="vi-btn vi-skip" type="button" data-vi="forward" aria-label="快进15秒">${SKIP(true)}</button><button type="button" class="vi-btn vi-list-toggle" data-vi="close" aria-label="展开朗读列表" aria-expanded="false">${LIST}</button></div>
       <div class="vi-list" data-vi-list></div><div class="vi-resize" data-vi-resize role="separator" tabindex="0" aria-label="调整台词小窗高度" aria-orientation="horizontal"></div></div>`;
   doc.body.append(el);
-  let place = null, dismissed = '', reply = null, built = '', expanded = false, width = 0, openedAt = 0, dragged = false;
-  try { place = JSON.parse(win.localStorage.getItem(KEY) || 'null'); } catch { /* the top middle */ }
+  let place = {side:'left', y:.42}, reply = null, built = '', expanded = false, openedAt = 0;
+  let panelOpen = false, drag = null, suppressClickUntil = 0;
+  try {
+    const saved = JSON.parse(win.localStorage.getItem(KEY) || 'null');
+    if (saved && Number.isFinite(saved.y)) place = {...saved, side: saved.side || (saved.cx > .5 ? 'right' : 'left')};
+  } catch { /* use the default edge */ }
+  const edge = el.querySelector('.vi-edge');
   const list = el.querySelector('.vi-list'), grip = el.querySelector('[data-vi-resize]');
   let selectedStep = false;
   let preferredHeight = null, sizing = null, following = '', manualUntil = 0;
   list.addEventListener('wheel',()=>manualUntil=Date.now()+5000,{passive:true});list.addEventListener('touchmove',()=>manualUntil=Date.now()+5000,{passive:true});
-  const lineViewport=el.querySelector('.vi-line'),lineText=el.querySelector('[data-vi-line]');
-  function marquee(){const distance=lineText.scrollWidth-lineViewport.clientWidth;const moving=!expanded&&lineViewport.clientWidth>0&&distance>1;lineText.classList.toggle('vi-scrolling',moving);if(moving){lineText.style.setProperty('--vi-travel',-distance+'px');lineText.style.setProperty('--vi-duration',Math.max(6,distance/24+4)+'s');}}
   function follow(force=false){if(!expanded||(!force&&Date.now()<manualUntil))return;const row=list.querySelector('[data-state]');if(!row)return;const id=built+'|'+row.dataset.viI;if(!force&&following===id)return;following=id;const r=row.getBoundingClientRect(),box=list.getBoundingClientRect();if(r.top<box.top||r.bottom>box.bottom)list.scrollTop+=r.top-box.top;}
   try { const saved = Number(win.localStorage.getItem(HEIGHT_KEY)); if (Number.isFinite(saved) && saved > 0) preferredHeight = saved; } catch { /* this visit */ }
   function heightBounds() {
@@ -70,18 +67,32 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
       else win.localStorage.setItem(HEIGHT_KEY, String(preferredHeight));
     } catch { /* this visit */ }
   }
-  const free = () => !place || !Number.isFinite(place.cx) || !Number.isFinite(place.y);
   function where() {
-    el.style.transform = 'translateX(-50%)';
-    const w = el.offsetWidth || 220, h = el.offsetHeight || 40, vw = win.innerWidth, vh = win.innerHeight;
-    width = w;
-    if (free()) { el.style.left = '50%'; el.style.top = stackTop(el); return; }
-    el.style.left = Math.min(vw - w / 2 - 6, Math.max(w / 2 + 6, place.cx * vw)) + 'px';
-    el.style.top = Math.min(vh - Math.min(h, 120) - 6, Math.max(6, place.y * vh)) + 'px';
+    if (el.hidden) return;
+    const vw = win.innerWidth, vh = win.innerHeight, right = place.side === 'right';
+    const w = el.offsetWidth, h = el.offsetHeight;
+    let top = Math.max(6, Math.min(vh - h - 6, Math.round(place.y * vh)));
+    const phone = doc.querySelector('#myphone-floating')?.getBoundingClientRect();
+    if (!panelOpen && phone?.width && phone.height &&
+        (right ? phone.right > vw - w - 8 : phone.left < w + 8) &&
+        top + h + 8 > phone.top && top < phone.bottom + 8) {
+      const below = phone.bottom + 8;
+      top = below + h <= vh - 6 ? below : Math.max(6, phone.top - h - 8);
+    }
+    el.dataset.side = place.side;
+    el.style.left = (right ? vw - w - (panelOpen ? 8 : 0) : panelOpen ? 8 : 0) + 'px';
+    el.style.top = top + 'px';
   }
-  const leave = joinStack({el, order: 2, free, place: where});
+  function setPanel(on) {
+    panelOpen = on;
+    openedAt = on ? Date.now() : 0;
+    el.toggleAttribute('data-panel', on);
+    edge.setAttribute('aria-expanded', String(on));
+    where();
+    if (on) follow(true);
+  }
   const key = r => r ? JSON.stringify([r.id,r.lines.map(l=>[l.role,l.text,l.translation])]) : '';
-  const text = (sel, value) => { const p = el.querySelector(sel); if (p.textContent !== value) {p.textContent = value;if(p===lineText){p.classList.remove('vi-scrolling');void p.offsetWidth;}} };
+  const text = (sel, value) => { const p = el.querySelector(sel); if (p.textContent !== value) p.textContent = value; };
 
   function draw(r, s) {
     const mine = s && s.id === r.id && BUSY.includes(s.phase) ? s.index : -1, paused = s && s.id === r.id && s.phase === 'paused' ? s.index : -1;
@@ -107,8 +118,8 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
     text('[data-vi-time]',t?.system?'系统朗读 · 可点选段落':`${clock(t?.totalSeconds?t.elapsed:t?.position)} / ${t?.totalSeconds?clock(t.totalSeconds):t?.duration?clock(t.duration):'--:--'} · ${t?.totalSeconds?'整条':'本段'}`);
     text('[data-vi-buffer]',t?.buffering?`开播缓冲 · 已备 ${Math.floor(t.bufferSeconds)} 秒`:t?(t.ready>=t.total?'音频已就绪':s.phase==='generating'?'正在准备音频':'边听边缓存'):'');el.querySelector('[data-vi=now]').hidden=!t?.buffering;
     for(const button of el.querySelectorAll('.vi-skip')){button.disabled=!t?.duration||t.system||!['playing','paused'].includes(s?.phase);button.title=t?.system?'系统朗读不支持精确跳秒':'在已准备的音频范围内跳转';}
-    text('[data-vi-line]', said ? `${lineLabel(said)}：${voiceDisplay(said.text)}` : mineAll && s.narration ? `旁白：${s.narration}` : '准备好，随时开始');
-    marquee();
+    edge.title = mineAll ? '正文朗读中 · 点击展开' : pausedAll ? '正文朗读已暂停 · 点击展开' : '展开正文朗读播放器';
+    edge.setAttribute('aria-label', edge.title);
     if(s?.id===r.id&&[...BUSY,'paused'].includes(s.phase))selectedStep=!!s.stepwise;
     el.querySelector('[data-vi=mode-all]').setAttribute('aria-pressed',String(!selectedStep));
     el.querySelector('[data-vi=mode-step]').setAttribute('aria-pressed',String(selectedStep));
@@ -124,41 +135,45 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
     if (!on && sizing) { preferredHeight = sizing.before; sizing = null; }
     if (on) sizeList();
     if (on) follow(true);else following='';
-    (win.requestAnimationFrame || (fn => win.setTimeout(fn, 16))).call(win, () => {where();marquee();});
+    (win.requestAnimationFrame || (fn => win.setTimeout(fn, 16))).call(win, where);
   }
   function refresh() {
     let r = null, s = null;
     try { r = enabled() ? latest() : null; s = r ? now() : null; } catch { r = null; }
     reply = r?.lines?.length ? r : null;
-    if (reply && dismissed && dismissed !== key(reply)) dismissed = '';
-    const show = reply && !phoneOpen() && !callShown() && dismissed !== key(reply);
-    if (!show) { el.hidden = true; setExpanded(false); return; }
+    const show = reply && !phoneOpen() && !callShown();
+    if (!show) { el.hidden = true; setPanel(false); setExpanded(false); return; }
     draw(reply, s);
-    if (el.hidden) { el.hidden = false; where(); }
-    else if (el.offsetWidth !== width) where();
-    marquee();
+    el.hidden = false;
+    if (!drag) where();
   }
-
-  let drag = null;
-  el.addEventListener('pointerdown', e => {
-    if (e.button > 0 || e.target.closest('button, input, .vi-list, [data-vi-resize]')) return;
-    const r = el.getBoundingClientRect();
-    drag = {id: e.pointerId, dx: e.clientX - (r.left + r.width / 2), dy: e.clientY - r.top, x0: e.clientX, y0: e.clientY, live: false};
-    try { el.setPointerCapture(e.pointerId); } catch { /* gone */ }
+  edge.addEventListener('pointerdown', e => {
+    if (e.button !== 0 || drag) return;
+    drag = {id:e.pointerId, x:e.clientX, y:e.clientY, offset:e.clientY-el.offsetTop, before:place, moved:false};
+    edge.setPointerCapture(e.pointerId);
   });
-  el.addEventListener('pointermove', e => {
-    if (!drag || e.pointerId !== drag.id) return;
-    if (!drag.live && Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 6) return;
-    drag.live = true; el.dataset.dragging = '';
-    place = {cx: (e.clientX - drag.dx) / win.innerWidth, y: (e.clientY - drag.dy) / win.innerHeight};
+  edge.addEventListener('pointermove', e => {
+    if (drag?.id !== e.pointerId || (!drag.moved && Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<6)) return;
+    drag.moved = true;
+    el.dataset.dragging = '';
+    place = {side:e.clientX > win.innerWidth/2?'right':'left', y:(e.clientY-drag.offset)/win.innerHeight};
     where();
   });
-  el.addEventListener('pointerup', e => {
-    if (!drag || e.pointerId !== drag.id) return;
-    const moved = drag.live; drag = null; delete el.dataset.dragging;
-    if (moved) { dragged = true; try { win.localStorage.setItem(KEY, JSON.stringify(place)); } catch { /* this visit */ } }
-  });
-  el.addEventListener('pointercancel', () => { drag = null; delete el.dataset.dragging; });
+  function finishDrag(e, cancel = false) {
+    if (drag?.id !== e.pointerId) return;
+    if (cancel) place = drag.before;
+    else if (drag.moved) {
+      suppressClickUntil = Date.now() + 250;
+      place.y = Math.max(0, Math.min(1, place.y));
+      try { win.localStorage.setItem(KEY, JSON.stringify(place)); } catch { /* this visit */ }
+    }
+    drag = null;
+    delete el.dataset.dragging;
+    where();
+  }
+  edge.addEventListener('pointerup', finishDrag);
+  edge.addEventListener('pointercancel', e => finishDrag(e,true));
+  edge.addEventListener('lostpointercapture', e => finishDrag(e,true));
   grip.addEventListener('pointerdown', e => {
     if (e.button > 0 || !expanded || sizing) return;
     e.preventDefault(); e.stopPropagation();
@@ -194,10 +209,14 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
   // opening is that same tap, so it does nothing.
   el.addEventListener('click', e => {
     if (e.target.closest('[data-vi-resize], input')) return;
-    if (dragged) { dragged = false; return; }
     const b = e.target.closest('[data-vi], [data-vi-i]');
     if (!b) return;
     if (!reply) return;
+    if (b.dataset.vi === 'open') {
+      if (e.detail === 0 || Date.now() >= suppressClickUntil) { setPanel(true); el.querySelector('[data-vi=fold]').focus({preventScroll:true}); }
+      return;
+    }
+    if (b.dataset.vi === 'fold') { setPanel(false); edge.focus({preventScroll:true}); return; }
     // Mode and list controls never start audio; do not swallow a quick tap after opening.
     if (Date.now()-openedAt<350 && !['mode-all','mode-step','close'].includes(b.dataset.vi)) return;
     const id = reply.id;
@@ -211,10 +230,12 @@ export function createVoiceIsland({doc = document, enabled, latest, now, play, p
   el.querySelector('[data-vi-progress]').addEventListener('change',e=>seekTo?.(Number(e.target.value)));
   const timer=win.setInterval(()=>{if(!el.hidden)refresh();},350);
   // A tap anywhere else takes the list back in.
-  const away = e => { if (expanded && !el.contains(e.target)) setExpanded(false); };
+  const away = e => { if (panelOpen && !el.contains(e.target)) setPanel(false); };
+  const escape = e => { if (e.key === 'Escape' && panelOpen && el.contains(doc.activeElement)) { e.stopPropagation(); setPanel(false); edge.focus({preventScroll:true}); } };
+  doc.addEventListener('keydown', escape, true);
   doc.addEventListener('pointerdown', away, true);
-  const onResize = () => { if (sizing) { preferredHeight = sizing.before; sizing = null; } sizeList(); if (!el.hidden) {where();marquee();follow(true);} };
+  const onResize = () => { if (sizing) { preferredHeight = sizing.before; sizing = null; } sizeList(); if (!el.hidden) {where();follow(true);} };
   win.addEventListener('resize', onResize);
-  return {refresh, open() { dismissed = ''; refresh(); if (!el.hidden) setExpanded(false); }, get shown() { return !el.hidden; }, get expanded() { return expanded; },
-    dispose() { win.clearInterval(timer);leave(); doc.removeEventListener('pointerdown', away, true); win.removeEventListener('resize', onResize); el.remove(); }};
+  return {refresh, open() { refresh(); if (!el.hidden) setPanel(true); }, get shown() { return !el.hidden; }, get expanded() { return expanded; },
+    dispose() { win.clearInterval(timer);doc.removeEventListener('keydown', escape, true); doc.removeEventListener('pointerdown', away, true); win.removeEventListener('resize', onResize); el.remove(); }};
 }

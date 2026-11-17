@@ -74,7 +74,7 @@ export function createPhoneApp({window: win, api, mount = win.document.getElemen
 
   mount.innerHTML = `
     <div class="stage">
-      <div class="stage-bar" title="按住这里拖动手机，双击放回原处"><span>ST-iPhonie</span><div class="stage-actions"><button class="size-button" data-system="size" aria-label="换手机大小" hidden></button><button class="info" data-system="help" aria-label="手机界面说明">i</button><button class="close" data-system="close" aria-label="返回酒馆">${icon('close')}</button></div></div>
+      <div class="stage-bar" title="按住这里拖动手机，双击放回原处"><span>MyPhone</span><div class="stage-actions"><button class="size-button" data-system="size" aria-label="换手机大小" hidden></button><button class="info" data-system="help" aria-label="手机界面说明">i</button><button class="close" data-system="close" aria-label="返回酒馆">${icon('close')}</button></div></div>
       <div class="device">
         <button class="power-key" data-system="power" aria-label="锁屏或唤醒"></button>
         <div class="screen" data-view="home">
