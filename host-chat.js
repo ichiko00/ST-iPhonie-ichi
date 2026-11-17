@@ -96,7 +96,8 @@ export function createChatHost({context, settings, backend, enabled = () => true
   /** nudge: 主动找你 — the contact may also choose not to text (null then), and no 正在输入 shows meanwhile. */
   /** reroll: 重新回复这一轮 — the last round is asked again as if it were not there, and is replaced only when the new one
    *  came (it stays among the round's versions); one that fails or is stopped changes nothing. */
-  function reply(threadId, {nudge = false, reroll = false, source = null} = {}) {
+  function reply(threadId, {nudge = false, reroll = false, source = null, reading = ""} = {}) {
+    if (reading && !enabled()) return Promise.reject(Error('当前聊天已暂停社交功能'));
     if (busy.has(threadId)) return busy.get(threadId);
     const controller = new AbortController(), signal = controller.signal;
     const job = (async () => {
@@ -135,7 +136,12 @@ export function createChatHost({context, settings, backend, enabled = () => true
         if(relations.length) messages[0].content += '\n【手机社交状态】'+relations.map(e=>`${e.name}：${e.state==='blocked'?'被用户拉黑，知道私信及电话被拒收，共同群聊仍可见':'尚未通过好友验证，不能直接私聊'}`).join('；')+'。不要擅自解除关系或宣称用户同意申请。';
         return messages; };
       if(phoneSceneStamp(context())!==sceneStamp){if(!nudge)notice('正文场景已变化，请按最新剧情继续交流');return null;}
-      const answer = cleanTagged(await answerFor(ctx, request, await pictures(ctx, thread, preset), signal), preset.cleanTags);
+      const readingRequest = pics => {
+        const messages = request(pics);
+        if (reading) messages.splice(messages.length - 1, 0, {role:'system', content:String(reading).slice(0,6000)});
+        return messages;
+      };
+      const answer = cleanTagged(await answerFor(ctx, readingRequest, await pictures(ctx, thread, preset), signal), preset.cleanTags);
       if(phoneSceneStamp(context())!==sceneStamp){if(!nudge)notice('正文已推进，未发送基于旧场景生成的手机回复');return null;}
       // 停止 while it was being written: what comes late is let go (the tavern's own generation cannot be stopped).
       if (signal.aborted || (source&&timeline&&!timeline.current(source))) throw stopped();
@@ -161,6 +167,22 @@ export function createChatHost({context, settings, backend, enabled = () => true
     return job;
   }
 
+  async function readingNote({companion, reading, blob = null} = {}) {
+    if (!enabled()) throw Error('当前聊天已暂停社交功能');
+    const ctx = context(), save = backend.saveKey(), scene = phoneSceneStamp(ctx);
+    if (!save || !backend.contacts().some(c => c.name === companion)) throw Error('这个角色不在当前聊天的联系人里');
+    backend.socialAssert(companion);
+    const [person] = members({members:[companion]});
+    const current = () => enabled() && backend.saveKey() === save && phoneSceneStamp(context()) === scene;
+    const pics = blob && await sees(ctx) ? [{id:'page',url:await picture(blob)}] : [];
+    if (!current()) throw Error('聊天已变化，请重新打开这一页');
+    const answer = await answerFor(ctx, images => [
+      {role:'system',content:'你是'+person.name+'。'+(person.persona||person.card||'')+'\n只写一句当前页的批注。\n'+String(reading||'').slice(0,6000)},
+      {role:'user',content:images.length ? [{type:'text',text:'为当前页留一句批注。'},...images.map(p=>({type:'image_url',image_url:{url:p.url}}))] : '为当前页留一句批注。'}
+    ], pics, new AbortController().signal);
+    if (!current()) throw Error('聊天已变化，请重新打开这一页');
+    return String(answer||'').trim().slice(0,120);
+  }
   /**
    * Stores a reply. A claim takes (or returns) the user's latest red packet or transfer that is still waiting,
    * and leaves a notice where it happened.
@@ -563,7 +585,7 @@ export function createChatHost({context, settings, backend, enabled = () => true
   }
 
   return {
-    reply, bring, bringPlan, tidyNotes, drawPhoto, storyPlan, storyReplied, deliver, phoneAfter, phoneAfterPlan, askFriend,
+    reply, readingNote, bring, bringPlan, tidyNotes, drawPhoto, storyPlan, storyReplied, deliver, phoneAfter, phoneAfterPlan, askFriend,
     reroll: threadId => reply(threadId, {reroll: true}),
     /** 停止回复: the reply being written for this chat is let go. */
     cancelAll: () => { for (const controller of stops.values()) controller.abort(); },

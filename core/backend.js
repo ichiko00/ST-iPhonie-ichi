@@ -1,3 +1,4 @@
+import {BookshelfStore} from './bookshelf.js';
 import {withProxyHeaders, noTavernProxy} from './proxy-url.js';
 import { ownBlob } from './compat.js';
 import { normalizeNarration, NARRATOR } from './narration.js';
@@ -177,6 +178,7 @@ export class TTSBackend {
         this.chats = chats || new ChatStore(this.settings.scope, { indexedDB });
         this.moments = new MomentStore(this.settings.scope, { indexedDB });
         // 论坛 and 查手机 (core/forum.js, core/peek.js).
+        this.bookshelf = new BookshelfStore(this.settings.scope, {indexedDB});
         this.apps = new AppStore(this.settings.scope, { indexedDB });
         // 记忆 (core/memory.js): one book per chat, and the vectors of its older messages. A database of its own: big.
         this.memoryStore = new AppStore(this.settings.scope, { indexedDB, database: 'myphone-app-memory-v1' });
@@ -249,6 +251,11 @@ export class TTSBackend {
     // ---------- The apps' own rows in a backup and in 保存到酒馆 ----------
     partStore(part) { return part === 'music' ? this.music : part === 'sounds' ? this.sounds : this.apps; }
     async partRows(part) {
+        if (part === 'bookshelf') {
+            const out = [];
+            for (const row of await this.bookshelf.list()) { const file = await this.bookshelf.files.get(row.id); if (file?.blob) out.push({...row, blob: file.blob, cover: file.cover}); }
+            return out;
+        }
         if (part === 'paint') return this.paintWorks.all();
         if (part === 'ledger') await this.ledger.flush();
         if (part === 'ledger' || part === 'peek' || part === 'looks' || part === 'albums' || part === 'wardrobe' || part === 'theater') return this.apps.listFrom(part + ':');
@@ -260,6 +267,16 @@ export class TTSBackend {
      * what the app needs to show them. replace: this part's rows now are only these; merge: makes the list when it is written.
      */
     async putPartRows(part, rows, { replace = false, merge } = {}) {
+        if (part === 'bookshelf') {
+            const clean = rows.filter(r => r?.kind === 'reading' && typeof r.id === 'string' && r.id.startsWith('reading:') && Array.isArray(r.chapters) && typeof r.blob?.arrayBuffer === 'function');
+            for (const row of clean) {
+                const {blob, cover, ...meta} = row;
+                await this.bookshelf.files.put([{id: row.id, kind: 'reading-file', at: row.at, blob, cover}]);
+                await this.bookshelf.meta.put([meta]);
+            }
+            if (replace) for (const row of await this.bookshelf.list()) if (!clean.some(r => r.id === row.id)) await this.bookshelf.remove(row.id);
+            return clean.length;
+        }
         if (part === 'paint') return this.paintWorks.importWorks(rows.filter(row => row && typeof row.id === 'string' && Array.isArray(row.layers)), { replace });
         const kinds = PART_KINDS[part], fileBacked = row => row.kind === 'sound' || row.kind === 'look' || (row.kind === 'song' && row.origin !== 'source');
         const clean = rows.filter(row => row && typeof row.id === 'string' && kinds.includes(row.kind) && (merge || !fileBacked(row) || typeof row.blob?.arrayBuffer === 'function')), ids = new Set(clean.map(row => row.id));
@@ -282,9 +299,9 @@ export class TTSBackend {
     async backupCounts() {
         this.assertOpen();
         const bytes = rows => rows.reduce((n, row) => n + (row.blob?.size || row.size || row.bytes || 0), 0);
-        const [docs, music, sounds, works] = await Promise.all([this.apps.list(), this.music.list(), this.sounds.list('sound'), this.paintRows().catch(() => [])]);
+        const [docs, music, sounds, works, reading] = await Promise.all([this.apps.list(), this.music.list(), this.sounds.list('sound'), this.paintRows().catch(() => []), this.bookshelf.list()]);
         const songs = music.filter(row => row.kind === 'song' && row.origin !== 'source'), looks = docs.filter(row => row.kind === 'look');
-        return { wardrobe: docs.filter(row => row.kind === 'wardrobe-item' || row.kind === 'wardrobe-set').length, theater: docs.filter(row => row.kind === 'theater').length, games: docs.filter(row => row.kind === 'gamesave').map(row => ({ game: row.game, day: Number(row.data?.day) || 0 })), looks: looks.length, lookBytes: bytes(looks), forum: docs.filter(row => row.kind === 'forum').length, peek: docs.filter(row => row.kind === 'peek').length, ledger: new Set(docs.filter(row => row.kind === 'ledger').map(row => row.day)).size, playlists: music.filter(row => row.kind === 'playlist').length, songs: songs.length, musicBytes: bytes(songs), sounds: sounds.length, soundBytes: bytes(sounds), works: works.length, workBytes: bytes(works) };
+        return { bookshelf: reading.length, wardrobe: docs.filter(row => row.kind === 'wardrobe-item' || row.kind === 'wardrobe-set').length, theater: docs.filter(row => row.kind === 'theater').length, games: docs.filter(row => row.kind === 'gamesave').map(row => ({ game: row.game, day: Number(row.data?.day) || 0 })), looks: looks.length, lookBytes: bytes(looks), forum: docs.filter(row => row.kind === 'forum').length, peek: docs.filter(row => row.kind === 'peek').length, ledger: new Set(docs.filter(row => row.kind === 'ledger').map(row => row.day)).size, playlists: music.filter(row => row.kind === 'playlist').length, songs: songs.length, musicBytes: bytes(songs), sounds: sounds.length, soundBytes: bytes(sounds), works: works.length, workBytes: bytes(works) };
     }
     /** The works' list; one saved before it kept its size has its layers read for that. */
     async paintRows() {
@@ -411,7 +428,7 @@ export class TTSBackend {
         for (const part of ROW_PARTS) {
             if (!want.has(part === 'albums' ? 'photos' : part) || !backup.rows[part]) continue;
             done[part] = await this.putPartRows(part, backup.rows[part], { replace });
-            this.reviveSync(part, backup.rows[part].map(row => String(row?.id)));
+            if (part !== 'bookshelf') this.reviveSync(part, backup.rows[part].map(row => String(row?.id)));
             this.partsChanged(part);
         }
         if (keys) { let count = 0; for (const [engine, key] of Object.entries(keys)) { try { this.setKey(engine, key); count++; } catch { /* an engine this version does not know */ } } done.keys = count; }
@@ -3549,6 +3566,14 @@ export class TTSBackend {
             listPhotos: () => this.library.listPhotos(), addPhoto: value => this.mutateLibrary('photos', 'addPhoto', value),
             getPhoto: id => this.library.getPhoto(id), photoThumb: id => this.photoThumb(id), photoThumbs: ids => this.library.getThumbs([...(ids || [])].map(String)), photoPreview: id => this.photoPreview(id), packablePhotos: days => this.packablePhotos(days), packPhotos: ids => this.packPhotos([...(ids || [])].map(String)), deletePhoto: id => this.deletePhotos([id]).then(n => n > 0), deletePhotos: ids => this.deletePhotos(ids),
             listNotes: () => this.library.listNotes(), saveNote: value => this.mutateLibrary('notes', 'saveNote', value), deleteNote: id => this.mutateLibrary('notes', 'deleteNote', id),
+            listReadingBooks: () => this.bookshelf.list(),
+            getReadingBook: id => this.bookshelf.get(String(id)),
+            readingBookFile: id => this.bookshelf.files.get(String(id)),
+            addReadingBook: (data, blob, cover) => this.bookshelf.add(clone(data), blob, cover),
+            updateReadingBook: (id, patch) => this.bookshelf.update(String(id), clone(patch)),
+            deleteReadingBook: id => this.bookshelf.remove(String(id)),
+            updateReadingBooks: (ids, patch) => this.bookshelf.updateMany(ids.map(String), clone(patch)),
+            deleteReadingBooks: ids => this.bookshelf.removeMany(ids.map(String)),
             listBooks: () => this.library.listBooks(), getBook: id => this.library.getBook(id), saveBook: value => this.mutateLibrary('books', 'saveBook', clone(value)), deleteBook: id => this.mutateLibrary('books', 'deleteBook', id),
             getPhone: () => this.getPhone(), savePhone: patch => this.savePhone(patch), libraryStats: () => this.library.stats(), storageBudget: () => this.budget.read(),
             listAlbums: () => this.listAlbums(), favoritePhotoIds: () => this.favoritePhotoIds(), favoritePhotos: (ids, on) => this.favoritePhotos([...(ids || [])], on !== false), saveAlbum: value => this.saveAlbum(clone(value || {})), deleteAlbum: id => this.deleteAlbum(String(id)), addToAlbum: (id, ids) => this.addToAlbum(String(id), [...(ids || [])]), removeFromAlbum: (id, ids) => this.removeFromAlbum(String(id), [...(ids || [])]), arrangeAlbums: ids => this.arrangeAlbums([...(ids || [])]),
@@ -3660,7 +3685,7 @@ export class TTSBackend {
         this.music.close();
         this.drawQueue.cancelAll();
         // The 账本 writes what is waiting first: it keeps its numbers with the apps.
-        this.closing = Promise.all([this.ledger.close().finally(() => this.apps.close()), this.player.close(), this.cache.close(), this.library.close(), Promise.resolve(this.keyStore.flush?.()).then(() => this.keyStore.close?.())]);
+        this.closing = Promise.all([this.ledger.close().finally(() => this.apps.close()), this.bookshelf.close(), this.player.close(), this.cache.close(), this.library.close(), Promise.resolve(this.keyStore.flush?.()).then(() => this.keyStore.close?.())]);
         await this.closing;
     }
 }

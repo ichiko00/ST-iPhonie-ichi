@@ -1,3 +1,4 @@
+import {cleanBedtime} from './bedtime.js';
 // 绘本: a stretch of the story made into a picture book, laid out the way picture books are — in spreads, the two pages
 // seen together when the book lies open. A few sentences on each tell what happens (so the words alone tell the
 // story), and they are what is read aloud; the pictures show the rest. Each spread takes one of the layouts picture
@@ -107,6 +108,7 @@ function fromPages(pages) {
 export function normalizeBook(b) {
   const made = Array.isArray(b?.spreads) ? {cover: b.cover, spreads: b.spreads, ending: b.ending} : fromPages(Array.isArray(b?.pages) ? b.pages : []);
   return {
+    ...(b?.bedtime ? {bedtime: cleanBedtime(b.bedtime)} : {}),
     id: text(b?.id, 60) || 'b-' + Date.now().toString(36), version: 3,
     title: words(b?.title, BOOK_LIMIT.title) || '无题', subtitle: words(b?.subtitle, 60), author: text(b?.author, 40),
     theme: THEME_IDS.includes(b?.theme) ? b.theme : 'fairy', art: b?.art === 'app' ? 'app' : 'book', mode: b?.mode === 'story' ? 'story' : 'retell',
