@@ -1140,13 +1140,14 @@ export class TTSBackend {
             if (!payload || !/no message generated|empty/i.test(String(error?.message || ''))) throw error;
             empty = true;
         } finally { source?.removeListener?.(event, keep); }
-        if (empty) { const id = this.requestLog.add('文字模型重试', {reason: '普通请求为空，改用流式'}, 'warn'); this.requestLog.finish(id, {retry: true}); return this.streamTavern(context, payload); }
+        if (signal?.aborted) throw Object.assign(new Error('已停止回复'), {name:'AbortError'});
+        if (empty) { const id = this.requestLog.add('文字模型重试', {reason: '普通请求为空，改用流式'}, 'warn'); this.requestLog.finish(id, {retry: true}); return this.streamTavern(context, payload, signal); }
     }
     /** Sends the tavern's chat-completion request again with streaming on, and reads the whole answer. */
-    async streamTavern(context, payload) {
+    async streamTavern(context, payload, signal) {
         if (typeof context.getRequestHeaders !== 'function') throw Error('模型没有返回内容');
         let response;
-        try { response = await this.textFetch('/api/backends/chat-completions/generate', { method: 'POST', headers: context.getRequestHeaders(), cache: 'no-cache', body: JSON.stringify({ ...payload, stream: true }) }); }
+        try { response = await this.textFetch('/api/backends/chat-completions/generate', { method: 'POST', headers: context.getRequestHeaders(), cache: 'no-cache', signal, body: JSON.stringify({ ...payload, stream: true }) }); }
         catch { throw Error('模型没有返回内容，改用流式请求也没连上'); }
         if (!response.ok) throw Error(`模型没有返回内容，改用流式请求也失败了（HTTP ${response.status}）`);
         const text = await streamText(response);

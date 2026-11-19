@@ -1,3 +1,4 @@
+import {abortable} from './core/abortable.js';
 import {sceneStops,phoneSceneStamp} from './core/phone-scene.js';
 // Phone chat, tavern side. Replies are generated separately from the story with the tavern's connected model
 // (generateRaw): the prompt carries the chat preset, each contact's persona or character card, the user's persona,
@@ -100,9 +101,10 @@ export function createChatHost({context, settings, backend, enabled = () => true
     if (reading && !enabled()) return Promise.reject(Error('当前聊天已暂停社交功能'));
     if (busy.has(threadId)) return busy.get(threadId);
     const controller = new AbortController(), signal = controller.signal;
-    const job = (async () => {
+    const wait = task => abortable(signal, task);
+    const job = wait(async () => {
       const ctx = context(),sceneStamp=phoneSceneStamp(ctx);
-      const thread = await backend.chats.get(threadId);
+      const thread = await wait(() => backend.chats.get(threadId));
       if (!thread) throw Error('这段聊天已不存在');
       if (thread.type === 'dm') backend.socialAssert(thread.members[0],backend.socialScopeFor(thread));
       const last = reroll ? lastRound(thread.messages) : null;
@@ -118,20 +120,20 @@ export function createChatHost({context, settings, backend, enabled = () => true
       const recent = story(preset), forumSpace = backend.here();
       let forum = '';
       if (promptOn(s.promptRules, 'chat-forum')) {
-        try { forum = forumContext((await backend.apps.list('forum')).filter(p => inSpace(p, forumSpace)), user, s.chat.netNames); }
+        try { forum = forumContext((await wait(() => backend.apps.list('forum'))).filter(p => inSpace(p, forumSpace)), user, s.chat.netNames); }
         catch (error) { backend.reportDiagnostic?.('聊天 · 论坛读取', error, 'warn'); }
       }
       // 世界书: scanned over who is in the chat, the recent story and the chat itself, as the story's own request would be.
-      const lore = preset.lore === false ? '' : await worldInfoFor(context, {...loreOptions(preset), report: (...args) => backend.reportDiagnostic?.(...args), persona: userPersona(), characters: people.map(p => p.persona || p.card).join('\n'),
-        texts: [forum, people.map(p => p.name).join('、'), ...recent.map(r => `${r.name}: ${r.text}`), ...thread.messages.slice(-preset.history).map(m => messageLine(m, user))]});
+      const lore = preset.lore === false ? '' : await wait(() => worldInfoFor(context, {...loreOptions(preset), report: (...args) => backend.reportDiagnostic?.(...args), persona: userPersona(), characters: people.map(p => p.persona || p.card).join('\n'),
+        texts: [forum, people.map(p => p.name).join('、'), ...recent.map(r => `${r.name}: ${r.text}`), ...thread.messages.slice(-preset.history).map(m => messageLine(m, user))]}));
       // 记忆: the written-up older chat, and older messages that match the latest ones.
       const query = thread.messages.filter(m => m.kind !== 'system').slice(-6).map(m => messageLine(m, user)).join('\n');
       // 私聊带同群消息: what was said lately in the groups the contact is in too
       let shared = '';
       if (thread.type === 'dm' && promptOn(s.promptRules, 'chat-groups')) {
-        try { shared = await sharedGroups(thread.members[0], user); } catch (error) { backend.reportDiagnostic?.('聊天 · 同群消息', error, 'warn'); }
+        try { shared = await wait(() => sharedGroups(thread.members[0], user)); } catch (error) { backend.reportDiagnostic?.('聊天 · 同群消息', error, 'warn'); }
       }
-      const remembered = memory ? (await memory.contextFor(thread, {query}).catch(() => ({text: ''}))).text : '';
+      const remembered = memory ? (await wait(() => memory.contextFor(thread, {query}).catch(() => ({text: ''})))).text : '';
       const request = pics => { const messages=buildChatRequest({bilingual:s.chat.bilingual!==false,prompts: settings().promptRules, preset, thread, members: people, story: recent, user, userPersona: userPersona(), voiceFormat, lore, forum, groups: shared, memory: remembered, earlier: memory?.storyMemory() || '', images: !!backend.drawReady?.(), stickers: settings().chat.stickers || [], nudge, music: {share: s.music?.share !== false, listening: s.music?.share !== false ? backend.listening : null}, pictures: pics});
         if (thread.type === 'group' && thread.groupInfo) {
           const info = thread.groupInfo;
@@ -146,7 +148,7 @@ export function createChatHost({context, settings, backend, enabled = () => true
         if (reading) messages.splice(messages.length - 1, 0, {role:'system', content:String(reading).slice(0,6000)});
         return messages;
       };
-      const answer = cleanTagged(await answerFor(ctx, readingRequest, await pictures(ctx, thread, preset), signal), preset.cleanTags);
+      const answer = cleanTagged(await wait(async () => answerFor(ctx, readingRequest, await wait(() => pictures(ctx, thread, preset)), signal)), preset.cleanTags);
       if(phoneSceneStamp(context())!==sceneStamp){if(!nudge)notice('正文已推进，未发送基于旧场景生成的手机回复');return null;}
       // 停止 while it was being written: what comes late is let go (the tavern's own generation cannot be stopped).
       if (signal.aborted || (source&&timeline&&!timeline.current(source))) throw stopped();
@@ -157,8 +159,8 @@ export function createChatHost({context, settings, backend, enabled = () => true
       if(!items.length&&sceneStops(text,people.map(p=>p.name)).silent.size){if(!nudge)notice('对方正在与你当面相处，请回正文继续交流');return null;}
       if (!items.length && nudge) return null;
       if (!items.length) throw Error('这次没有收到消息，可以再试一次');
-      const before = new Set((await backend.chats.get(threadId))?.messages.map(m => m.id) || []);
-      const saved = await backend.chatMutate(threadId, () => settle(threadId, items, last));
+      const before = new Set((await wait(() => backend.chats.get(threadId)))?.messages.map(m => m.id) || []);
+      const saved = await wait(() => backend.chatMutate(threadId, () => { if (signal.aborted) throw stopped(); return settle(threadId, items, last); }));
       memory?.after(threadId);
       // The new photos with tags are drawn when the free tier covers them; the others wait for 画出来.
       for (const m of saved?.messages || []) if (!before.has(m.id) && m.kind === 'photo' && !m.photoId && (m.imageTags || backend.drawReady?.())) drawPhoto(threadId, m.id).catch(() => {});
@@ -166,8 +168,8 @@ export function createChatHost({context, settings, backend, enabled = () => true
       const fresh = (saved?.messages || []).filter(m => !before.has(m.id) && m.from !== 'me' && !['system', 'notice', 'recall'].includes(m.kind));
       if (!nudge && fresh.length) backend.emit('chat', {threadId, incoming: {from: fresh.at(-1).from, text: fresh.at(-1).text || '', kind: fresh.at(-1).kind, count: fresh.length}});
       return saved;
-    })().catch(error => { throw signal.aborted ? stopped() : error; })
-      .finally(() => { busy.delete(threadId); stops.delete(threadId); backend.emit('chat', {threadId, typing: false}); });
+    }).catch(error => { throw signal.aborted ? stopped() : error; })
+      .finally(() => { if (stops.get(threadId) === controller) { busy.delete(threadId); stops.delete(threadId); backend.emit('chat', {threadId, typing: false}); } });
     busy.set(threadId, job); stops.set(threadId, controller);
     return job;
   }
@@ -329,18 +331,20 @@ export function createChatHost({context, settings, backend, enabled = () => true
   /** 发送好友申请 to someone who deleted the user: they decide (one model request). {accepted, thread}. */
   function askFriend(threadId, text) {
     if (busy.has(threadId)) return busy.get(threadId);
-    const job = (async () => {
+    const controller = new AbortController(), signal = controller.signal;
+    const wait = task => abortable(signal, task);
+    const job = wait(async () => {
       const ctx = context(), said = String(text || '').trim().slice(0, 100) || `我是${userName()}`;
-      const thread = await backend.chats.get(threadId);
+      const thread = await wait(() => backend.chats.get(threadId));
       if (!thread) throw Error('这段聊天已不存在');
       if (thread.friend?.by !== 'them') throw Error('TA 还是你的好友');
       const name = thread.members[0], s = settings(), preset = activeChatPreset(s.chat), people = members(thread), user = userName();
-      await backend.chatMutate(threadId, () => backend.chats.append(threadId, [{from: 'me', kind: 'system', text: `你发送了好友申请：「${said}」`}], {read: true}));
+      await wait(() => backend.chatMutate(threadId, () => { if (signal.aborted) throw stopped(); return backend.chats.append(threadId, [{from: 'me', kind: 'system', text: `你发送了好友申请：「${said}」`}], {read: true}); }));
       backend.emit('chat', {threadId, typing: true});
       const recent = story(preset);
-      const remembered = memory ? (await memory.contextFor(thread, {query: said}).catch(() => ({text: ''}))).text : '';
+      const remembered = memory ? (await wait(() => memory.contextFor(thread, {query: said}).catch(() => ({text: ''})))).text : '';
       const prompt = buildChatRequest({bilingual:s.chat.bilingual!==false,prompts: settings().promptRules, preset, thread, members: people, story: recent, user, userPersona: userPersona(), voiceFormat: '', memory: remembered, earlier: memory?.storyMemory() || '', images: !!backend.drawReady?.(), stickers: s.chat.stickers || [], asking: said});
-      const reply = cleanTagged(await backend.generateText(ctx, {use: 'chat', prompt, trimNames: false}), preset.cleanTags);
+      const reply = cleanTagged(await wait(() => backend.generateText(ctx, {use: 'chat', prompt, trimNames: false, signal})), preset.cleanTags);
       const items = parseChatReply(reply, {members: people.map(p => ({...p, voice: false})), user, voiceFormat: '', voiceNames: [], stickers: s.chat.stickers || []});
       const yes = items.findIndex(i => i.kind === 'befriend'), no = items.find(i => i.kind === 'refuse');
       if (yes < 0 || (no && items.indexOf(no) < yes)) {
@@ -350,12 +354,12 @@ export function createChatHost({context, settings, backend, enabled = () => true
       await backend.chats.update(threadId, {friend: null});
       await backend.chats.append(threadId, [{from: 'me', kind: 'system', text: `${name}通过了你的好友申请，现在可以开始聊天了`}], {read: true});
       const rest = items.slice(yes + 1).filter(i => !['befriend', 'refuse', 'unfriend'].includes(i.kind));
-      const saved = rest.length ? await backend.chatMutate(threadId, () => settle(threadId, rest)) : await backend.chats.get(threadId);
+      const saved = rest.length ? await backend.chatMutate(threadId, () => settle(threadId, rest)) : await wait(() => backend.chats.get(threadId));
       refreshCuts();
       backend.emit('chat', {threadId, friend: true});
       return {accepted: true, thread: saved};
-    })().finally(() => { busy.delete(threadId); backend.emit('chat', {threadId, typing: false}); });
-    busy.set(threadId, job);
+    }).finally(() => { if (stops.get(threadId) === controller) { stops.delete(threadId); busy.delete(threadId); backend.emit('chat', {threadId, typing: false}); } });
+    busy.set(threadId, job); stops.set(threadId, controller);
     return job;
   }
   // Who is not friends with whom on the phone (every card's), for the story: kept here because inject() cannot wait.
